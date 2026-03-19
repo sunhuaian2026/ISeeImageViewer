@@ -35,16 +35,30 @@ class ImageViewerViewModel: ObservableObject {
 
 ## ImageViewerView
 
-- 黑色全屏背景
-- 图片居中，`.resizable().scaledToFit()`
+- ~~黑色全屏背景~~ → `.regularMaterial` + `.environment(\.colorScheme, .dark)` 毛玻璃暗色背景
+- 图片居中，`.resizable().scaledToFit()`，圆角 16 + 阴影
+- ZStack `.clipShape(RoundedRectangle(cornerRadius: 10)).padding(8)` 浮动卡片效果
 - `MagnificationGesture` 缩放（范围 0.5x～5x）
-- 左右按钮半透明浮层（disabled 时隐藏/半透明）
+- 左右导航按钮半透明浮层（disabled 时半透明）
+- 左上角关闭按钮（xmark + ultraThinMaterial circle）
 - 右上角进度文字 `"3 / 20"`
 - `.focusable()` + `.onKeyPress`：
   - `←`：goBack
   - `→`：goForward
   - `Escape`：onDismiss()
 - `onAppear` 时主动获取键盘焦点
+
+## 当前实现状态（截至 2026-03-19）
+
+- ✅ 毛玻璃背景（.regularMaterial + dark）
+- ✅ 浮动卡片圆角（clipShape + padding）
+- ✅ 图片圆角 16 + 阴影
+- ✅ 左上角关闭按钮
+- ✅ 进度指示器右上角
+- ❌ 控件自动隐藏（待 UIRefresh Phase 1）
+- ❌ 底部 Filmstrip（待 UIRefresh Phase 1）
+- ❌ Zoom transition 进入动画（待 UIRefresh Phase 1）
+- ❌ 全屏模式（待 FullScreen Phase 4）
 
 ## 数据流
 
