@@ -19,8 +19,20 @@ struct FolderSidebarView: View {
                 }
             )
         ) { url in
-            Label(url.lastPathComponent, systemImage: "folder")
-                .contextMenu {
+            HStack {
+                Label(url.lastPathComponent, systemImage: "folder")
+                Spacer()
+                if let count = folderStore.imageCountByFolder[url] {
+                    Text("\(count)")
+                        .font(.caption2)
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(.secondary.opacity(0.15), in: Capsule())
+                }
+            }
+            .contextMenu {
                     Button("在 Finder 中显示") {
                         NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: url.path)
                     }

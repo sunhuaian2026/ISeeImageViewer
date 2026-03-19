@@ -51,6 +51,13 @@ class ImageViewerViewModel: ObservableObject {
         loadCurrentImage()
     }
 
+    func goTo(index: Int) {
+        guard index >= 0, index < images.count, index != currentIndex else { return }
+        currentIndex = index
+        resetZoom()
+        loadCurrentImage()
+    }
+
     func resetZoom() {
         scale = 1.0
         baseScale = 1.0

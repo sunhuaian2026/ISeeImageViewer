@@ -9,7 +9,7 @@ import ImageIO
 struct ImageGridView: View {
     @EnvironmentObject var folderStore: FolderStore
 
-    private let columns = [GridItem(.adaptive(minimum: 160, maximum: 200))]
+    private let columns = [GridItem(.adaptive(minimum: 190, maximum: 230))]
 
     var body: some View {
         Group {
@@ -36,15 +36,25 @@ struct ImageGridView: View {
                 )
             } else {
                 ScrollView {
-                    LazyVGrid(columns: columns, spacing: 8) {
+                    LazyVGrid(columns: columns, spacing: 16) {
                         ForEach(Array(folderStore.images.enumerated()), id: \.element) { index, url in
-                            ThumbnailCell(url: url)
-                                .onTapGesture(count: 2) {
-                                    folderStore.selectedImageIndex = index
-                                }
+                            VStack(spacing: 5) {
+                                ThumbnailCell(url: url)
+                                    .onTapGesture(count: 2) {
+                                        withAnimation(.spring(duration: 0.3)) {
+                                            folderStore.selectedImageIndex = index
+                                        }
+                                    }
+                                Text(url.deletingPathExtension().lastPathComponent)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                    .frame(maxWidth: 180)
+                            }
                         }
                     }
-                    .padding(8)
+                    .padding(12)
                 }
             }
         }
@@ -65,22 +75,22 @@ struct ThumbnailCell: View {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 150, height: 150)
+                    .frame(width: 180, height: 180)
                     .clipped()
             } else {
                 Rectangle()
                     .fill(Color.secondary.opacity(0.15))
-                    .frame(width: 150, height: 150)
+                    .frame(width: 180, height: 180)
                     .overlay { ProgressView() }
             }
         }
-        .frame(width: 150, height: 150)
-        .cornerRadius(6)
+        .frame(width: 180, height: 180)
+        .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay {
             if isHovered {
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 8)
                     .stroke(Color.accentColor, lineWidth: 2)
-                RoundedRectangle(cornerRadius: 6)
+                RoundedRectangle(cornerRadius: 8)
                     .fill(.ultraThinMaterial)
                     .opacity(0.3)
             }
@@ -90,13 +100,13 @@ struct ThumbnailCell: View {
     }
 }
 
-// MARK: - Thumbnail Loading
+// MARK: - Thumbnail Loading（internal，供 FilmstripCell 复用）
 
-private func loadThumbnail(url: URL) async -> NSImage? {
+func loadThumbnail(url: URL, maxPixelSize: Int = 200) async -> NSImage? {
     await Task.detached(priority: .userInitiated) {
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         let options: [CFString: Any] = [
-            kCGImageSourceThumbnailMaxPixelSize: 200,
+            kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
             kCGImageSourceShouldCacheImmediately: true

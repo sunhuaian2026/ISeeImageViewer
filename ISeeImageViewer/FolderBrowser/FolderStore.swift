@@ -14,6 +14,7 @@ class FolderStore: ObservableObject {
     @Published var images: [URL] = []
     @Published var selectedImageIndex: Int? = nil
     @Published var isLoadingImages: Bool = false
+    @Published var imageCountByFolder: [URL: Int] = [:]
 
     private let bookmarkManager: BookmarkManager
 
@@ -66,6 +67,7 @@ class FolderStore: ObservableObject {
         bookmarkManager.stopAccessing(url)
         bookmarkManager.removeBookmark(for: url)
         folders.removeAll { $0 == url }
+        imageCountByFolder.removeValue(forKey: url)
         if selectedFolder == url {
             selectedFolder = nil
             images = []
@@ -99,6 +101,7 @@ class FolderStore: ObservableObject {
                 }
         }.value
         images = scanned
+        imageCountByFolder[url] = scanned.count
         isLoadingImages = false
     }
 }
