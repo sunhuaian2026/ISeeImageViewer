@@ -21,10 +21,18 @@ struct FolderSidebarView: View {
         ) { url in
             Label(url.lastPathComponent, systemImage: "folder")
                 .contextMenu {
+                    Button("在 Finder 中显示") {
+                        NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: url.path)
+                    }
+                    Divider()
                     Button("移除文件夹", role: .destructive) {
                         folderStore.removeFolder(url)
                     }
                 }
+        }
+        .listStyle(.sidebar)
+        .contextMenu {
+            Button("添加文件夹…") { folderStore.addFolder() }
         }
         .toolbar {
             ToolbarItem {

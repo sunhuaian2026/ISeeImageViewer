@@ -18,13 +18,14 @@ struct ImageViewerView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-
             // Image
             if let nsImage = viewModel.currentNSImage {
                 Image(nsImage: nsImage)
                     .resizable()
                     .scaledToFit()
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .shadow(color: .black.opacity(0.5), radius: 24, x: 0, y: 8)
+                    .padding(40)
                     .scaleEffect(viewModel.scale)
                     .offset(viewModel.offset)
                     .gesture(magnificationGesture)
@@ -44,24 +45,38 @@ struct ImageViewerView: View {
                     viewModel.goForward()
                 }
             }
-            .padding(.horizontal, 16)
+            .padding(.horizontal, 24)
 
-            // Progress indicator
+            // Top bar: close button (left) + progress indicator (right)
             VStack {
                 HStack {
+                    Button(action: onDismiss) {
+                        Image(systemName: "xmark")
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.8))
+                            .frame(width: 32, height: 32)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(16)
                     Spacer()
                     Text(viewModel.progress)
                         .font(.caption)
                         .foregroundColor(.white)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
-                        .background(Color.black.opacity(0.5))
+                        .background(.ultraThinMaterial)
                         .cornerRadius(8)
                         .padding(12)
                 }
                 Spacer()
             }
         }
+        .background(.regularMaterial)
+        .environment(\.colorScheme, .dark)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(8)
         .focusable()
         .focused($isFocused)
         .onAppear { isFocused = true }
@@ -79,7 +94,7 @@ struct ImageViewerView: View {
                 .font(.title)
                 .foregroundColor(.white.opacity(enabled ? 0.9 : 0.25))
                 .frame(width: 44, height: 44)
-                .background(Color.black.opacity(enabled ? 0.4 : 0.15))
+                .background(enabled ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.ultraThinMaterial))
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)

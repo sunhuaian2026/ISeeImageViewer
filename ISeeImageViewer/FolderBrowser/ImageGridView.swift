@@ -14,11 +14,18 @@ struct ImageGridView: View {
     var body: some View {
         Group {
             if folderStore.selectedFolder == nil {
-                ContentUnavailableView(
-                    "选择文件夹",
-                    systemImage: "folder",
-                    description: Text("从左侧添加并选择一个文件夹来浏览图片")
-                )
+                Color.primary.opacity(0.001)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .overlay {
+                        ContentUnavailableView(
+                            "选择文件夹",
+                            systemImage: "folder",
+                            description: Text("从左侧添加并选择一个文件夹来浏览图片")
+                        )
+                    }
+                    .contextMenu {
+                        Button("添加文件夹…") { folderStore.addFolder() }
+                    }
             } else if folderStore.isLoadingImages {
                 ProgressView("加载中…")
             } else if folderStore.images.isEmpty {
@@ -32,7 +39,7 @@ struct ImageGridView: View {
                     LazyVGrid(columns: columns, spacing: 8) {
                         ForEach(Array(folderStore.images.enumerated()), id: \.element) { index, url in
                             ThumbnailCell(url: url)
-                                .onTapGesture {
+                                .onTapGesture(count: 2) {
                                     folderStore.selectedImageIndex = index
                                 }
                         }
@@ -69,10 +76,15 @@ struct ThumbnailCell: View {
         }
         .frame(width: 150, height: 150)
         .cornerRadius(6)
-        .overlay(
-            RoundedRectangle(cornerRadius: 6)
-                .stroke(isHovered ? Color.accentColor : Color.clear, lineWidth: 2)
-        )
+        .overlay {
+            if isHovered {
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color.accentColor, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 6)
+                    .fill(.ultraThinMaterial)
+                    .opacity(0.3)
+            }
+        }
         .onHover { isHovered = $0 }
         .task { thumbnail = await loadThumbnail(url: url) }
     }
