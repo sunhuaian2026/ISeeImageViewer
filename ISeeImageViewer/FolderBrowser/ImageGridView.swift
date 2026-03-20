@@ -9,7 +9,10 @@ import ImageIO
 struct ImageGridView: View {
     @EnvironmentObject var folderStore: FolderStore
 
-    private let columns = [GridItem(.adaptive(minimum: 190, maximum: 230))]
+    private let columns = [GridItem(.adaptive(
+        minimum: DS.Thumbnail.defaultSize,
+        maximum: DS.Thumbnail.defaultSize + DS.Spacing.xl
+    ))]
 
     var body: some View {
         Group {
@@ -19,7 +22,7 @@ struct ImageGridView: View {
                     .overlay {
                         ContentUnavailableView(
                             "选择文件夹",
-                            systemImage: "folder",
+                            systemImage: DS.Icon.folder,
                             description: Text("从左侧添加并选择一个文件夹来浏览图片")
                         )
                     }
@@ -36,12 +39,12 @@ struct ImageGridView: View {
                 )
             } else {
                 ScrollView {
-                    LazyVGrid(columns: columns, spacing: 16) {
+                    LazyVGrid(columns: columns, spacing: DS.Thumbnail.spacing) {
                         ForEach(Array(folderStore.images.enumerated()), id: \.element) { index, url in
-                            VStack(spacing: 5) {
+                            VStack(spacing: DS.Spacing.xs) {
                                 ThumbnailCell(url: url)
                                     .onTapGesture(count: 2) {
-                                        withAnimation(.spring(duration: 0.3)) {
+                                        withAnimation(DS.Animation.normal) {
                                             folderStore.selectedImageIndex = index
                                         }
                                     }
@@ -50,11 +53,11 @@ struct ImageGridView: View {
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
                                     .truncationMode(.middle)
-                                    .frame(maxWidth: 180)
+                                    .frame(maxWidth: DS.Thumbnail.defaultSize)
                             }
                         }
                     }
-                    .padding(12)
+                    .padding(DS.Spacing.sm)
                 }
             }
         }
@@ -75,26 +78,24 @@ struct ThumbnailCell: View {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 180, height: 180)
+                    .frame(width: DS.Thumbnail.defaultSize, height: DS.Thumbnail.defaultSize)
                     .clipped()
             } else {
                 Rectangle()
                     .fill(Color.secondary.opacity(0.15))
-                    .frame(width: 180, height: 180)
+                    .frame(width: DS.Thumbnail.defaultSize, height: DS.Thumbnail.defaultSize)
                     .overlay { ProgressView() }
             }
         }
-        .frame(width: 180, height: 180)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .frame(width: DS.Thumbnail.defaultSize, height: DS.Thumbnail.defaultSize)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius))
         .overlay {
             if isHovered {
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(Color.accentColor, lineWidth: 2)
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(.ultraThinMaterial)
-                    .opacity(0.3)
+                RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
+                    .fill(DS.Color.hoverBackground)
             }
         }
+        .animation(DS.Animation.fast, value: isHovered)
         .onHover { isHovered = $0 }
         .task { thumbnail = await loadThumbnail(url: url) }
     }

@@ -28,13 +28,13 @@ struct ContentView: View {
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
-            .animation(.spring(duration: 0.25), value: showInspector)
+            .animation(DS.Animation.normal, value: showInspector)
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button {
                         showInspector.toggle()
                     } label: {
-                        Label("信息", systemImage: showInspector ? "info.circle.fill" : "info.circle")
+                        Label("信息", systemImage: showInspector ? DS.Icon.infoFilled : DS.Icon.info)
                     }
                     .keyboardShortcut("i", modifiers: .command)
                 }
@@ -50,14 +50,14 @@ struct ContentView: View {
                     images: folderStore.images,
                     startIndex: idx,
                     onDismiss: {
-                        withAnimation(.spring(duration: 0.3)) {
+                        withAnimation(DS.Animation.normal) {
                             folderStore.selectedImageIndex = nil
                         }
                     }
                 )
                 .transition(.asymmetric(
-                    insertion: .scale(scale: 0.96).combined(with: .opacity),
-                    removal: .scale(scale: 0.96).combined(with: .opacity)
+                    insertion: .scale(scale: 0.97).combined(with: .opacity),
+                    removal:   .scale(scale: 0.97).combined(with: .opacity)
                 ))
             } else {
                 ImageGridView()
@@ -65,7 +65,7 @@ struct ContentView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(.spring(duration: 0.3), value: folderStore.selectedImageIndex)
+        .animation(DS.Animation.normal, value: folderStore.selectedImageIndex)
     }
 }
 
