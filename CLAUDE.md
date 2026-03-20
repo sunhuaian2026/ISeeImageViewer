@@ -14,28 +14,37 @@ ISeeImageViewer/
 ├── specs/                           ← 所有模块规范文档
 │   ├── UI.md                        ← UI 设计规范（唯一来源）
 │   ├── Roadmap.md                   ← 总体进度与 TODO
-│   ├── BookmarkManager.md
-│   ├── FolderStore.md
-│   ├── FolderBrowserView.md
-│   ├── ImageViewerView.md
+│   ├── BookmarkManager.md           ← ✅ 已完成
+│   ├── FolderStore.md               ← ✅ 已完成
+│   ├── FolderBrowserView.md         ← ✅ 已完成
+│   ├── ImageViewerView.md           ← ✅ 已完成（已被 QuickViewer 替代）
 │   ├── UIRefresh.md                 ← ✅ 已完成
-│   ├── SortFilter.md                ← ⏳ Phase 2 下一步
-│   ├── KeyboardShortcuts.md         ← ⏳ Phase 2
-│   ├── Inspector.md                 ← ⏳ Phase 3
-│   └── FullScreen.md                ← ⏳ Phase 4
+│   ├── QuickViewer.md               ← ✅ 已完成
+│   ├── SortFilter.md                ← ✅ 已完成
+│   ├── KeyboardShortcuts.md         ← ✅ 已完成
+│   ├── Inspector.md                 ← ✅ 已完成
+│   └── FullScreen.md                ← ✅ 已完成
 └── ISeeImageViewer/                 ← Swift 源码（PBXFileSystemSynchronizedRootGroup，新文件自动加入编译）
-    ├── ISeeImageViewerApp.swift
-    ├── ContentView.swift            ← 三栏布局（Sidebar + Detail + Inspector）
+    ├── ISeeImageViewerApp.swift      ← App 入口，注入 BookmarkManager / FolderStore / AppState
+    ├── ContentView.swift            ← NavigationSplitView + 内嵌预览/QuickViewer 覆盖层
     ├── DesignSystem.swift           ← DS.Spacing / DS.Color / DS.Animation 等所有 UI 常量
-    ├── InspectorPlaceholderView.swift
     ├── BookmarkManager.swift
     ├── FolderBrowser/
     │   ├── FolderStore.swift        ← 状态管理（文件夹、图片列表、排序）
     │   ├── FolderSidebarView.swift  ← 侧边栏（badge、右键菜单）
     │   └── ImageGridView.swift      ← 缩略图网格 + ThumbnailCell + loadThumbnail()
-    └── ImageViewer/
-        ├── ImageViewerViewModel.swift
-        └── ImageViewerView.swift    ← 看图界面 + FilmstripCell + 自动隐藏控件
+    ├── ImageViewer/
+    │   └── ImagePreviewView.swift   ← 单击后内嵌预览（简单展示，双击触发 QuickViewer）
+    ├── QuickViewer/
+    │   ├── QuickViewerViewModel.swift  ← ZoomMode + 缩放/导航逻辑
+    │   ├── ZoomScrollView.swift        ← NSViewRepresentable（滚轮/双击/拖拽）
+    │   └── QuickViewerOverlay.swift    ← 全窗口覆盖层（TopBar + NavButtons + BottomToolbar + Filmstrip）
+    ├── Inspector/
+    │   ├── ImageInspectorViewModel.swift  ← ImageInfo struct + EXIF 读取
+    │   └── ImageInspectorView.swift       ← Form + Section 布局
+    └── FullScreen/
+        ├── AppState.swift           ← isFullScreen 状态 + toggleFullScreen()
+        └── WindowAccessor.swift     ← NSViewRepresentable，获取 NSWindow + NSWindowDelegate
 ```
 
 ---

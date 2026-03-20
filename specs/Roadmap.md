@@ -43,15 +43,12 @@
 
 1. **DesignSystem.swift**：所有 UI 常量的唯一来源，引用 `DS.*`，禁止硬编码。
 2. **PBXFileSystemSynchronizedRootGroup**：`ISeeImageViewer/` 目录下新建 .swift 文件自动加入编译，无需改 xcodeproj。
-3. **三栏布局**：`ContentView` = NavigationSplitView（Sidebar） + HStack（Detail + Inspector）。Inspector 用 `⌘I` 切换，宽度 260pt。
-4. **看图界面**：`DS.Color.viewerBackground`（#1A1A1A）纯深色，`preferredColorScheme(.dark)`，禁止 spring 动画。
-5. **loadThumbnail()**：定义在 `ImageGridView.swift`，internal 级别，`FilmstripCell` 复用。
-6. **构建**：项目根目录有 Makefile，用 `make build` / `make run`。
-
----
-
-## 开发顺序说明
-
-- Phase 2 两个模块互相独立，可在同一 session 内完成
-- Phase 3 Inspector 依赖 Phase 1 三栏布局（已就位，右栏有 `InspectorPlaceholderView` 占位）
-- Phase 4 全屏完全独立，最后做
+3. **图片查看两级交互**：
+   - 单击缩略图 → `folderStore.selectedImageIndex` → `ImagePreviewView`（内嵌预览，简单展示）
+   - 双击缩略图 / 双击内嵌预览图片 → `quickViewerIndex`（ContentView 局部状态）→ `QuickViewerOverlay`（全窗口，含缩放/平移/Filmstrip）
+4. **QuickViewerOverlay 覆盖方式**：用 `.overlay` 挂在 `NavigationSplitView` 上（不用 ZStack），确保铺满整个内容区。
+5. **三栏布局**：`ContentView` = NavigationSplitView（Sidebar） + HStack（Detail + Inspector）。Inspector 用 `⌘I` 切换，宽度 260pt。
+6. **看图界面**：`DS.Color.viewerBackground`（#1A1A1A）纯深色，`preferredColorScheme(.dark)`，禁止 spring 动画。
+7. **loadThumbnail()**：定义在 `ImageGridView.swift`，internal 级别，`FilmstripCell` 复用。
+8. **AppState**：全局 ObservableObject，持有 `NSWindow` 引用 + `isFullScreen` 状态，通过 `EnvironmentObject` 注入。
+9. **构建**：项目根目录有 Makefile，用 `make build` / `make run`。

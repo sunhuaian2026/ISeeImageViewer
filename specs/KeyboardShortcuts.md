@@ -1,6 +1,8 @@
 # KeyboardShortcuts Spec
 
-## 当前进度：第 0 步已完成（未开始）
+## 当前进度：全部步骤已完成（commit 8885893）
+
+> 注：实现时 ImageViewerView/ViewModel 已被 QuickViewerOverlay/QuickViewerViewModel 替代，快捷键绑定在 QuickViewerOverlay 中。
 
 ---
 

@@ -1,6 +1,6 @@
 # Inspector Spec（EXIF 元信息面板）
 
-## 当前进度：第 0 步已完成（未开始）
+## 当前进度：全部步骤已完成（commit faf77ac）
 
 ## 前置依赖
 
