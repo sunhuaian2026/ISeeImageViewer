@@ -7,6 +7,7 @@ import SwiftUI
 
 struct QuickViewerOverlay: View {
     @StateObject private var viewModel: QuickViewerViewModel
+    @EnvironmentObject var appState: AppState
     let onDismiss: () -> Void
 
     @FocusState private var isFocused: Bool
@@ -100,6 +101,10 @@ struct QuickViewerOverlay: View {
         }
         .onKeyPress(.init("-"), phases: .down) { _ in
             if NSEvent.modifierFlags.contains(.command) { viewModel.zoomOut() }
+            return .handled
+        }
+        .onKeyPress(.init("f"), phases: .down) { _ in
+            appState.toggleFullScreen()
             return .handled
         }
         // 捏合手势
@@ -203,6 +208,9 @@ struct QuickViewerOverlay: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             toolbarButton(title: "放大", systemImage: "plus.magnifyingglass") {
                 viewModel.zoomIn()
+            }
+            toolbarButton(title: "全屏 (F)", systemImage: appState.isFullScreen ? "arrow.down.right.and.arrow.up.left" : DS.Icon.fullscreen) {
+                appState.toggleFullScreen()
             }
         }
         .padding(.horizontal, DS.Spacing.md)

@@ -11,6 +11,7 @@ import SwiftUI
 struct ISeeImageViewerApp: App {
     @StateObject private var bookmarkManager: BookmarkManager
     @StateObject private var folderStore: FolderStore
+    @StateObject private var appState = AppState()
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
@@ -25,6 +26,7 @@ struct ISeeImageViewerApp: App {
             ContentView()
                 .environmentObject(bookmarkManager)
                 .environmentObject(folderStore)
+                .environmentObject(appState)
                 .preferredColorScheme(.dark)
                 .onAppear {
                     folderStore.loadSavedFolders()

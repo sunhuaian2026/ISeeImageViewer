@@ -7,6 +7,7 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject var folderStore: FolderStore
+    @EnvironmentObject var appState: AppState
     @State private var showInspector = false
 
     private var currentImageURL: URL? {
@@ -17,6 +18,9 @@ struct ContentView: View {
 
     var body: some View {
         ZStack {
+            WindowAccessor(appState: appState)
+                .frame(width: 0, height: 0)
+
             NavigationSplitView {
                 FolderSidebarView()
             } detail: {
