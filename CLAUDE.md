@@ -73,8 +73,21 @@ ISeeImageViewer/
 - **模块完成后必须同步更新文档**：
   1. 更新 specs/[模块名].md 里的「当前进度：第 X 步已完成」
   2. 更新 specs/Roadmap.md：将该模块移入「已完成」表格，标注 commit hash
-  3. 如涉及新文件，同步更新 CLAUDE.md 的文件结构
+  3. 如涉及新文件或目录，同步更新 CLAUDE.md 的文件结构
 - xcodeproj 使用 PBXFileSystemSynchronizedRootGroup，在 ISeeImageViewer/ 目录下新建 .swift 文件会自动被编译，无需手改 xcodeproj。
+
+## ⚠️ 文档同步强制规则（每次必须执行，不得跳过）
+
+**任何代码变更后，必须在同一次 commit 前完成以下检查：**
+
+1. **新增/删除/移动文件** → 立即更新 CLAUDE.md 文件结构
+2. **完成模块或子功能** → 立即更新对应 specs/[模块名].md 的「当前进度」
+3. **模块进入已完成** → 立即更新 specs/Roadmap.md 的已完成表格（含 commit hash）
+4. **架构或交互逻辑发生变化** → 立即更新 specs/Roadmap.md 的「关键架构决策」
+
+**判断标准：任何让"下一个 session 读文档会产生误解"的变更，都必须同步更新文档。**
+
+文档更新不是可选步骤，是开发流程的一部分，与编译验证同等重要。
 
 ## 验证与 Review 规范
 
