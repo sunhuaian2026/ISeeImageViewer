@@ -61,7 +61,10 @@ ISeeImageViewer/
 
 - 每次计划生成后，立刻将计划追加到对应的 specs/[模块名].md 的「实现步骤」章节。
 - 每个模块完成后立刻 git commit，commit message 格式：「完成 [模块名]」。
-- 每次 session 结束前，更新 specs/[模块名].md 里的「当前进度：第 X 步已完成」，并更新 specs/Roadmap.md。
+- **模块完成后必须同步更新文档**：
+  1. 更新 specs/[模块名].md 里的「当前进度：第 X 步已完成」
+  2. 更新 specs/Roadmap.md：将该模块移入「已完成」表格，标注 commit hash
+  3. 如涉及新文件，同步更新 CLAUDE.md 的文件结构
 - xcodeproj 使用 PBXFileSystemSynchronizedRootGroup，在 ISeeImageViewer/ 目录下新建 .swift 文件会自动被编译，无需手改 xcodeproj。
 
 ## 验证与 Review 规范
