@@ -16,37 +16,34 @@ struct ContentView: View {
     }
 
     var body: some View {
-        NavigationSplitView {
-            FolderSidebarView()
-        } detail: {
-            HStack(spacing: 0) {
-                mainContent
-                if showInspector {
-                    Divider()
-                    InspectorPlaceholderView(url: currentImageURL)
-                        .frame(width: 260)
-                        .transition(.move(edge: .trailing).combined(with: .opacity))
-                }
-            }
-            .animation(DS.Animation.normal, value: showInspector)
-            .toolbar {
-                ToolbarItem(placement: .automatic) {
-                    Button {
-                        showInspector.toggle()
-                    } label: {
-                        Label("信息", systemImage: showInspector ? DS.Icon.infoFilled : DS.Icon.info)
+        ZStack {
+            NavigationSplitView {
+                FolderSidebarView()
+            } detail: {
+                HStack(spacing: 0) {
+                    ImageGridView()
+                    if showInspector {
+                        Divider()
+                        InspectorPlaceholderView(url: currentImageURL)
+                            .frame(width: 260)
+                            .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
-                    .keyboardShortcut("i", modifiers: .command)
+                }
+                .animation(DS.Animation.normal, value: showInspector)
+                .toolbar {
+                    ToolbarItem(placement: .automatic) {
+                        Button {
+                            showInspector.toggle()
+                        } label: {
+                            Label("信息", systemImage: showInspector ? DS.Icon.infoFilled : DS.Icon.info)
+                        }
+                        .keyboardShortcut("i", modifiers: .command)
+                    }
                 }
             }
-        }
-    }
 
-    @ViewBuilder
-    private var mainContent: some View {
-        Group {
             if let idx = folderStore.selectedImageIndex {
-                ImageViewerView(
+                QuickViewerOverlay(
                     images: folderStore.images,
                     startIndex: idx,
                     onDismiss: {
@@ -55,17 +52,10 @@ struct ContentView: View {
                         }
                     }
                 )
-                .transition(.asymmetric(
-                    insertion: .scale(scale: 0.97).combined(with: .opacity),
-                    removal:   .scale(scale: 0.97).combined(with: .opacity)
-                ))
-            } else {
-                ImageGridView()
-                    .transition(.opacity)
+                .transition(.opacity)
+                .animation(DS.Animation.normal, value: folderStore.selectedImageIndex)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .animation(DS.Animation.normal, value: folderStore.selectedImageIndex)
     }
 }
 
