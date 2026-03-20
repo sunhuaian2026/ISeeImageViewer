@@ -69,7 +69,7 @@ ISeeImageViewer/
 ## 持久化规范
 
 - 每次计划生成后，立刻将计划追加到对应的 specs/[模块名].md 的「实现步骤」章节。
-- 每个模块完成后立刻 git commit，commit message 格式：「完成 [模块名]」。
+- 每个模块完成后立刻 git commit，commit message 格式：「完成 [模块名]」，然后执行 `git push` 同步到 GitHub（remote: git@github.com:sunhuaian2026/ISeeImageViewer.git）。
 - **模块完成后必须同步更新文档**：
   1. 更新 specs/[模块名].md 里的「当前进度：第 X 步已完成」
   2. 更新 specs/Roadmap.md：将该模块移入「已完成」表格，标注 commit hash
