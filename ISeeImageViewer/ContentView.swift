@@ -9,56 +9,85 @@ struct ContentView: View {
     @EnvironmentObject var folderStore: FolderStore
     @EnvironmentObject var appState: AppState
     @State private var showInspector = false
+    @State private var quickViewerIndex: Int? = nil
 
-    private var currentImageURL: URL? {
+    private var inspectorURL: URL? {
         guard let idx = folderStore.selectedImageIndex,
               idx < folderStore.images.count else { return nil }
         return folderStore.images[idx]
     }
 
     var body: some View {
-        ZStack {
-            WindowAccessor(appState: appState)
-                .frame(width: 0, height: 0)
-
-            NavigationSplitView {
-                FolderSidebarView()
-            } detail: {
-                HStack(spacing: 0) {
-                    ImageGridView()
-                    if showInspector {
-                        Divider()
-                        ImageInspectorView(url: currentImageURL)
-                            .frame(width: 260)
-                            .transition(.move(edge: .trailing).combined(with: .opacity))
-                    }
-                }
-                .animation(DS.Animation.normal, value: showInspector)
-                .toolbar {
-                    ToolbarItem(placement: .automatic) {
-                        Button {
-                            showInspector.toggle()
-                        } label: {
-                            Label("信息", systemImage: showInspector ? DS.Icon.infoFilled : DS.Icon.info)
-                        }
-                        .keyboardShortcut("i", modifiers: .command)
-                    }
+        NavigationSplitView {
+            FolderSidebarView()
+        } detail: {
+            HStack(spacing: 0) {
+                mainContent
+                if showInspector {
+                    Divider()
+                    ImageInspectorView(url: inspectorURL)
+                        .frame(width: 260)
+                        .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
-
-            if let idx = folderStore.selectedImageIndex {
+            .animation(DS.Animation.normal, value: showInspector)
+            .toolbar {
+                ToolbarItem(placement: .automatic) {
+                    Button {
+                        showInspector.toggle()
+                    } label: {
+                        Label("信息", systemImage: showInspector ? DS.Icon.infoFilled : DS.Icon.info)
+                    }
+                    .keyboardShortcut("i", modifiers: .command)
+                }
+            }
+        }
+        // QuickViewerOverlay 用 .overlay 挂在 NavigationSplitView 上，确保铺满整个内容区
+        .overlay {
+            if let idx = quickViewerIndex {
                 QuickViewerOverlay(
                     images: folderStore.images,
                     startIndex: idx,
                     onDismiss: {
                         withAnimation(DS.Animation.normal) {
-                            folderStore.selectedImageIndex = nil
+                            quickViewerIndex = nil
                         }
                     }
                 )
                 .transition(.opacity)
-                .animation(DS.Animation.normal, value: folderStore.selectedImageIndex)
             }
+        }
+        .animation(DS.Animation.normal, value: quickViewerIndex)
+        .background {
+            WindowAccessor(appState: appState)
+        }
+    }
+
+    // MARK: - Main Content
+
+    @ViewBuilder
+    private var mainContent: some View {
+        if let idx = folderStore.selectedImageIndex {
+            ImagePreviewView(
+                images: folderStore.images,
+                startIndex: idx,
+                onDismiss: {
+                    folderStore.selectedImageIndex = nil
+                },
+                onQuickView: { index in
+                    quickViewerIndex = index
+                }
+            )
+            .transition(.asymmetric(
+                insertion: .scale(scale: 0.97).combined(with: .opacity),
+                removal:   .scale(scale: 0.97).combined(with: .opacity)
+            ))
+        } else {
+            ImageGridView(onDoubleClick: { index in
+                folderStore.selectedImageIndex = index
+                quickViewerIndex = index
+            })
+            .transition(.opacity)
         }
     }
 }
@@ -66,4 +95,5 @@ struct ContentView: View {
 #Preview {
     ContentView()
         .environmentObject(FolderStore(bookmarkManager: BookmarkManager()))
+        .environmentObject(AppState())
 }

@@ -8,6 +8,7 @@ import ImageIO
 
 struct ImageGridView: View {
     @EnvironmentObject var folderStore: FolderStore
+    var onDoubleClick: (Int) -> Void = { _ in }
 
     @FocusState private var isFocused: Bool
     @State private var highlightedIndex: Int? = nil
@@ -82,12 +83,11 @@ struct ImageGridView: View {
                         VStack(spacing: DS.Spacing.xs) {
                             ThumbnailCell(url: url, isHighlighted: highlightedIndex == index)
                                 .onTapGesture(count: 2) {
-                                    withAnimation(DS.Animation.normal) {
-                                        folderStore.selectedImageIndex = index
-                                    }
+                                    onDoubleClick(index)
                                 }
                                 .onTapGesture(count: 1) {
                                     highlightedIndex = index
+                                    folderStore.selectedImageIndex = index
                                 }
                             Text(url.deletingPathExtension().lastPathComponent)
                                 .font(.caption2)
@@ -104,13 +104,11 @@ struct ImageGridView: View {
             .focusable()
             .focused($isFocused)
             .onAppear { isFocused = true }
-            // Space：进入查看器
+            // Space：进入全窗口查看器
             .onKeyPress(.space) {
                 let target = highlightedIndex ?? 0
                 guard !images.isEmpty else { return .ignored }
-                withAnimation(DS.Animation.normal) {
-                    folderStore.selectedImageIndex = target
-                }
+                onDoubleClick(target)
                 return .handled
             }
             // 方向键导航

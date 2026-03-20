@@ -1,0 +1,154 @@
+//
+//  ImagePreviewView.swift
+//  ISeeImageViewer
+//
+//  单击图片后显示的内嵌预览。双击图片进入 QuickViewerOverlay 全窗口模式。
+//
+
+import SwiftUI
+
+struct ImagePreviewView: View {
+    @EnvironmentObject var folderStore: FolderStore
+
+    let images: [URL]
+    let onDismiss: () -> Void
+    let onQuickView: (Int) -> Void
+
+    @State private var currentIndex: Int
+    @State private var nsImage: NSImage?
+    @State private var loadTask: Task<Void, Never>?
+
+    init(images: [URL], startIndex: Int,
+         onDismiss: @escaping () -> Void,
+         onQuickView: @escaping (Int) -> Void) {
+        self.images = images
+        _currentIndex = State(initialValue: max(0, min(startIndex, images.count - 1)))
+        self.onDismiss = onDismiss
+        self.onQuickView = onQuickView
+    }
+
+    var body: some View {
+        ZStack {
+            DS.Color.viewerBackground.ignoresSafeArea()
+
+            // 图片
+            if let img = nsImage {
+                Image(nsImage: img)
+                    .resizable()
+                    .scaledToFit()
+                    .padding(DS.Spacing.xl)
+                    .onTapGesture(count: 2) {
+                        onQuickView(currentIndex)
+                    }
+            } else {
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(.white)
+            }
+
+            // 顶部栏
+            VStack {
+                HStack {
+                    Button(action: onDismiss) {
+                        Image(systemName: DS.Icon.close)
+                            .font(.body.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.8))
+                            .frame(width: 32, height: 32)
+                            .background(.ultraThinMaterial)
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .padding(DS.Spacing.md)
+
+                    Spacer()
+
+                    Text(images[currentIndex].lastPathComponent)
+                        .font(.subheadline)
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+
+                    Spacer()
+
+                    Text("\(currentIndex + 1) / \(images.count)")
+                        .font(.caption)
+                        .foregroundColor(.white)
+                        .padding(.horizontal, DS.Spacing.sm + DS.Spacing.xs)
+                        .padding(.vertical, DS.Spacing.xs + 2)
+                        .background(.ultraThinMaterial)
+                        .cornerRadius(DS.Spacing.sm)
+                        .padding(DS.Spacing.sm + DS.Spacing.xs)
+                }
+                Spacer()
+            }
+
+            // 左右导航
+            HStack {
+                navButton(systemImage: DS.Icon.previous, enabled: currentIndex > 0) {
+                    navigate(by: -1)
+                }
+                Spacer()
+                navButton(systemImage: DS.Icon.next, enabled: currentIndex < images.count - 1) {
+                    navigate(by: +1)
+                }
+            }
+            .padding(.horizontal, DS.Spacing.lg)
+
+            // 底部提示
+            VStack {
+                Spacer()
+                Text("双击图片进入全屏查看")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.35))
+                    .padding(.bottom, DS.Spacing.md)
+            }
+        }
+        .preferredColorScheme(.dark)
+        .onAppear { loadImage() }
+        .onKeyPress(.escape)     { onDismiss(); return .handled }
+        .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
+        .onKeyPress(.rightArrow) { navigate(by: +1); return .handled }
+        .onKeyPress(.space) { onQuickView(currentIndex); return .handled }
+    }
+
+    // MARK: - Navigation
+
+    private func navigate(by delta: Int) {
+        let next = currentIndex + delta
+        guard next >= 0, next < images.count else { return }
+        currentIndex = next
+        folderStore.selectedImageIndex = next
+        loadImage()
+    }
+
+    // MARK: - Image Loading
+
+    private func loadImage() {
+        let url = images[currentIndex]
+        nsImage = nil
+        loadTask?.cancel()
+        loadTask = Task {
+            let img: NSImage? = await Task.detached(priority: .userInitiated) {
+                NSImage(contentsOf: url)
+            }.value
+            guard !Task.isCancelled else { return }
+            nsImage = img
+        }
+    }
+
+    // MARK: - Nav Button
+
+    @ViewBuilder
+    private func navButton(systemImage: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemImage)
+                .font(.title2)
+                .foregroundColor(.white.opacity(enabled ? 0.9 : 0.25))
+                .frame(width: 44, height: 44)
+                .background(enabled ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.ultraThinMaterial))
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled)
+    }
+}
