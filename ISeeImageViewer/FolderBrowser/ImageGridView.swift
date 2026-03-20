@@ -9,6 +9,9 @@ import ImageIO
 struct ImageGridView: View {
     @EnvironmentObject var folderStore: FolderStore
 
+    @FocusState private var isFocused: Bool
+    @State private var highlightedIndex: Int? = nil
+
     private let columns = [GridItem(.adaptive(
         minimum: DS.Thumbnail.defaultSize,
         maximum: DS.Thumbnail.defaultSize + DS.Spacing.xl
@@ -38,30 +41,84 @@ struct ImageGridView: View {
                     description: Text("此文件夹中没有支持的图片格式")
                 )
             } else {
-                ScrollView {
-                    LazyVGrid(columns: columns, spacing: DS.Thumbnail.spacing) {
-                        ForEach(Array(folderStore.images.enumerated()), id: \.element) { index, url in
-                            VStack(spacing: DS.Spacing.xs) {
-                                ThumbnailCell(url: url)
-                                    .onTapGesture(count: 2) {
-                                        withAnimation(DS.Animation.normal) {
-                                            folderStore.selectedImageIndex = index
-                                        }
-                                    }
-                                Text(url.deletingPathExtension().lastPathComponent)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                    .frame(maxWidth: DS.Thumbnail.defaultSize)
-                            }
-                        }
-                    }
-                    .padding(DS.Spacing.sm)
-                }
+                gridContent
             }
         }
         .navigationTitle(folderStore.selectedFolder?.lastPathComponent ?? "")
+        .onChange(of: folderStore.images) { _, _ in
+            highlightedIndex = nil
+        }
+    }
+
+    // MARK: - Grid
+
+    private var gridContent: some View {
+        let images = folderStore.images
+        let colCount = columnCount()
+
+        return ScrollViewReader { scrollProxy in
+            ScrollView {
+                LazyVGrid(columns: columns, spacing: DS.Thumbnail.spacing) {
+                    ForEach(Array(images.enumerated()), id: \.element) { index, url in
+                        VStack(spacing: DS.Spacing.xs) {
+                            ThumbnailCell(url: url, isHighlighted: highlightedIndex == index)
+                                .onTapGesture(count: 2) {
+                                    withAnimation(DS.Animation.normal) {
+                                        folderStore.selectedImageIndex = index
+                                    }
+                                }
+                                .onTapGesture(count: 1) {
+                                    highlightedIndex = index
+                                }
+                            Text(url.deletingPathExtension().lastPathComponent)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .frame(maxWidth: DS.Thumbnail.defaultSize)
+                        }
+                        .id(index)
+                    }
+                }
+                .padding(DS.Spacing.sm)
+            }
+            .focusable()
+            .focused($isFocused)
+            .onAppear { isFocused = true }
+            // Space：进入查看器
+            .onKeyPress(.space) {
+                let target = highlightedIndex ?? 0
+                guard !images.isEmpty else { return .ignored }
+                withAnimation(DS.Animation.normal) {
+                    folderStore.selectedImageIndex = target
+                }
+                return .handled
+            }
+            // 方向键导航
+            .onKeyPress(.leftArrow)  { moveHighlight(by: -1,        colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
+            .onKeyPress(.rightArrow) { moveHighlight(by: +1,        colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
+            .onKeyPress(.upArrow)    { moveHighlight(by: -colCount, colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
+            .onKeyPress(.downArrow)  { moveHighlight(by: +colCount, colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private func moveHighlight(by delta: Int, colCount: Int, total: Int, proxy: ScrollViewProxy) {
+        guard total > 0 else { return }
+        let current = highlightedIndex ?? (delta > 0 ? -1 : 0)
+        let next = max(0, min(total - 1, current + delta))
+        highlightedIndex = next
+        withAnimation(DS.Animation.fast) {
+            proxy.scrollTo(next, anchor: .center)
+        }
+    }
+
+    private func columnCount() -> Int {
+        // 估算列数，用于上下方向键步进
+        let cellWidth = DS.Thumbnail.defaultSize + DS.Thumbnail.spacing
+        let windowWidth = NSApp.keyWindow?.contentView?.bounds.width ?? 800
+        return max(1, Int(windowWidth / cellWidth))
     }
 }
 
@@ -69,6 +126,7 @@ struct ImageGridView: View {
 
 struct ThumbnailCell: View {
     let url: URL
+    var isHighlighted: Bool = false
     @State private var thumbnail: NSImage? = nil
     @State private var isHovered = false
 
@@ -90,12 +148,19 @@ struct ThumbnailCell: View {
         .frame(width: DS.Thumbnail.defaultSize, height: DS.Thumbnail.defaultSize)
         .clipShape(RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius))
         .overlay {
-            if isHovered {
+            if isHovered && !isHighlighted {
                 RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
                     .fill(DS.Color.hoverBackground)
             }
         }
+        .overlay {
+            if isHighlighted {
+                RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
+                    .stroke(Color.accentColor, lineWidth: 2.5)
+            }
+        }
         .animation(DS.Animation.fast, value: isHovered)
+        .animation(DS.Animation.fast, value: isHighlighted)
         .onHover { isHovered = $0 }
         .task { thumbnail = await loadThumbnail(url: url) }
     }
