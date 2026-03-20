@@ -8,7 +8,7 @@
 
 ## 当前进度（2026-03-20）
 
-**下一步：Phase 2 — KeyboardShortcuts → SortFilter → Inspector → FullScreen**
+**所有模块已完成，待上架 App Store**
 
 ---
 
@@ -24,6 +24,10 @@
 | DesignSystem | UI.md | 9230bc7 | DS.* 所有 UI 常量，全代码已对齐 |
 | UIRefresh（Phase 1） | UIRefresh.md | 0abde01 | 三栏布局、Inspector 面板、过渡动画 |
 | QuickViewer | QuickViewer.md | 9018877 | 沉浸式全窗口查看器，缩放/平移/导航，替代 ImageViewerView |
+| KeyboardShortcuts | KeyboardShortcuts.md | 8885893 | 网格方向键导航、Space 进入查看器、缩放快捷键 |
+| SortFilter | SortFilter.md | a2d1fc2 | 6 种排序，UserDefaults 持久化，Toolbar Menu |
+| Inspector | Inspector.md | faf77ac | EXIF 元信息面板，相机/拍摄参数/GPS |
+| FullScreen | FullScreen.md | 0abcae6 | NSWindow.toggleFullScreen，F 键切换，NSWindowDelegate 监听 |
 
 ---
 
@@ -31,10 +35,7 @@
 
 | 阶段 | 模块 | Spec | 优先级 | 前置依赖 |
 |------|------|------|--------|----------|
-| **Phase 2** | 图片排序 / 过滤 | SortFilter.md | P1 | 无 |
-| **Phase 2** | 键盘快捷键完善 | KeyboardShortcuts.md | P1 | QuickViewer ✅ |
-| Phase 3 | EXIF 元信息 Inspector | Inspector.md | P2 | Phase 1 ✅ |
-| Phase 4 | 全屏模式 | FullScreen.md | P2 | 无 |
+（无待开发模块）
 
 ---
 
