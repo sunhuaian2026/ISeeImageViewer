@@ -24,7 +24,7 @@ struct ContentView: View {
                     ImageGridView()
                     if showInspector {
                         Divider()
-                        InspectorPlaceholderView(url: currentImageURL)
+                        ImageInspectorView(url: currentImageURL)
                             .frame(width: 260)
                             .transition(.move(edge: .trailing).combined(with: .opacity))
                     }
