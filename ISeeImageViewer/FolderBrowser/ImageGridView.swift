@@ -48,6 +48,25 @@ struct ImageGridView: View {
         .onChange(of: folderStore.images) { _, _ in
             highlightedIndex = nil
         }
+        .toolbar {
+            ToolbarItem(placement: .automatic) {
+                Menu {
+                    ForEach(SortOrder.allCases, id: \.self) { order in
+                        Button {
+                            folderStore.sortOrder = order
+                        } label: {
+                            Label(
+                                order.rawValue,
+                                systemImage: folderStore.sortOrder == order ? "checkmark" : ""
+                            )
+                        }
+                    }
+                } label: {
+                    Image(systemName: "arrow.up.arrow.down")
+                }
+                .help("排序方式")
+            }
+        }
     }
 
     // MARK: - Grid

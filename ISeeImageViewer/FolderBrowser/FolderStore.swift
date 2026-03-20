@@ -7,6 +7,15 @@ import Foundation
 import AppKit
 import Combine
 
+enum SortOrder: String, CaseIterable {
+    case nameAsc  = "名称 ↑"
+    case nameDesc = "名称 ↓"
+    case dateAsc  = "日期 ↑"
+    case dateDesc = "日期 ↓"
+    case sizeAsc  = "大小 ↑"
+    case sizeDesc = "大小 ↓"
+}
+
 @MainActor
 class FolderStore: ObservableObject {
     @Published var folders: [URL] = []
@@ -15,6 +24,16 @@ class FolderStore: ObservableObject {
     @Published var selectedImageIndex: Int? = nil
     @Published var isLoadingImages: Bool = false
     @Published var imageCountByFolder: [URL: Int] = [:]
+    @Published var sortOrder: SortOrder = {
+        let raw = UserDefaults.standard.string(forKey: "sortOrder") ?? ""
+        return SortOrder(rawValue: raw) ?? .nameAsc
+    }() {
+        didSet {
+            UserDefaults.standard.set(sortOrder.rawValue, forKey: "sortOrder")
+            guard !images.isEmpty else { return }
+            Task { images = await sortImages(images) }
+        }
+    }
 
     private let bookmarkManager: BookmarkManager
 
@@ -94,14 +113,43 @@ class FolderStore: ObservableObject {
                 includingPropertiesForKeys: [.isRegularFileKey],
                 options: [.skipsHiddenFiles]
             ) else { return [] }
-            return contents
-                .filter { ext.contains($0.pathExtension.lowercased()) }
-                .sorted {
+            return contents.filter { ext.contains($0.pathExtension.lowercased()) }
+        }.value
+        let sorted = await sortImages(scanned)
+        images = sorted
+        imageCountByFolder[url] = sorted.count
+        isLoadingImages = false
+    }
+
+    private func sortImages(_ urls: [URL]) async -> [URL] {
+        let order = sortOrder
+        return await Task.detached(priority: .userInitiated) {
+            switch order {
+            case .nameAsc:
+                return urls.sorted {
                     $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending
                 }
+            case .nameDesc:
+                return urls.sorted {
+                    $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedDescending
+                }
+            case .dateAsc, .dateDesc:
+                let keys: Set<URLResourceKey> = [.contentModificationDateKey]
+                let dated: [(URL, Date)] = urls.map { url in
+                    let date = (try? url.resourceValues(forKeys: keys))?.contentModificationDate
+                    return (url, date ?? .distantPast)
+                }
+                let sorted = dated.sorted { order == .dateAsc ? $0.1 < $1.1 : $0.1 > $1.1 }
+                return sorted.map { $0.0 }
+            case .sizeAsc, .sizeDesc:
+                let keys: Set<URLResourceKey> = [.fileSizeKey]
+                let sized: [(URL, Int)] = urls.map { url in
+                    let size = (try? url.resourceValues(forKeys: keys))?.fileSize
+                    return (url, size ?? Int.max)
+                }
+                let sorted = sized.sorted { order == .sizeAsc ? $0.1 < $1.1 : $0.1 > $1.1 }
+                return sorted.map { $0.0 }
+            }
         }.value
-        images = scanned
-        imageCountByFolder[url] = scanned.count
-        isLoadingImages = false
     }
 }
