@@ -58,6 +58,15 @@ struct ContentView: View {
             }
         }
         .animation(DS.Anim.normal, value: quickViewerIndex)
+        // 切换文件夹或取消图片选择时，自动关闭 Inspector
+        .onChange(of: folderStore.selectedFolder) { _, _ in
+            withAnimation(DS.Anim.normal) { showInspector = false }
+        }
+        .onChange(of: folderStore.selectedImageIndex) { _, newValue in
+            if newValue == nil {
+                withAnimation(DS.Anim.normal) { showInspector = false }
+            }
+        }
         .background {
             WindowAccessor(appState: appState)
         }
