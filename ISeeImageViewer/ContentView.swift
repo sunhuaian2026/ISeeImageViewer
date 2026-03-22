@@ -39,6 +39,7 @@ struct ContentView: View {
                         Label("信息", systemImage: showInspector ? DS.Icon.infoFilled : DS.Icon.info)
                     }
                     .keyboardShortcut("i", modifiers: .command)
+                    .disabled(folderStore.selectedImageIndex == nil)
                 }
             }
         }
