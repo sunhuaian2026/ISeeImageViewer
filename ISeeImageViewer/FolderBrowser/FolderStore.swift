@@ -7,6 +7,26 @@ import Foundation
 import AppKit
 import Combine
 
+// MARK: - FolderNode（树形节点）
+
+struct FolderNode: Identifiable, Hashable {
+    let url: URL
+    /// nil = 无子文件夹（叶节点）；non-nil = 有子文件夹（可展开）
+    var children: [FolderNode]?
+
+    var id: URL { url }
+
+    static func == (lhs: FolderNode, rhs: FolderNode) -> Bool {
+        lhs.url == rhs.url
+    }
+
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(url)
+    }
+}
+
+// MARK: - SortOrder
+
 enum SortOrder: String, CaseIterable {
     case nameAsc  = "名称 ↑"
     case nameDesc = "名称 ↓"
@@ -16,9 +36,11 @@ enum SortOrder: String, CaseIterable {
     case sizeDesc = "大小 ↓"
 }
 
+// MARK: - FolderStore
+
 @MainActor
 class FolderStore: ObservableObject {
-    @Published var folders: [URL] = []
+    @Published var rootFolders: [FolderNode] = []
     @Published var selectedFolder: URL? = nil
     @Published var images: [URL] = []
     @Published var selectedImageIndex: Int? = nil
@@ -52,8 +74,19 @@ class FolderStore: ObservableObject {
         for url in restored {
             _ = bookmarkManager.startAccessing(url)
         }
-        folders = restored.sorted {
-            $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending
+        Task {
+            var nodes: [FolderNode] = []
+            for url in restored {
+                let node = await discoverTree(at: url)
+                nodes.append(node)
+            }
+            rootFolders = nodes.sorted {
+                $0.url.lastPathComponent.localizedStandardCompare($1.url.lastPathComponent) == .orderedAscending
+            }
+            // 统计各文件夹图片数（后台完成，badge 会自动更新）
+            for node in rootFolders {
+                await countImagesInTree(node)
+            }
         }
     }
 
@@ -65,7 +98,7 @@ class FolderStore: ObservableObject {
         panel.prompt = "选择文件夹"
         guard panel.runModal() == .OK, let url = panel.url else { return }
 
-        if folders.contains(url) {
+        if rootFolders.contains(where: { $0.url == url }) {
             selectFolder(url)
             return
         }
@@ -78,16 +111,27 @@ class FolderStore: ObservableObject {
         }
 
         _ = bookmarkManager.startAccessing(url)
-        folders.append(url)
-        selectFolder(url)
+
+        Task {
+            let node = await discoverTree(at: url)
+            rootFolders.append(node)
+            rootFolders.sort {
+                $0.url.lastPathComponent.localizedStandardCompare($1.url.lastPathComponent) == .orderedAscending
+            }
+            await countImagesInTree(node)
+            selectFolder(url)
+        }
     }
 
     func removeFolder(_ url: URL) {
+        guard rootFolders.contains(where: { $0.url == url }) else { return }
         bookmarkManager.stopAccessing(url)
         bookmarkManager.removeBookmark(for: url)
-        folders.removeAll { $0 == url }
+        rootFolders.removeAll { $0.url == url }
         imageCountByFolder.removeValue(forKey: url)
-        if selectedFolder == url {
+        // 若选中的是被删除树中的任意节点，则取消选择
+        if let selected = selectedFolder,
+           selected == url || selected.path.hasPrefix(url.path + "/") {
             selectedFolder = nil
             images = []
             selectedImageIndex = nil
@@ -101,7 +145,56 @@ class FolderStore: ObservableObject {
         Task { await scanImages(in: url) }
     }
 
-    // MARK: - Private
+    // MARK: - Tree Discovery
+
+    /// 递归构建 FolderNode 树（只扫目录，不扫图片）
+    private func discoverTree(at url: URL) async -> FolderNode {
+        let subdirs: [URL] = await Task.detached(priority: .userInitiated) {
+            let fm = FileManager.default
+            guard let contents = try? fm.contentsOfDirectory(
+                at: url,
+                includingPropertiesForKeys: [.isDirectoryKey],
+                options: [.skipsHiddenFiles]
+            ) else { return [] }
+            return contents
+                .filter { (try? $0.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory == true }
+                .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        }.value
+
+        if subdirs.isEmpty {
+            return FolderNode(url: url, children: nil)
+        }
+
+        var children: [FolderNode] = []
+        for subdir in subdirs {
+            let child = await discoverTree(at: subdir)
+            children.append(child)
+        }
+        return FolderNode(url: url, children: children)
+    }
+
+    /// 递归统计每个节点的直接图片数，结果写入 imageCountByFolder
+    private func countImagesInTree(_ node: FolderNode) async {
+        let ext = Self.supportedExtensions
+        let url = node.url
+        let count: Int = await Task.detached(priority: .utility) {
+            let fm = FileManager.default
+            guard let contents = try? fm.contentsOfDirectory(
+                at: url,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            ) else { return 0 }
+            return contents.filter { ext.contains($0.pathExtension.lowercased()) }.count
+        }.value
+        imageCountByFolder[node.url] = count
+        if let children = node.children {
+            for child in children {
+                await countImagesInTree(child)
+            }
+        }
+    }
+
+    // MARK: - Image Scanning
 
     private func scanImages(in url: URL) async {
         isLoadingImages = true
