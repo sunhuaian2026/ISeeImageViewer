@@ -27,11 +27,11 @@ ISeeImageViewer/
 └── ISeeImageViewer/                 ← Swift 源码（PBXFileSystemSynchronizedRootGroup，新文件自动加入编译）
     ├── ISeeImageViewerApp.swift      ← App 入口，注入 BookmarkManager / FolderStore / AppState
     ├── ContentView.swift            ← NavigationSplitView + 内嵌预览/QuickViewer 覆盖层
-    ├── DesignSystem.swift           ← DS.Spacing / DS.Color / DS.Animation 等所有 UI 常量
+    ├── DesignSystem.swift           ← DS.Spacing / DS.Color / DS.Anim 等所有 UI 常量
     ├── BookmarkManager.swift
     ├── FolderBrowser/
-    │   ├── FolderStore.swift        ← 状态管理（文件夹、图片列表、排序）
-    │   ├── FolderSidebarView.swift  ← 侧边栏（badge、右键菜单）
+    │   ├── FolderStore.swift        ← 状态管理（FolderNode 树形结构、图片列表、排序）
+    │   ├── FolderSidebarView.swift  ← 侧边栏（树形展开/折叠、badge、右键菜单）
     │   └── ImageGridView.swift      ← 缩略图网格 + ThumbnailCell + loadThumbnail()
     ├── ImageViewer/
     │   └── ImagePreviewView.swift   ← 单击后内嵌预览（简单展示，双击触发 QuickViewer）
@@ -64,7 +64,7 @@ ISeeImageViewer/
 - 详细规范见 specs/UI.md。
 - 核心原则：内容优先、克制、原生、深色优先。
 - 看图界面强制深色（`.preferredColorScheme(.dark)`），不加装饰性元素。
-- 禁止在看图界面使用 `.spring` 动画，用 `DS.Animation.normal / fast`。
+- 禁止在看图界面使用 `.spring` 动画，用 `DS.Anim.normal / fast`。
 
 ## 持久化规范
 

@@ -6,9 +6,9 @@
 
 ---
 
-## 当前进度（2026-03-20）
+## 当前进度（2026-03-22）
 
-**所有模块已完成，待上架 App Store**
+**所有模块已完成，Bug 修复中，待上架 App Store**
 
 ---
 
@@ -28,6 +28,19 @@
 | SortFilter | SortFilter.md | a2d1fc2 | 6 种排序，UserDefaults 持久化，Toolbar Menu |
 | Inspector | Inspector.md | faf77ac | EXIF 元信息面板，相机/拍摄参数/GPS |
 | FullScreen | FullScreen.md | 0abcae6 | NSWindow.toggleFullScreen，F 键切换，NSWindowDelegate 监听 |
+| Liquid Glass UI | UI.md | 9a0cfde | DS.Anim / 新色系 / 毛玻璃控件 / 光晕 / 浮动气泡 Toolbar |
+| 树形侧边栏 | FolderBrowserView.md | e8aec40 | FolderNode + discoverTree，List(children:) 展开/折叠 |
+
+---
+
+## Bug Fix 记录
+
+| Commit | 说明 |
+|--------|------|
+| 1234d68 | QuickViewer 顶部栏改为三个独立浮动气泡，去掉全宽背景遮挡问题 |
+| 3ae95b3 | ImagePreviewView 文件名改用 `.navigationTitle`，消除与系统 toolbar 重叠 |
+| fe82225 | 切换文件夹或取消图片选择时自动关闭 Inspector |
+| f4a69da | 无图片选中时禁用 Inspector（ⓘ）按钮，防止空 Inspector 挤压网格布局 |
 
 ---
 
@@ -41,14 +54,15 @@
 
 ## 关键架构决策（新 session 必读）
 
-1. **DesignSystem.swift**：所有 UI 常量的唯一来源，引用 `DS.*`，禁止硬编码。
+1. **DesignSystem.swift**：所有 UI 常量的唯一来源，引用 `DS.*`，禁止硬编码。动画常量为 `DS.Anim.fast / normal / slow`（注意：旧名 `DS.Animation` 已废弃）。
 2. **PBXFileSystemSynchronizedRootGroup**：`ISeeImageViewer/` 目录下新建 .swift 文件自动加入编译，无需改 xcodeproj。
 3. **图片查看两级交互**：
-   - 单击缩略图 → `folderStore.selectedImageIndex` → `ImagePreviewView`（内嵌预览，简单展示）
+   - 单击缩略图 → `folderStore.selectedImageIndex` → `ImagePreviewView`（内嵌预览，文件名通过 `.navigationTitle` 显示在系统 toolbar）
    - 双击缩略图 / 双击内嵌预览图片 → `quickViewerIndex`（ContentView 局部状态）→ `QuickViewerOverlay`（全窗口，含缩放/平移/Filmstrip）
 4. **QuickViewerOverlay 覆盖方式**：用 `.overlay` 挂在 `NavigationSplitView` 上（不用 ZStack），确保铺满整个内容区。
-5. **三栏布局**：`ContentView` = NavigationSplitView（Sidebar） + HStack（Detail + Inspector）。Inspector 用 `⌘I` 切换，宽度 260pt。
-6. **看图界面**：`DS.Color.viewerBackground`（#1A1A1A）纯深色，`preferredColorScheme(.dark)`，禁止 spring 动画。
-7. **loadThumbnail()**：定义在 `ImageGridView.swift`，internal 级别，`FilmstripCell` 复用。
-8. **AppState**：全局 ObservableObject，持有 `NSWindow` 引用 + `isFullScreen` 状态，通过 `EnvironmentObject` 注入。
-9. **构建**：项目根目录有 Makefile，用 `make build` / `make run`。
+5. **三栏布局**：`ContentView` = NavigationSplitView（Sidebar） + HStack（Detail + Inspector）。Inspector 用 `⌘I` 切换，宽度 `DS.Inspector.width`（260pt）。Inspector 按钮在无图片选中时禁用；切换文件夹或取消选图时自动关闭 Inspector。
+6. **颜色系统**：主背景 `DS.Color.appBackground`（#121217），网格区 `DS.Color.gridBackground`（#141419），光晕 `DS.Color.glowPrimary`（紫）/ `glowSecondary`（青绿）。`DS.Color.viewerBackground` 已废弃。
+7. **树形侧边栏**：`FolderStore.rootFolders: [FolderNode]`（替代旧 `folders: [URL]`）。`discoverTree(at:)` 递归构建子文件夹树，`countImagesInTree(_:)` 统计各节点图片数。子文件夹继承父文件夹的 Security Scoped Bookmark，无需独立权限。
+8. **loadThumbnail()**：定义在 `ImageGridView.swift`，internal 级别，`FilmstripCell` 复用。
+9. **AppState**：全局 ObservableObject，持有 `NSWindow` 引用 + `isFullScreen` 状态，通过 `EnvironmentObject` 注入。
+10. **构建**：项目根目录有 Makefile，用 `make build` / `make run`。
