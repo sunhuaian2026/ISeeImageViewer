@@ -164,30 +164,37 @@ struct QuickViewerOverlay: View {
     // MARK: - Top Bar
 
     private var topBar: some View {
+        // 三个独立浮动小气泡，不连成一整条
         HStack {
+            // 关闭按钮（圆形气泡）
             Button(action: onDismiss) {
                 Image(systemName: DS.Icon.close)
                     .font(.body.weight(.semibold))
                     .foregroundColor(.white.opacity(0.8))
                     .frame(width: 32, height: 32)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Circle())
+                    .background(.ultraThinMaterial, in: Circle())
             }
             .buttonStyle(.plain)
 
             Spacer()
 
+            // 文件名（居中小气泡）
             if let url = viewModel.images[safe: viewModel.currentIndex] {
                 Text(url.lastPathComponent)
                     .font(.subheadline)
                     .foregroundColor(.white)
                     .lineLimit(1)
                     .truncationMode(.middle)
+                    .padding(.horizontal, DS.Spacing.md)
+                    .padding(.vertical, DS.Spacing.xs)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius))
+                    .frame(maxWidth: 320)
             }
 
             Spacer()
 
-            HStack(spacing: DS.Spacing.sm) {
+            // 缩放 + 进度（右侧小气泡）
+            HStack(spacing: DS.Spacing.xs) {
                 Text(viewModel.zoomPercent)
                     .font(.caption)
                     .foregroundColor(.white.opacity(0.7))
@@ -197,22 +204,10 @@ struct QuickViewerOverlay: View {
             }
             .padding(.horizontal, DS.Spacing.sm + DS.Spacing.xs)
             .padding(.vertical, DS.Spacing.xs + 2)
-            .background(.ultraThinMaterial)
-            .cornerRadius(DS.Spacing.sm)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DS.Spacing.sm))
         }
         .padding(.horizontal, DS.Spacing.md)
-        .frame(height: DS.Toolbar.height)
-        .background(
-            RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
-                .fill(.ultraThinMaterial)
-                .overlay(
-                    RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
-                )
-                .shadow(color: .black.opacity(0.3), radius: 12, y: 6)
-        )
-        .padding(.horizontal, DS.Spacing.md)
-        .padding(.top, DS.Spacing.sm)
+        .padding(.top, DS.Spacing.sm + DS.Spacing.xs)
     }
 
     // MARK: - Bottom Toolbar
