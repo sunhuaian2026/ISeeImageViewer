@@ -56,7 +56,7 @@ struct ImagePreviewView: View {
                     .tint(.white)
             }
 
-            // 顶部栏
+            // 关闭按钮（左上角浮动）
             VStack {
                 HStack {
                     Button(action: onDismiss) {
@@ -64,31 +64,19 @@ struct ImagePreviewView: View {
                             .font(.body.weight(.semibold))
                             .foregroundColor(.white.opacity(0.8))
                             .frame(width: 32, height: 32)
-                            .background(.ultraThinMaterial)
-                            .clipShape(Circle())
+                            .background(.ultraThinMaterial, in: Circle())
                     }
                     .buttonStyle(.plain)
-                    .padding(DS.Spacing.md)
-
                     Spacer()
-
-                    Text(images[currentIndex].lastPathComponent)
-                        .font(.subheadline)
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-
-                    Spacer()
-
+                    // n/m 进度（右上角浮动）
                     Text("\(currentIndex + 1) / \(images.count)")
                         .font(.caption)
                         .foregroundColor(.white)
                         .padding(.horizontal, DS.Spacing.sm + DS.Spacing.xs)
                         .padding(.vertical, DS.Spacing.xs + 2)
-                        .background(.ultraThinMaterial)
-                        .cornerRadius(DS.Spacing.sm)
-                        .padding(DS.Spacing.sm + DS.Spacing.xs)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DS.Spacing.sm))
                 }
+                .padding(DS.Spacing.md)
                 Spacer()
             }
 
@@ -113,6 +101,7 @@ struct ImagePreviewView: View {
                     .padding(.bottom, DS.Spacing.md)
             }
         }
+        .navigationTitle(images[currentIndex].lastPathComponent)
         .preferredColorScheme(.dark)
         .onAppear { loadImage() }
         .onKeyPress(.escape)     { onDismiss(); return .handled }
