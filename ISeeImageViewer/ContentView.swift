@@ -26,11 +26,11 @@ struct ContentView: View {
                 if showInspector {
                     Divider()
                     ImageInspectorView(url: inspectorURL)
-                        .frame(width: 260)
+                        .frame(width: DS.Inspector.width)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
             }
-            .animation(DS.Animation.normal, value: showInspector)
+            .animation(DS.Anim.normal, value: showInspector)
             .toolbar {
                 ToolbarItem(placement: .automatic) {
                     Button {
@@ -49,7 +49,7 @@ struct ContentView: View {
                     images: folderStore.images,
                     startIndex: idx,
                     onDismiss: {
-                        withAnimation(DS.Animation.normal) {
+                        withAnimation(DS.Anim.normal) {
                             quickViewerIndex = nil
                         }
                     }
@@ -57,7 +57,7 @@ struct ContentView: View {
                 .transition(.opacity)
             }
         }
-        .animation(DS.Animation.normal, value: quickViewerIndex)
+        .animation(DS.Anim.normal, value: quickViewerIndex)
         .background {
             WindowAccessor(appState: appState)
         }

@@ -9,7 +9,18 @@ struct FolderSidebarView: View {
     @EnvironmentObject var folderStore: FolderStore
 
     var body: some View {
-        List(
+        ZStack(alignment: .topLeading) {
+            // 紫色环境光光晕
+            RadialGradient(
+                colors: [DS.Color.glowPrimary.opacity(0.18), .clear],
+                center: .topLeading,
+                startRadius: 0,
+                endRadius: 300
+            )
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
+
+            List(
             folderStore.folders,
             id: \.self,
             selection: Binding<URL?>(
@@ -29,7 +40,7 @@ struct FolderSidebarView: View {
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(.secondary.opacity(0.15), in: Capsule())
+                        .background(.ultraThinMaterial, in: Capsule())
                 }
             }
             .contextMenu {
@@ -43,6 +54,8 @@ struct FolderSidebarView: View {
                 }
         }
         .listStyle(.sidebar)
+        .background(.ultraThinMaterial)
+        .environment(\.colorScheme, .dark)
         .contextMenu {
             Button("添加文件夹…") { folderStore.addFolder() }
         }
@@ -56,5 +69,6 @@ struct FolderSidebarView: View {
             }
         }
         .navigationTitle("文件夹")
+        } // ZStack
     }
 }

@@ -23,8 +23,28 @@ struct QuickViewerOverlay: View {
         GeometryReader { geo in
             ZStack {
                 // 背景
-                DS.Color.viewerBackground
+                DS.Color.appBackground
                     .ignoresSafeArea()
+
+                // 紫色光晕（左上角）
+                RadialGradient(
+                    colors: [DS.Color.glowPrimary.opacity(0.15), .clear],
+                    center: .topLeading,
+                    startRadius: 0,
+                    endRadius: 350
+                )
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
+
+                // 青绿光晕（右下角）
+                RadialGradient(
+                    colors: [DS.Color.glowSecondary.opacity(0.10), .clear],
+                    center: .bottomTrailing,
+                    startRadius: 0,
+                    endRadius: 400
+                )
+                .ignoresSafeArea()
+                .allowsHitTesting(false)
 
                 // 图片 + 缩放层
                 ZoomScrollView(viewModel: viewModel)
@@ -51,7 +71,7 @@ struct QuickViewerOverlay: View {
                     }
                 }
                 .padding(.horizontal, DS.Spacing.lg)
-                .padding(.bottom, DS.Viewer.filmstripHeight)
+                .padding(.bottom, DS.Viewer.filmstripHeight + DS.Spacing.sm)
                 .opacity(controlsVisible ? 1 : 0)
 
                 // 底部：工具栏 + 胶片条
@@ -181,8 +201,18 @@ struct QuickViewerOverlay: View {
             .cornerRadius(DS.Spacing.sm)
         }
         .padding(.horizontal, DS.Spacing.md)
-        .frame(height: DS.Viewer.toolbarHeight)
-        .background(.ultraThinMaterial)
+        .frame(height: DS.Toolbar.height)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.3), radius: 12, y: 6)
+        )
+        .padding(.horizontal, DS.Spacing.md)
+        .padding(.top, DS.Spacing.sm)
     }
 
     // MARK: - Bottom Toolbar
@@ -215,6 +245,17 @@ struct QuickViewerOverlay: View {
         }
         .padding(.horizontal, DS.Spacing.md)
         .padding(.vertical, DS.Spacing.xs)
+        .background(
+            RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+                .shadow(color: .black.opacity(0.3), radius: 12, y: 6)
+        )
+        .padding(.horizontal, DS.Spacing.xl)
+        .padding(.bottom, DS.Spacing.xs)
     }
 
     // MARK: - Filmstrip
@@ -233,9 +274,15 @@ struct QuickViewerOverlay: View {
                 .padding(.vertical, DS.Spacing.sm + DS.Spacing.xs)
             }
             .frame(height: DS.Viewer.filmstripHeight)
-            .background(.ultraThinMaterial)
+            .background(
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.6)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
             .onChange(of: viewModel.currentIndex) { _, newIndex in
-                withAnimation(DS.Animation.fast) {
+                withAnimation(DS.Anim.fast) {
                     proxy.scrollTo(newIndex, anchor: .center)
                 }
             }
@@ -278,7 +325,7 @@ struct QuickViewerOverlay: View {
     // MARK: - Auto-hide
 
     private func showControlsTemporarily() {
-        withAnimation(DS.Animation.normal) { controlsVisible = true }
+        withAnimation(DS.Anim.normal) { controlsVisible = true }
         scheduleHide(after: 2.0)
     }
 
@@ -288,7 +335,7 @@ struct QuickViewerOverlay: View {
             try? await Task.sleep(for: .seconds(seconds))
             guard !Task.isCancelled else { return }
             await MainActor.run {
-                withAnimation(DS.Animation.normal) { controlsVisible = false }
+                withAnimation(DS.Anim.normal) { controlsVisible = false }
             }
         }
     }
@@ -319,17 +366,17 @@ struct FilmstripCell: View {
                     .clipped()
             } else {
                 Rectangle()
-                    .fill(DS.Color.hoverBackground)
+                    .fill(DS.Color.hoverOverlay)
                     .frame(width: 56, height: 56)
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius + DS.Spacing.xs))
         .overlay(
             RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius + DS.Spacing.xs)
-                .stroke(isSelected ? Color.white : Color.clear, lineWidth: 2)
+                .stroke(isSelected ? Color.accentColor : Color.clear, lineWidth: 2)
         )
         .scaleEffect(isSelected ? 1.08 : 1.0)
-        .animation(DS.Animation.fast, value: isSelected)
+        .animation(DS.Anim.fast, value: isSelected)
         .task { thumbnail = await loadThumbnail(url: url, maxPixelSize: 80) }
     }
 }

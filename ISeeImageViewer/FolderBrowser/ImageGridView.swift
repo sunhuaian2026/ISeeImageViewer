@@ -21,7 +21,7 @@ struct ImageGridView: View {
     var body: some View {
         Group {
             if folderStore.selectedFolder == nil {
-                Color.primary.opacity(0.001)
+                DS.Color.gridBackground
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .overlay {
                         ContentUnavailableView(
@@ -101,6 +101,7 @@ struct ImageGridView: View {
                 }
                 .padding(DS.Spacing.sm)
             }
+            .background(DS.Color.gridBackground)
             .focusable()
             .focused($isFocused)
             .onAppear { isFocused = true }
@@ -126,7 +127,7 @@ struct ImageGridView: View {
         let current = highlightedIndex ?? (delta > 0 ? -1 : 0)
         let next = max(0, min(total - 1, current + delta))
         highlightedIndex = next
-        withAnimation(DS.Animation.fast) {
+        withAnimation(DS.Anim.fast) {
             proxy.scrollTo(next, anchor: .center)
         }
     }
@@ -167,17 +168,22 @@ struct ThumbnailCell: View {
         .overlay {
             if isHovered && !isHighlighted {
                 RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
-                    .fill(DS.Color.hoverBackground)
+                    .fill(DS.Color.hoverOverlay)
             }
         }
         .overlay {
             if isHighlighted {
                 RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
-                    .stroke(Color.accentColor, lineWidth: 2.5)
+                    .fill(Color.accentColor.opacity(0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
+                            .stroke(Color.accentColor, lineWidth: 2)
+                    )
             }
         }
-        .animation(DS.Animation.fast, value: isHovered)
-        .animation(DS.Animation.fast, value: isHighlighted)
+        .scaleEffect(isHovered && !isHighlighted ? 1.03 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isHovered)
+        .animation(DS.Anim.fast, value: isHighlighted)
         .onHover { isHovered = $0 }
         .task { thumbnail = await loadThumbnail(url: url) }
     }

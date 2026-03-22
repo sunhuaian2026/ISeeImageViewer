@@ -3,7 +3,7 @@
 //  ISeeImageViewer
 //
 //  所有 UI 常量的唯一来源，遵循 specs/UI.md 规范。
-//  使用方式：DS.Spacing.md、DS.Color.viewerBackground、DS.Animation.normal
+//  使用方式：DS.Spacing.md、DS.Color.appBackground、DS.Anim.normal
 //
 
 import SwiftUI
@@ -13,21 +13,21 @@ enum DS {
     // MARK: - Spacing（8pt Grid）
 
     enum Spacing {
-        static let xs: CGFloat = 4    // 极小：图标与文字
-        static let sm: CGFloat = 8    // 小：列表行内部、缩略图间距
-        static let md: CGFloat = 16   // 中：组件之间、侧边栏内边距
-        static let lg: CGFloat = 24   // 大：区块之间
-        static let xl: CGFloat = 32   // 超大：页面边距
+        static let xs: CGFloat = 4
+        static let sm: CGFloat = 8
+        static let md: CGFloat = 16
+        static let lg: CGFloat = 24
+        static let xl: CGFloat = 32
     }
 
     // MARK: - Thumbnail
 
     enum Thumbnail {
-        static let defaultSize: CGFloat = 160
+        static let defaultSize: CGFloat = 180
         static let minSize: CGFloat = 80
         static let maxSize: CGFloat = 280
-        static let spacing: CGFloat = 8
-        static let cornerRadius: CGFloat = 4
+        static let spacing: CGFloat = 12
+        static let cornerRadius: CGFloat = 8
     }
 
     // MARK: - Sidebar
@@ -37,57 +37,75 @@ enum DS {
         static let minWidth: CGFloat = 180
         static let maxWidth: CGFloat = 300
         static let rowHeight: CGFloat = 36
-        static let rowPaddingH: CGFloat = 12
+        static let rowPaddingH: CGFloat = 8
         static let iconSize: CGFloat = 16
     }
 
     // MARK: - Viewer
 
     enum Viewer {
-        static let toolbarHeight: CGFloat = 52
-        static let filmstripHeight: CGFloat = 76
+        static let filmstripHeight: CGFloat = 72
+        static let filmstripThumbSize: CGFloat = 56
+        static let cardCornerRadius: CGFloat = 16
+        static let cardPadding: CGFloat = 12
+        // 缩放范围（QuickViewerViewModel 依赖）
         static let minZoom: CGFloat = 0.1
         static let maxZoom: CGFloat = 16.0
     }
 
+    // MARK: - Inspector
+
+    enum Inspector {
+        static let width: CGFloat = 260
+        static let previewHeight: CGFloat = 120
+        static let previewCornerRadius: CGFloat = 10
+    }
+
+    // MARK: - Toolbar
+
+    enum Toolbar {
+        static let height: CGFloat = 44
+        static let cornerRadius: CGFloat = 12
+    }
+
     // MARK: - Animation
 
-    enum Animation {
-        /// 缩略图选中、小交互（0.1s）
-        static let fast = SwiftUI.Animation.easeInOut(duration: 0.1)
-        /// 工具栏显隐、控件过渡（0.2s）
+    enum Anim {
+        static let fast   = SwiftUI.Animation.easeInOut(duration: 0.15)
         static let normal = SwiftUI.Animation.easeInOut(duration: 0.2)
-        /// 图片切换（0.15s）
-        static let imageCross = SwiftUI.Animation.easeInOut(duration: 0.15)
+        static let slow   = SwiftUI.Animation.easeInOut(duration: 0.35)
     }
 
     // MARK: - Color
 
     enum Color {
-        /// 看图界面背景 #1A1A1A（不用纯黑）
-        static let viewerBackground = SwiftUI.Color(red: 0.1, green: 0.1, blue: 0.1)
-        /// 侧边栏背景 #262626
-        static let sidebarBackground = SwiftUI.Color(red: 0.15, green: 0.15, blue: 0.15)
-        /// 悬停态背景
-        static let hoverBackground = SwiftUI.Color.white.opacity(0.08)
-        /// 选中态背景
-        static let selectedBackground = SwiftUI.Color.accentColor.opacity(0.15)
+        // 背景层
+        static let appBackground  = SwiftUI.Color(red: 0.07, green: 0.07, blue: 0.09)
+        static let gridBackground = SwiftUI.Color(red: 0.08, green: 0.08, blue: 0.11)
+
+        // 悬停/交互
+        static let hoverOverlay   = SwiftUI.Color.white.opacity(0.06)
+        static let separatorColor = SwiftUI.Color.white.opacity(0.08)
+
+        // 环境光（Liquid Glass 光晕）
+        static let glowPrimary    = SwiftUI.Color(red: 0.49, green: 0.42, blue: 1.0)  // 紫
+        static let glowSecondary  = SwiftUI.Color(red: 0.2,  green: 0.6,  blue: 0.5)  // 青绿
     }
 
     // MARK: - Icons（SF Symbols）
 
     enum Icon {
-        static let folder = "folder"
-        static let album = "photo.on.rectangle"
-        static let add = "plus"
-        static let trash = "trash"
-        static let favorite = "heart"
-        static let search = "magnifyingglass"
-        static let previous = "arrow.left"
-        static let next = "arrow.right"
+        static let folder     = "folder"
+        static let album      = "photo.on.rectangle"
+        static let add        = "plus"
+        static let trash      = "trash"
+        static let favorite   = "heart"
+        static let search     = "magnifyingglass"
+        static let previous   = "arrow.left"
+        static let next       = "arrow.right"
         static let fullscreen = "arrow.up.left.and.arrow.down.right"
-        static let info = "info.circle"
+        static let info       = "info.circle"
         static let infoFilled = "info.circle.fill"
-        static let close = "xmark"
+        static let close      = "xmark"
     }
 }

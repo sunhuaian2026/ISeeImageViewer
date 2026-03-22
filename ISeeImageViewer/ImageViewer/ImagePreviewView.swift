@@ -29,7 +29,17 @@ struct ImagePreviewView: View {
 
     var body: some View {
         ZStack {
-            DS.Color.viewerBackground.ignoresSafeArea()
+            DS.Color.appBackground.ignoresSafeArea()
+
+            // 青绿光晕（右下角）
+            RadialGradient(
+                colors: [DS.Color.glowSecondary.opacity(0.12), .clear],
+                center: .bottomTrailing,
+                startRadius: 0,
+                endRadius: 400
+            )
+            .ignoresSafeArea()
+            .allowsHitTesting(false)
 
             // 图片
             if let img = nsImage {
