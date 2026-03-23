@@ -1,189 +1,269 @@
 # UI 规范 — ISeeImageViewer
-> 设计方向：极简、内容优先、深色友好
-> 参考：Pixea、Viso、Apple HIG macOS
+> 设计方向：Liquid Glass 沉浸感 · 内容优先 · 深色打底
+> 参考：macOS Tahoe 26 Liquid Glass、Pixea、Viso、Apple HIG macOS
+> 最后更新：2026-03
 
 ---
 
 ## 设计原则
 
-- **内容优先**：UI 元素只在需要时出现，图片永远是主角
-- **克制**：没有多余的装饰，间距和留白就是设计
-- **原生**：遵循 Apple HIG，用户打开就觉得是 Mac 上该有的样子
-- **深色优先**：看图场景默认深色背景，减少对图片的干扰
+- **内容优先**：UI 控件只在需要时出现，图片永远是主角
+- **层次漂浮**：控件层（Toolbar / Sidebar / Inspector）用毛玻璃材质悬浮于内容层之上，两层有明确的景深感
+- **彩色光晕**：用 `radial-gradient` 或图片主色在背景上制造环境光泄漏，让纯深色界面有温度
+- **原生克制**：遵循 Apple HIG，SF Symbols + 系统字体，不造自定义控件
+- **深色优先**：整体强制深色，减少对图片色彩的干扰
 
 ---
 
 ## 颜色
 
-### 背景色
+### 背景层（内容区）
 ```swift
-// 看图界面背景（深色，突出图片）
-Color(red: 0.1, green: 0.1, blue: 0.1)   // #1A1A1A 主背景
-Color(red: 0.15, green: 0.15, blue: 0.15) // #262626 侧边栏背景
-Color(red: 0.2, green: 0.2, blue: 0.2)   // #333333 悬停/选中态
+// 主背景 — 不用纯黑，保留一点色温
+Color(red: 0.07, green: 0.07, blue: 0.09)   // #121217  主背景
+Color(red: 0.08, green: 0.08, blue: 0.11)   // #141419  网格区背景
 ```
 
-### 文字色
+### 控件层（毛玻璃，叠在背景上）
 ```swift
-Color.primary          // 主要文字（自动适配深浅色）
-Color.secondary        // 次要文字（文件名、数量等）
-Color.tertiaryLabel    // 辅助信息（时间、格式等）
+// Sidebar / Inspector / Toolbar 全部使用系统材质，不硬编码颜色
+.background(.ultraThinMaterial)              // 主要控件层
+.background(.regularMaterial)               // 较厚的面板（Inspector）
+.environment(\.colorScheme, .dark)           // 强制材质走深色渲染
+```
+
+### 彩色环境光（Liquid Glass 关键细节）
+```swift
+// 在 ZStack 底层加一个模糊光晕，颜色从当前图片主色取样，或固定用品牌色
+// 侧边栏顶部光晕示例：
+RadialGradient(
+    colors: [Color(red: 0.49, green: 0.42, blue: 1.0).opacity(0.18), .clear],
+    center: .topLeading,
+    startRadius: 0,
+    endRadius: 300
+)
+// 看图界面光晕示例（右下角暖色）：
+RadialGradient(
+    colors: [Color(red: 0.2, green: 0.6, blue: 0.5).opacity(0.12), .clear],
+    center: .bottomTrailing,
+    startRadius: 0,
+    endRadius: 400
+)
+// 规则：光晕 opacity 不超过 0.20，半径不超过窗口短边的 60%
 ```
 
 ### 强调色
 ```swift
-Color.accentColor      // 系统强调色（跟随用户系统设置）
-// 选中态边框、激活状态等
+Color.accentColor     // 系统强调色，跟随用户设置
+// 选中态：accentColor 边框 2pt + accentColor.opacity(0.15) 背景
+// 激活态按钮：accentColor.opacity(0.2) 背景 + accentColor 文字/图标
 ```
 
-### 语义色（直接用系统变量）
+### 文字色
 ```swift
-// 全部使用系统语义色，自动适配深浅色模式
-Color(NSColor.windowBackgroundColor)
-Color(NSColor.controlBackgroundColor)
-Color(NSColor.separatorColor)
+Color.primary          // 主要文字
+Color.secondary        // 次要文字（文件名、数量）
+Color.tertiaryLabel    // 辅助信息（时间、格式）
+// 控件层文字因毛玻璃背景，对比度自动满足，无需额外处理
 ```
+
+### 禁止
+- 不用纯黑 `#000000`，不用纯白 `#ffffff` 作背景
+- 不硬编码颜色值，用系统语义色或上方定义的常量
+- 光晕不超过 2 个/视图，避免过度装饰
 
 ---
 
 ## 字体
 
-遵循 Apple HIG，全部使用 SF Pro（系统字体），支持 Dynamic Type。
+全部使用 SF Pro（系统字体），支持 Dynamic Type，禁止硬编码字号。
 
 ```swift
-// 标题（文件夹名、相册名）
-.font(.headline)           // SF Pro 13pt Medium（macOS）
-
-// 正文（文件名）
-.font(.body)               // SF Pro 13pt Regular
-
-// 次要信息（数量、格式、尺寸）
-.font(.caption)            // SF Pro 11pt Regular
-.font(.caption2)           // SF Pro 10pt Regular
-
-// 工具栏按钮文字
-.font(.callout)            // SF Pro 12pt Regular
+.font(.headline)    // 文件夹名、标题
+.font(.body)        // 文件名
+.font(.callout)     // Toolbar 按钮文字
+.font(.caption)     // 数量、格式等次要信息（badge、状态栏）
+.font(.caption2)    // Inspector 标签（key 列）
 ```
-
-**禁止：**
-- 不硬编码字体大小（`.font(.system(size: 14))`）
-- 不使用非系统字体
 
 ---
 
 ## 间距（8pt Grid）
 
-所有间距基于 8pt 网格系统：
-
 ```swift
-// 间距常量（在 DesignSystem.swift 里统一定义）
-enum Spacing {
-    static let xs: CGFloat = 4    // 极小间距（图标与文字）
-    static let sm: CGFloat = 8    // 小间距（列表行内部）
-    static let md: CGFloat = 16   // 中间距（组件之间）
-    static let lg: CGFloat = 24   // 大间距（区块之间）
-    static let xl: CGFloat = 32   // 超大间距（页面边距）
+enum DS {
+    enum Spacing {
+        static let xs: CGFloat = 4
+        static let sm: CGFloat = 8
+        static let md: CGFloat = 16
+        static let lg: CGFloat = 24
+        static let xl: CGFloat = 32
+    }
 }
 ```
 
-**具体应用：**
-- 侧边栏内边距：`16pt`
-- 列表行高：`36pt`
-- 列表行内图标与文字间距：`8pt`
-- 缩略图网格间距：`8pt`
-- 缩略图圆角：`4pt`
-- 工具栏高度：`52pt`
+---
+
+## 圆角
+
+```swift
+// 控件层浮动卡片（Toolbar bubble、Badge）
+let floatingCornerRadius: CGFloat = 12
+
+// 缩略图
+let thumbnailCornerRadius: CGFloat = 8    // 从 4 升到 8，与 Liquid Glass 圆角语言一致
+
+// 侧边栏行选中态
+let rowCornerRadius: CGFloat = 8
+
+// Inspector 内预览图
+let previewCornerRadius: CGFloat = 10
+
+// 上限：非按钮元素圆角不超过 12pt
+```
 
 ---
 
 ## 缩略图网格
 
 ```swift
-// 网格列宽
-let thumbnailSize: CGFloat = 160   // 默认尺寸
-let thumbnailMin: CGFloat = 80     // 最小（缩小时）
-let thumbnailMax: CGFloat = 280    // 最大（放大时）
-
-// 网格间距
-let gridSpacing: CGFloat = 8
-
-// 缩略图内圆角
-let thumbnailCornerRadius: CGFloat = 4
-
-// 选中态
-// 边框：2pt accentColor
-// 背景：accentColor.opacity(0.15)
-
-// 悬停态
-// 背景：Color.white.opacity(0.08)
+enum DS {
+    enum Thumbnail {
+        static let defaultSize: CGFloat = 180   // 默认（UIRefresh 已更新）
+        static let minSize: CGFloat = 80
+        static let maxSize: CGFloat = 280
+        static let spacing: CGFloat = 12        // UIRefresh 已更新
+        static let cornerRadius: CGFloat = 8   // 升级，与 Liquid Glass 对齐
+    }
+}
 ```
+
+**悬停行为**：
+- 缩略图微放大：`scaleEffect(isHovered ? 1.03 : 1.0)`，`animation(.easeOut(duration: 0.15))`
+- 悬停时图片下方出现文件名（单行截断），从底部淡入
+- 悬停背景：`Color.white.opacity(0.06)` 圆角矩形
+
+**选中态**：
+- 描边：`2pt accentColor`
+- 内部 overlay：`accentColor.opacity(0.12)`
+- 右上角可选勾选标记（多选模式）
 
 ---
 
 ## 侧边栏
 
 ```swift
-// 宽度
-let sidebarWidth: CGFloat = 220
-let sidebarMinWidth: CGFloat = 180
-let sidebarMaxWidth: CGFloat = 300
+enum DS {
+    enum Sidebar {
+        static let width: CGFloat = 220
+        static let minWidth: CGFloat = 180
+        static let maxWidth: CGFloat = 300
+        static let rowHeight: CGFloat = 36
+        static let rowPaddingH: CGFloat = 8
+        static let iconSize: CGFloat = 16
+    }
+}
+```
 
-// 列表行
-let rowHeight: CGFloat = 36
-let rowPaddingH: CGFloat = 12
-let rowIconSize: CGFloat = 16
+**视觉处理**：
+- 背景：`.ultraThinMaterial` + `.environment(\.colorScheme, .dark)`
+- 顶部加 1 个彩色光晕（紫/蓝，opacity ≤ 0.18）
+- 与主内容区分隔线：`Divider()`（系统自动适配材质）
 
-// 区块标题（FOLDERS / ALBUMS）
+**文件夹行**：
+```swift
+// 区块标题
 .font(.caption)
-.foregroundColor(.secondary)
-// 字母全大写，tracking: 0.5
+.foregroundStyle(.tertiary)
+.textCase(.uppercase)
+.tracking(0.5)
+
+// 选中行
+RoundedRectangle(cornerRadius: 8)
+    .fill(.ultraThinMaterial)              // 毛玻璃选中态
+    .overlay(
+        RoundedRectangle(cornerRadius: 8)
+            .stroke(Color.accentColor.opacity(0.3), lineWidth: 1)
+    )
+
+// 图片数量 badge（每行右侧）
+Text("\(count)")
+    .font(.caption2)
+    .foregroundStyle(.secondary)
+    .padding(.horizontal, 6)
+    .padding(.vertical, 2)
+    .background(.ultraThinMaterial, in: Capsule())
 ```
 
 ---
 
-## 看图界面
+## Toolbar（浮动气泡式）
+
+**布局**：Toolbar 不贴边，以圆角胶囊/气泡形式浮在内容上方，对齐 Liquid Glass 风格。
 
 ```swift
-// 背景
-Color(red: 0.1, green: 0.1, blue: 0.1)  // 纯深色，不加任何装饰
+// 容器
+RoundedRectangle(cornerRadius: 12)
+    .fill(.ultraThinMaterial)
+    .overlay(
+        RoundedRectangle(cornerRadius: 12)
+            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+    )
+    .shadow(color: .black.opacity(0.3), radius: 12, y: 6)
 
-// 工具栏（顶部）
-// 默认隐藏，鼠标移到顶部 1 秒后显示
-// 高度 52pt，半透明毛玻璃效果
-.background(.ultraThinMaterial)
+// 高度
+let toolbarHeight: CGFloat = 44   // 比原 52pt 更紧凑，符合浮动气泡比例
 
-// 图片信息（底部）
-// 默认隐藏，与工具栏同步显示/隐藏
-// 显示：文件名、尺寸、格式、索引（3/128）
-
-// 缩放
-// 双击：切换 fit / 100%
-// 双指捏合：自由缩放
-// 最小缩放：10%，最大缩放：1600%
+// 按钮间距：8pt
+// 分隔线：Divider().frame(height: 16)
 ```
+
+**图标尺寸**：`20pt`（工具栏），`16pt`（侧边栏/菜单）
 
 ---
 
-## 图标
-
-全部使用 SF Symbols，不使用自定义图标。
+## 看图界面（ImageViewerView）
 
 ```swift
-// 常用图标
-"folder"              // 文件夹
-"photo.on.rectangle"  // 相册
-"plus"                // 添加
-"trash"               // 删除
-"heart"               // 收藏
-"magnifyingglass"     // 搜索
-"arrow.left"          // 上一张
-"arrow.right"         // 下一张
-"arrow.up.left.and.arrow.down.right"  // 全屏
+// 主背景
+DS.Color.viewerBackground  // #121217，不加任何装饰
 
-// 图标尺寸
-// 工具栏：20pt
-// 侧边栏列表：16pt
-// 上下文菜单：16pt
+// 但在 ZStack 底层叠加 1-2 个环境光光晕（见颜色章节）
+
+// 浮动控件卡片效果（图片容器）
+.clipShape(RoundedRectangle(cornerRadius: 16))
+.shadow(color: .black.opacity(0.5), radius: 24, y: 8)
+.padding(12)
+
+// 控件自动隐藏
+// 鼠标静止 2s 后所有浮层控件 opacity → 0（easeInOut 0.25s）
+// 鼠标移动立即恢复 opacity → 1
+// 实现：onContinuousHover + Timer
+
+// 底部 Filmstrip
+// 高度 72pt（含上方渐变遮罩）
+// 缩略图 56×56pt，当前项描边 2pt accentColor + scaleEffect(1.08)
+// 背景：LinearGradient(transparent → .black.opacity(0.6))，不用材质
+// 鼠标进入底部 80pt 区域时渐显，离开后 1.5s 渐隐
+```
+
+**缩放范围**：最小 10%，最大 1600%（双击切换 fit/100%）
+
+---
+
+## Inspector 面板
+
+```swift
+// 宽度：260pt 固定
+// 背景：.regularMaterial + dark colorScheme
+// 顶部：文件预览小图（圆角 10pt，高度 120pt）
+// 内容：Form + Section + LabeledContent
+//   - Section "文件"：文件名、尺寸、大小、修改日期
+//   - Section "相机"（有 EXIF 才显示）：相机型号、镜头、光圈、快门、ISO
+// key 列：.caption2 + .tertiary
+// value 列：.caption + .primary
+// 默认收起（columnVisibility = .doubleColumn）
+// ⌘+I 切换显示
 ```
 
 ---
@@ -191,16 +271,20 @@ Color(red: 0.1, green: 0.1, blue: 0.1)  // 纯深色，不加任何装饰
 ## 动画
 
 ```swift
-// 图片切换
-.animation(.easeInOut(duration: 0.15), value: currentIndex)
+enum DS {
+    enum Animation {
+        static let fast   = SwiftUI.Animation.easeInOut(duration: 0.15)
+        static let normal = SwiftUI.Animation.easeInOut(duration: 0.2)
+        static let slow   = SwiftUI.Animation.easeInOut(duration: 0.35)
+    }
+}
 
-// 工具栏显示/隐藏
-.animation(.easeInOut(duration: 0.2), value: isToolbarVisible)
+// 图片切换：DS.Animation.fast
+// 控件显隐：DS.Animation.normal（含 Filmstrip）
+// Zoom transition（matchedGeometryEffect）：DS.Animation.slow
+// 缩略图 hover 放大：easeOut(0.15)
 
-// 缩略图选中
-.animation(.easeInOut(duration: 0.1), value: selectedItem)
-
-// 禁止使用弹簧动画（.spring）在看图主界面，会让人分心
+// 禁止在看图主界面用 .spring()，分散注意力
 ```
 
 ---
@@ -208,34 +292,21 @@ Color(red: 0.1, green: 0.1, blue: 0.1)  // 纯深色，不加任何装饰
 ## 深浅色模式
 
 ```swift
-// 看图界面：强制深色（图片在深色背景下效果最好）
+// 整个 App 强制深色（包括侧边栏和网格区）
+// 在 WindowGroup 级别设置：
 .preferredColorScheme(.dark)
-
-// 侧边栏 + 缩略图界面：跟随系统
-// 不强制，让用户自己选
+// 不再区分「看图界面深色 / 其他跟随系统」，统一深色
 ```
 
 ---
 
-## 禁止项
-
-- 不使用纯黑 `#000000` 作为背景（用 `#1A1A1A`）
-- 不硬编码颜色值（用系统语义色或上面定义的常量）
-- 不在看图界面加任何装饰性元素（边框、阴影、渐变）
-- 不使用非 SF Symbols 的图标
-- 不硬编码字体大小
-- 圆角不超过 `8pt`（除按钮外）
-
----
-
-## DesignSystem.swift 实现模板
-
-在项目里新建 `DesignSystem.swift`，把上面的常量统一管理：
+## DesignSystem.swift 完整模板
 
 ```swift
 import SwiftUI
 
 enum DS {
+
     enum Spacing {
         static let xs: CGFloat = 4
         static let sm: CGFloat = 8
@@ -245,11 +316,11 @@ enum DS {
     }
 
     enum Thumbnail {
-        static let defaultSize: CGFloat = 160
+        static let defaultSize: CGFloat = 180
         static let minSize: CGFloat = 80
         static let maxSize: CGFloat = 280
-        static let spacing: CGFloat = 8
-        static let cornerRadius: CGFloat = 4
+        static let spacing: CGFloat = 12
+        static let cornerRadius: CGFloat = 8
     }
 
     enum Sidebar {
@@ -257,25 +328,69 @@ enum DS {
         static let minWidth: CGFloat = 180
         static let maxWidth: CGFloat = 300
         static let rowHeight: CGFloat = 36
+        static let rowPaddingH: CGFloat = 8
         static let iconSize: CGFloat = 16
     }
 
-    enum Animation {
-        static let fast = SwiftUI.Animation.easeInOut(duration: 0.15)
+    enum Viewer {
+        static let filmstripHeight: CGFloat = 72
+        static let filmstripThumbSize: CGFloat = 56
+        static let cardCornerRadius: CGFloat = 16
+        static let cardPadding: CGFloat = 12
+    }
+
+    enum Inspector {
+        static let width: CGFloat = 260
+        static let previewHeight: CGFloat = 120
+        static let previewCornerRadius: CGFloat = 10
+    }
+
+    enum Toolbar {
+        static let height: CGFloat = 44
+        static let cornerRadius: CGFloat = 12
+    }
+
+    enum Anim {
+        static let fast   = SwiftUI.Animation.easeInOut(duration: 0.15)
         static let normal = SwiftUI.Animation.easeInOut(duration: 0.2)
+        static let slow   = SwiftUI.Animation.easeInOut(duration: 0.35)
     }
 
     enum Color {
-        static let viewerBackground = SwiftUI.Color(red: 0.1, green: 0.1, blue: 0.1)
-        static let sidebarBackground = SwiftUI.Color(red: 0.15, green: 0.15, blue: 0.15)
-        static let hoverBackground = SwiftUI.Color.white.opacity(0.08)
+        // 背景层
+        static let appBackground   = SwiftUI.Color(red: 0.07, green: 0.07, blue: 0.09)
+        static let gridBackground  = SwiftUI.Color(red: 0.08, green: 0.08, blue: 0.11)
+
+        // 悬停/交互
+        static let hoverOverlay    = SwiftUI.Color.white.opacity(0.06)
+        static let separatorColor  = SwiftUI.Color.white.opacity(0.08)
+
+        // 环境光（Liquid Glass 光晕）
+        static let glowPrimary     = SwiftUI.Color(red: 0.49, green: 0.42, blue: 1.0)   // 紫
+        static let glowSecondary   = SwiftUI.Color(red: 0.2,  green: 0.6,  blue: 0.5)   // 青绿
     }
 }
 ```
 
-使用方式：
-```swift
-.padding(DS.Spacing.md)
-.frame(width: DS.Sidebar.width)
-.background(DS.Color.viewerBackground)
-```
+---
+
+## 禁止项
+
+- 不硬编码任何颜色值和字号，全部用 `DS.*` 常量或系统语义色
+- 不用纯黑 `#000000` / 纯白 `#ffffff` 作背景
+- 不在看图界面叠加超过 2 个光晕
+- 不用 `.spring()` 动画在主看图界面
+- 不使用非 SF Symbols 图标
+- 圆角上限 12pt（浮动控件），看图卡片 16pt
+- 光晕 opacity 上限 0.20
+
+---
+
+## 与其他 Spec 的关系
+
+| Spec 文件 | 与本文档关系 |
+|---|---|
+| `UIRefresh.md` | 已完成的迭代任务，数值变更已合并入本文档，可归档 |
+| `FolderBrowserView.md` | 布局结构定义，视觉细节以本文档为准 |
+| `ImageViewerView.md` | 功能逻辑定义，Filmstrip/自动隐藏视觉以本文档为准 |
+| `Inspector.md` | Inspector 功能逻辑，面板视觉以本文档为准 |
