@@ -33,8 +33,8 @@ struct FolderSidebarView: View {
                 folderRow(node)
             }
             .listStyle(.sidebar)
-            .background(.ultraThinMaterial)
-            .environment(\.colorScheme, .dark)
+            .scrollContentBackground(.hidden)
+            .background(DS.Color.appBackground)
             .contextMenu {
                 Button("添加文件夹…") { folderStore.addFolder() }
             }
