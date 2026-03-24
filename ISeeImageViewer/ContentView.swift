@@ -41,6 +41,23 @@ struct ContentView: View {
                     .keyboardShortcut("i", modifiers: .command)
                     .disabled(folderStore.selectedImageIndex == nil)
                 }
+                ToolbarItem(placement: .automatic) {
+                    Menu {
+                        ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                            Button {
+                                appState.appearanceMode = mode
+                            } label: {
+                                if appState.appearanceMode == mode {
+                                    Label(mode.label, systemImage: "checkmark")
+                                } else {
+                                    Text(mode.label)
+                                }
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "circle.lefthalf.filled")
+                    }
+                }
             }
         }
         // QuickViewerOverlay 用 .overlay 挂在 NavigationSplitView 上，确保铺满整个内容区
