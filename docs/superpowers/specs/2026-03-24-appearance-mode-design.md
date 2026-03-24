@@ -34,13 +34,16 @@ enum AppearanceMode: String, CaseIterable {
 }
 ```
 
-`AppState` 新增 `appearanceMode` 属性，写入时自动持久化到 UserDefaults，读取时从 UserDefaults 恢复，默认值为 `.system`：
+`AppState` 新增 `appearanceMode` 属性，写入时自动持久化到 UserDefaults，读取时从 UserDefaults 恢复，默认值为 `.system`。
+
+注意：需要新增显式 `init()`，但 `isFullScreen` 和 `window` 有默认值，无需在 init 中显式赋值：
 
 ```swift
 @Published var appearanceMode: AppearanceMode {
     didSet { UserDefaults.standard.set(appearanceMode.rawValue, forKey: "appearanceMode") }
 }
 
+// isFullScreen 默认 false，window 默认 nil，均无需在 init 中处理
 init() {
     let raw = UserDefaults.standard.string(forKey: "appearanceMode") ?? "system"
     self.appearanceMode = AppearanceMode(rawValue: raw) ?? .system
@@ -49,7 +52,9 @@ init() {
 
 ### 2. 颜色系统（DesignSystem.swift）
 
-新增 `Color(light:dark:)` 扩展，基于 `NSColor` appearance 动态返回对应色值：
+新增 `Color(light:dark:)` 扩展，基于 `NSColor` appearance 动态返回对应色值。
+
+**最低系统要求**：`NSColor.init(_ color: Color)` 需要 macOS 12+。若部署目标升级至 macOS 14+，Apple 原生提供了同名 `Color.init(light:dark:)`，届时可删除此自定义扩展。
 
 ```swift
 extension SwiftUI.Color {
@@ -73,20 +78,32 @@ extension SwiftUI.Color {
 | `glowPrimary` | 不变（紫色） | 不变（紫色） |
 | `glowSecondary` | 不变（青绿） | 不变（青绿） |
 
-### 3. 根视图（ContentView.swift）
+### 3. 根视图（ISeeImageViewerApp.swift）
+
+`.preferredColorScheme(.dark)` 实际位于 `ISeeImageViewerApp.swift`（`WindowGroup` 层），不在 `ContentView.swift`。
 
 **移除**：`.preferredColorScheme(.dark)`
 
-**新增**：动态 colorScheme 绑定
+**新增**：动态 colorScheme 绑定（`appState` 在此文件中已是 `@StateObject`，可直接访问）：
 
 ```swift
-.preferredColorScheme(
-    appState.appearanceMode == .system ? nil :
-    appState.appearanceMode == .dark   ? .dark : .light
-)
+ContentView()
+    .environmentObject(bookmarkManager)
+    .environmentObject(folderStore)
+    .environmentObject(appState)
+    .preferredColorScheme(
+        appState.appearanceMode == .system ? nil :
+        appState.appearanceMode == .dark   ? .dark : .light
+    )
 ```
 
-**新增 Toolbar Menu**（与 SortFilter 同风格，放在 toolbar 中）：
+### 4. 内嵌预览（ImagePreviewView.swift）
+
+`ImagePreviewView.swift` 有自己的 `.preferredColorScheme(.dark)`，需同步移除，使其跟随全局外观设置。
+
+### 5. Toolbar 入口（ContentView.swift）
+
+在现有 toolbar 中新增外观切换 Menu（与 SortFilter 同风格）：
 
 ```swift
 ToolbarItem(placement: .automatic) {
@@ -95,8 +112,11 @@ ToolbarItem(placement: .automatic) {
             Button {
                 appState.appearanceMode = mode
             } label: {
-                Label(mode.label,
-                      systemImage: appState.appearanceMode == mode ? "checkmark" : "")
+                if appState.appearanceMode == mode {
+                    Label(mode.label, systemImage: "checkmark")
+                } else {
+                    Text(mode.label)
+                }
             }
         }
     } label: {
@@ -105,9 +125,13 @@ ToolbarItem(placement: .automatic) {
 }
 ```
 
-### 4. QuickViewer（QuickViewerOverlay.swift）
+注意：不使用 `Label(mode.label, systemImage: "")` 的空字符串写法，在部分 SDK 版本下会产生 warning 或异常图标。
+
+### 6. QuickViewer（QuickViewerOverlay.swift）
 
 **不改动**。`QuickViewerOverlay` 保留自身的 `.preferredColorScheme(.dark)`，独立于全局外观设置，始终强制深色。
+
+**重要**：`DS.Color.appBackground` 等动态色在 `QuickViewerOverlay` 内部会自动解析为 dark 值，正是依赖这个 `.preferredColorScheme(.dark)` 生效。若未来移除该修饰符，背景色也会随之改变。
 
 ---
 
@@ -116,15 +140,16 @@ ToolbarItem(placement: .automatic) {
 ```
 UserDefaults
     ↑↓
-AppState.appearanceMode   (@Published)
+AppState.appearanceMode   (@Published, @StateObject in App)
     ↓
-ContentView (.preferredColorScheme)
+ISeeImageViewerApp (.preferredColorScheme 动态绑定)
     ↓
-所有子视图（自动继承）
+所有子视图（自动继承，包括 ContentView / ImagePreviewView 等）
     ↓
 DS.Color.* (Color(light:dark:) 动态响应 colorScheme)
 
 QuickViewerOverlay → .preferredColorScheme(.dark) 独立，不受影响
+                   → DS.Color.* 在此上下文中始终解析为 dark 值
 ```
 
 ---
@@ -138,6 +163,7 @@ QuickViewerOverlay → .preferredColorScheme(.dark) 独立，不受影响
 | 全屏模式下切换外观 | `preferredColorScheme` 实时生效，无需额外处理 |
 | 系统材质（`.ultraThinMaterial` 等） | 自动跟随 `preferredColorScheme`，无需额外处理 |
 | 光晕在浅色模式下 | 固定色 + 低 opacity，浅色背景下自然柔和，可接受 |
+| 移除 QuickViewerOverlay 的强制深色 | 会导致 DS.Color.* 在其内部解析为 light 值，破坏看图界面，不可移除 |
 
 ---
 
@@ -145,9 +171,11 @@ QuickViewerOverlay → .preferredColorScheme(.dark) 独立，不受影响
 
 | 文件 | 变更类型 |
 |------|---------|
-| `ISeeImageViewer/FullScreen/AppState.swift` | 新增 `AppearanceMode` 枚举 + `appearanceMode` 属性 |
+| `ISeeImageViewer/FullScreen/AppState.swift` | 新增 `AppearanceMode` 枚举 + `appearanceMode` 属性 + `init()` |
 | `ISeeImageViewer/DesignSystem.swift` | 新增 `Color(light:dark:)` 扩展，更新 `DS.Color.*` 四个色票 |
-| `ISeeImageViewer/ContentView.swift` | 移除强制深色，新增动态 colorScheme + Toolbar Menu |
+| `ISeeImageViewer/ISeeImageViewerApp.swift` | 移除强制深色，新增动态 colorScheme 绑定 |
+| `ISeeImageViewer/ImageViewer/ImagePreviewView.swift` | 移除 `.preferredColorScheme(.dark)` |
+| `ISeeImageViewer/ContentView.swift` | 新增外观切换 Toolbar Menu |
 | `ISeeImageViewer/QuickViewer/QuickViewerOverlay.swift` | 不改动 |
 
 ---
