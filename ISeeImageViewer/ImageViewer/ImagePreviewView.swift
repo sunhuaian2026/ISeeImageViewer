@@ -102,7 +102,6 @@ struct ImagePreviewView: View {
             }
         }
         .navigationTitle(images[currentIndex].lastPathComponent)
-        .preferredColorScheme(.dark)
         .onAppear { loadImage() }
         .onKeyPress(.escape)     { onDismiss(); return .handled }
         .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
