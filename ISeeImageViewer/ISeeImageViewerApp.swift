@@ -27,7 +27,10 @@ struct ISeeImageViewerApp: App {
                 .environmentObject(bookmarkManager)
                 .environmentObject(folderStore)
                 .environmentObject(appState)
-                .preferredColorScheme(.dark)
+                .preferredColorScheme(
+                    appState.appearanceMode == .system ? nil :
+                    appState.appearanceMode == .dark   ? .dark : .light
+                )
                 .onAppear {
                     folderStore.loadSavedFolders()
                 }
