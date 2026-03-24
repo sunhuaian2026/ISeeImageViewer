@@ -59,6 +59,7 @@ struct ContentView: View {
             }
         }
         .animation(DS.Anim.normal, value: quickViewerIndex)
+        .toolbar(quickViewerIndex != nil ? .hidden : .visible, for: .windowToolbar)
         // 切换文件夹或取消图片选择时，自动关闭 Inspector
         .onChange(of: folderStore.selectedFolder) { _, _ in
             withAnimation(DS.Anim.normal) { showInspector = false }
