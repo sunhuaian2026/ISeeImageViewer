@@ -18,12 +18,14 @@ ISeeImageViewer/
 │   ├── FolderStore.md               ← ✅ 已完成
 │   ├── FolderBrowserView.md         ← ✅ 已完成
 │   ├── ImageViewerView.md           ← ✅ 已完成（已被 QuickViewer 替代）
-│   ├── UIRefresh.md                 ← ✅ 已完成
 │   ├── QuickViewer.md               ← ✅ 已完成
 │   ├── SortFilter.md                ← ✅ 已完成
 │   ├── KeyboardShortcuts.md         ← ✅ 已完成
 │   ├── Inspector.md                 ← ✅ 已完成
 │   └── FullScreen.md                ← ✅ 已完成
+├── docs/
+│   └── archive/                     ← 已归档的历史规范文档
+│       └── UIRefresh.md             ← ✅ 已完成（已归档）
 └── ISeeImageViewer/                 ← Swift 源码（PBXFileSystemSynchronizedRootGroup，新文件自动加入编译）
     ├── ISeeImageViewerApp.swift      ← App 入口，注入 BookmarkManager / FolderStore / AppState
     ├── ContentView.swift            ← NavigationSplitView + 内嵌预览/QuickViewer 覆盖层
