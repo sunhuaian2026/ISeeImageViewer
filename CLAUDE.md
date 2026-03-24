@@ -22,7 +22,8 @@ ISeeImageViewer/
 │   ├── SortFilter.md                ← ✅ 已完成
 │   ├── KeyboardShortcuts.md         ← ✅ 已完成
 │   ├── Inspector.md                 ← ✅ 已完成
-│   └── FullScreen.md                ← ✅ 已完成
+│   ├── FullScreen.md                ← ✅ 已完成
+│   └── 2026-03-24-appearance-mode-design.md  ← ✅ 已完成
 ├── docs/
 │   └── archive/                     ← 已归档的历史规范文档
 │       └── UIRefresh.md             ← ✅ 已完成（已归档）
@@ -45,7 +46,7 @@ ISeeImageViewer/
     │   ├── ImageInspectorViewModel.swift  ← ImageInfo struct + EXIF 读取
     │   └── ImageInspectorView.swift       ← Form + Section 布局
     └── FullScreen/
-        ├── AppState.swift           ← isFullScreen 状态 + toggleFullScreen()
+        ├── AppState.swift           ← isFullScreen + appearanceMode 状态 + toggleFullScreen()
         └── WindowAccessor.swift     ← NSViewRepresentable，获取 NSWindow + NSWindowDelegate
 ```
 

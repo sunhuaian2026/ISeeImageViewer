@@ -30,6 +30,7 @@
 | FullScreen | FullScreen.md | 0abcae6 | NSWindow.toggleFullScreen，F 键切换，NSWindowDelegate 监听 |
 | Liquid Glass UI | UI.md | 9a0cfde | DS.Anim / 新色系 / 毛玻璃控件 / 光晕 / 浮动气泡 Toolbar |
 | 树形侧边栏 | FolderBrowserView.md | e8aec40 | FolderNode + discoverTree，List(children:) 展开/折叠 |
+| AppearanceMode | 2026-03-24-appearance-mode-design.md | b4363e7 | 深/浅/系统三档外观切换，UserDefaults 持久化 |
 
 ---
 
@@ -67,3 +68,4 @@
 8. **loadThumbnail()**：定义在 `ImageGridView.swift`，internal 级别，`FilmstripCell` 复用。
 9. **AppState**：全局 ObservableObject，持有 `NSWindow` 引用 + `isFullScreen` 状态，通过 `EnvironmentObject` 注入。
 10. **构建**：项目根目录有 Makefile，用 `make build` / `make run`。
+11. **AppearanceMode**：外观模式（system/light/dark）存在 `AppState.appearanceMode`，通过 `ISeeImageViewerApp` 的 `preferredColorScheme` 驱动全局外观。`DS.Color.*` 背景/交互色均为 `Color(light:dark:)` 双值。`QuickViewerOverlay` 保留自身 `.preferredColorScheme(.dark)`，使 `DS.Color.*` 在其内部始终解析为 dark 值，不受全局设置影响。
