@@ -79,15 +79,27 @@ enum DS {
     // MARK: - Color
 
     enum Color {
-        // 背景层
-        static let appBackground  = SwiftUI.Color(red: 0.07, green: 0.07, blue: 0.09)
-        static let gridBackground = SwiftUI.Color(red: 0.08, green: 0.08, blue: 0.11)
+        // 背景层（light / dark 双值）
+        static let appBackground  = SwiftUI.Color(
+            light: SwiftUI.Color(red: 0.95, green: 0.95, blue: 0.97),  // #F2F2F7
+            dark:  SwiftUI.Color(red: 0.07, green: 0.07, blue: 0.09)   // #121217
+        )
+        static let gridBackground = SwiftUI.Color(
+            light: SwiftUI.Color(red: 0.92, green: 0.92, blue: 0.94),  // #EBEBF0
+            dark:  SwiftUI.Color(red: 0.08, green: 0.08, blue: 0.11)   // #141419
+        )
 
-        // 悬停/交互
-        static let hoverOverlay   = SwiftUI.Color.white.opacity(0.06)
-        static let separatorColor = SwiftUI.Color.white.opacity(0.08)
+        // 悬停/交互（light / dark 双值）
+        static let hoverOverlay   = SwiftUI.Color(
+            light: SwiftUI.Color.black.opacity(0.05),
+            dark:  SwiftUI.Color.white.opacity(0.06)
+        )
+        static let separatorColor = SwiftUI.Color(
+            light: SwiftUI.Color.black.opacity(0.08),
+            dark:  SwiftUI.Color.white.opacity(0.08)
+        )
 
-        // 环境光（Liquid Glass 光晕）
+        // 环境光（Liquid Glass 光晕，两种模式均适用，不变）
         static let glowPrimary    = SwiftUI.Color(red: 0.49, green: 0.42, blue: 1.0)  // 紫
         static let glowSecondary  = SwiftUI.Color(red: 0.2,  green: 0.6,  blue: 0.5)  // 青绿
     }
@@ -107,5 +119,16 @@ enum DS {
         static let info       = "info.circle"
         static let infoFilled = "info.circle.fill"
         static let close      = "xmark"
+    }
+}
+
+// MARK: - Adaptive Color Extension（macOS 12+）
+// 若将来部署目标升级至 macOS 14+，可替换为 Apple 原生 Color.init(light:dark:)
+extension SwiftUI.Color {
+    init(light: SwiftUI.Color, dark: SwiftUI.Color) {
+        self.init(NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+                ? NSColor(dark) : NSColor(light)
+        })
     }
 }
