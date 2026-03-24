@@ -53,7 +53,6 @@ struct ImagePreviewView: View {
             } else {
                 ProgressView()
                     .controlSize(.large)
-                    .tint(.white)
             }
 
             // 关闭按钮（左上角浮动）
@@ -62,7 +61,7 @@ struct ImagePreviewView: View {
                     Button(action: onDismiss) {
                         Image(systemName: DS.Icon.close)
                             .font(.body.weight(.semibold))
-                            .foregroundColor(.white.opacity(0.8))
+                            .foregroundColor(.primary.opacity(0.8))
                             .frame(width: 32, height: 32)
                             .background(.ultraThinMaterial, in: Circle())
                     }
@@ -71,7 +70,7 @@ struct ImagePreviewView: View {
                     // n/m 进度（右上角浮动）
                     Text("\(currentIndex + 1) / \(images.count)")
                         .font(.caption)
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .padding(.horizontal, DS.Spacing.sm + DS.Spacing.xs)
                         .padding(.vertical, DS.Spacing.xs + 2)
                         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DS.Spacing.sm))
@@ -97,7 +96,7 @@ struct ImagePreviewView: View {
                 Spacer()
                 Text("双击图片进入全屏查看")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.35))
+                    .foregroundColor(.primary.opacity(0.35))
                     .padding(.bottom, DS.Spacing.md)
             }
         }
@@ -141,7 +140,7 @@ struct ImagePreviewView: View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.title2)
-                .foregroundColor(.white.opacity(enabled ? 0.9 : 0.25))
+                .foregroundColor(.primary.opacity(enabled ? 0.9 : 0.25))
                 .frame(width: 44, height: 44)
                 .background(enabled ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.ultraThinMaterial))
                 .clipShape(Circle())
