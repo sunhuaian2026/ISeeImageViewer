@@ -57,6 +57,7 @@ struct FolderSidebarView: View {
     private func folderRow(_ node: FolderNode) -> some View {
         let isRoot = folderStore.rootFolders.contains(where: { $0.url == node.url })
         let count = folderStore.imageCountByFolder[node.url]
+        let isSelected = folderStore.selectedFolder == node.url
 
         HStack {
             Label(node.url.lastPathComponent, systemImage: "folder")
@@ -71,7 +72,13 @@ struct FolderSidebarView: View {
                     .background(.ultraThinMaterial, in: Capsule())
             }
         }
-        .listRowBackground(DS.Color.appBackground)
+        .listRowBackground(Group {
+            if isSelected {
+                Color.accentColor.opacity(0.2)
+            } else {
+                DS.Color.appBackground
+            }
+        })
         .contextMenu {
             Button("在 Finder 中显示") {
                 NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: node.url.path)
