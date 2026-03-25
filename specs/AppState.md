@@ -19,8 +19,10 @@ class AppState: ObservableObject {
     @Published var appearanceMode: AppearanceMode
 
     init()
-    func enterFullScreen()
-    func exitFullScreen()
+    func toggleFullScreen()          // 进入/退出全屏（toggle）
+    func exitFullScreenIfNeeded()    // 仅在全屏时退出
+    func hideTrafficLights()         // 隐藏窗口左上角按钮（guard !isFullScreen）
+    func showTrafficLights()         // 恢复按钮（无 isFullScreen guard，见 TrafficLightHide.md）
 }
 
 enum AppearanceMode: String, CaseIterable {
@@ -58,7 +60,7 @@ struct WindowAccessor: NSViewRepresentable {
 ### 触发时机
 
 - 用户按 `F` 键，或点击 QuickViewer BottomToolbar 的全屏按钮
-- 退出查看器时不联动退出全屏（ESC 语义是关闭查看器）
+- **QuickViewer 内 ESC/X/Space**：全屏时退出全屏（留在 QuickViewer），非全屏时关闭 QuickViewer
 
 ### NSWindowDelegate 监听
 
@@ -75,9 +77,9 @@ struct WindowAccessor: NSViewRepresentable {
 
 | 场景 | 处理 |
 |------|------|
-| 全屏时按 ESC | 先退出查看器，不退出全屏 |
+| QuickViewer 内全屏时按 ESC/X/Space | 退出全屏，保持在 QuickViewer |
+| QuickViewer 内非全屏时按 ESC/X/Space | 关闭 QuickViewer |
 | 全屏时按 F | 退出全屏，保持在查看器 |
-| Space 在全屏时退出查看器 | 退出查看器，保持全屏状态 |
 | 多显示器 | NSWindow.toggleFullScreen 在当前显示器全屏，系统行为 |
 
 ---
