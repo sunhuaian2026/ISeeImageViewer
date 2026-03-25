@@ -14,6 +14,7 @@ struct ImagePreviewView: View {
     let onDismiss: () -> Void
     let onQuickView: (Int) -> Void
 
+    @FocusState private var isFocused: Bool
     @State private var currentIndex: Int
     @State private var nsImage: NSImage?
     @State private var loadTask: Task<Void, Never>?
@@ -101,7 +102,9 @@ struct ImagePreviewView: View {
             }
         }
         .navigationTitle(images[currentIndex].lastPathComponent)
-        .onAppear { loadImage() }
+        .focusable()
+        .focused($isFocused)
+        .onAppear { loadImage(); isFocused = true }
         .onKeyPress(.escape)     { onDismiss(); return .handled }
         .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
         .onKeyPress(.rightArrow) { navigate(by: +1); return .handled }
