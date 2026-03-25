@@ -11,6 +11,7 @@ struct ImagePreviewView: View {
     @EnvironmentObject var folderStore: FolderStore
 
     let images: [URL]
+    let focusTrigger: UUID
     let onDismiss: () -> Void
     let onQuickView: (Int) -> Void
 
@@ -19,10 +20,11 @@ struct ImagePreviewView: View {
     @State private var nsImage: NSImage?
     @State private var loadTask: Task<Void, Never>?
 
-    init(images: [URL], startIndex: Int,
+    init(images: [URL], startIndex: Int, focusTrigger: UUID = UUID(),
          onDismiss: @escaping () -> Void,
          onQuickView: @escaping (Int) -> Void) {
         self.images = images
+        self.focusTrigger = focusTrigger
         _currentIndex = State(initialValue: max(0, min(startIndex, images.count - 1)))
         self.onDismiss = onDismiss
         self.onQuickView = onQuickView
@@ -105,6 +107,7 @@ struct ImagePreviewView: View {
         .focusable()
         .focused($isFocused)
         .onAppear { loadImage(); isFocused = true }
+        .onChange(of: focusTrigger) { isFocused = true }
         .onKeyPress(.escape)     { onDismiss(); return .handled }
         .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
         .onKeyPress(.rightArrow) { navigate(by: +1); return .handled }

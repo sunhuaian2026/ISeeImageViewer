@@ -10,6 +10,7 @@ struct ContentView: View {
     @EnvironmentObject var appState: AppState
     @State private var showInspector = false
     @State private var quickViewerIndex: Int? = nil
+    @State private var previewFocusTrigger: UUID = UUID()
 
     private var inspectorURL: URL? {
         guard let idx = folderStore.selectedImageIndex,
@@ -70,6 +71,10 @@ struct ContentView: View {
                         withAnimation(DS.Anim.normal) {
                             quickViewerIndex = nil
                         }
+                        // 若关闭后仍在预览页，重新触发 ImagePreviewView 获取焦点
+                        if folderStore.selectedImageIndex != nil {
+                            previewFocusTrigger = UUID()
+                        }
                     }
                 )
                 .transition(.opacity)
@@ -99,6 +104,7 @@ struct ContentView: View {
             ImagePreviewView(
                 images: folderStore.images,
                 startIndex: idx,
+                focusTrigger: previewFocusTrigger,
                 onDismiss: {
                     folderStore.selectedImageIndex = nil
                 },
