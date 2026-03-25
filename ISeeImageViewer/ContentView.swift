@@ -112,6 +112,9 @@ struct ContentView: View {
             ))
         } else {
             ImageGridView(onDoubleClick: { index in
+                // 双击时单击 handler 也会触发并设置 selectedImageIndex，
+                // 此处清除，确保 QuickViewer 关闭后回到列表页而非预览页。
+                folderStore.selectedImageIndex = nil
                 quickViewerIndex = index
             })
             .transition(.opacity)

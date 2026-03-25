@@ -107,8 +107,8 @@ struct QuickViewerOverlay: View {
             }
         }
         // 键盘快捷键
-        .onKeyPress(.escape)     { onDismiss(); return .handled }
-        .onKeyPress(.space)      { onDismiss(); return .handled }
+        .onKeyPress(.escape)     { handleDismissOrExitFullScreen(); return .handled }
+        .onKeyPress(.space)      { handleDismissOrExitFullScreen(); return .handled }
         .onKeyPress(.leftArrow)  { viewModel.goBack(); return .handled }
         .onKeyPress(.rightArrow) { viewModel.goForward(); return .handled }
         .onKeyPress(.init("0"), phases: .down) { _ in
@@ -171,7 +171,7 @@ struct QuickViewerOverlay: View {
         // 三个独立浮动小气泡，不连成一整条
         HStack {
             // 关闭按钮（圆形气泡）
-            Button(action: onDismiss) {
+            Button(action: handleDismissOrExitFullScreen) {
                 Image(systemName: DS.Icon.close)
                     .font(.body.weight(.semibold))
                     .foregroundColor(.white.opacity(0.8))
@@ -318,6 +318,16 @@ struct QuickViewerOverlay: View {
         }
         .buttonStyle(.plain)
         .help(title)
+    }
+
+    // MARK: - Dismiss / Exit Fullscreen
+
+    private func handleDismissOrExitFullScreen() {
+        if appState.isFullScreen {
+            appState.toggleFullScreen()
+        } else {
+            onDismiss()
+        }
     }
 
     // MARK: - Auto-hide
