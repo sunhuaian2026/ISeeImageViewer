@@ -112,7 +112,6 @@ struct ContentView: View {
             ))
         } else {
             ImageGridView(onDoubleClick: { index in
-                folderStore.selectedImageIndex = index
                 quickViewerIndex = index
             })
             .transition(.opacity)
