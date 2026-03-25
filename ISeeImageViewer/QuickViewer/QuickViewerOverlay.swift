@@ -229,7 +229,7 @@ struct QuickViewerOverlay: View {
                 .frame(minWidth: 44)
                 .padding(.horizontal, DS.Spacing.xs)
                 .frame(height: 32)
-                .background(Color(white: 0, opacity: 0.4))
+                .background(Color(white: 1, opacity: 0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             toolbarButton(title: "放大", systemImage: "plus.magnifyingglass") {
                 viewModel.zoomIn()
@@ -242,7 +242,7 @@ struct QuickViewerOverlay: View {
         .padding(.vertical, DS.Spacing.xs)
         .background(
             RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
-                .fill(Color(white: 0, opacity: 0.5))
+                .fill(Color(white: 0, opacity: 0.28))
                 .overlay(
                     RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
                         .stroke(Color.white.opacity(0.1), lineWidth: 1)
@@ -310,7 +310,6 @@ struct QuickViewerOverlay: View {
                 .font(.body)
                 .foregroundColor(.white.opacity(0.85))
                 .frame(width: 32, height: 32)
-                .background(Color(white: 0, opacity: 0.4))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
