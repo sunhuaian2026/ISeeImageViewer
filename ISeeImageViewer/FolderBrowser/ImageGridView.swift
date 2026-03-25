@@ -53,7 +53,7 @@ struct ImageGridView: View {
         }
         .toolbar {
             ToolbarItem(placement: .automatic) {
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Image(systemName: "square.grid.3x3")
                         .font(.system(size: 11))
                         .foregroundStyle(.secondary)
@@ -62,7 +62,8 @@ struct ImageGridView: View {
                         in: DS.Thumbnail.minSize...DS.Thumbnail.maxSize,
                         step: 10
                     )
-                    .frame(width: 88)
+                    .labelsHidden()
+                    .frame(width: 140)
                     Image(systemName: "square.grid.2x2")
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
