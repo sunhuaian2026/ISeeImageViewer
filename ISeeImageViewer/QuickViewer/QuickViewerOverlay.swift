@@ -172,7 +172,7 @@ struct QuickViewerOverlay: View {
                     .font(.body.weight(.semibold))
                     .foregroundColor(.white.opacity(0.8))
                     .frame(width: 32, height: 32)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .background(Color(white: 0, opacity: 0.35), in: Circle())
             }
             .buttonStyle(.plain)
 
@@ -187,7 +187,7 @@ struct QuickViewerOverlay: View {
                     .truncationMode(.middle)
                     .padding(.horizontal, DS.Spacing.md)
                     .padding(.vertical, DS.Spacing.xs)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius))
+                    .background(Color(white: 0, opacity: 0.35), in: RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius))
                     .frame(maxWidth: 320)
             }
 
@@ -204,7 +204,7 @@ struct QuickViewerOverlay: View {
             }
             .padding(.horizontal, DS.Spacing.sm + DS.Spacing.xs)
             .padding(.vertical, DS.Spacing.xs + 2)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: DS.Spacing.sm))
+            .background(Color(white: 0, opacity: 0.35), in: RoundedRectangle(cornerRadius: DS.Spacing.sm))
         }
         .padding(.horizontal, DS.Spacing.md)
         .padding(.top, DS.Spacing.sm + DS.Spacing.xs)
@@ -229,7 +229,7 @@ struct QuickViewerOverlay: View {
                 .frame(minWidth: 44)
                 .padding(.horizontal, DS.Spacing.xs)
                 .frame(height: 32)
-                .background(.ultraThinMaterial)
+                .background(Color(white: 0, opacity: 0.4))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             toolbarButton(title: "放大", systemImage: "plus.magnifyingglass") {
                 viewModel.zoomIn()
@@ -242,7 +242,7 @@ struct QuickViewerOverlay: View {
         .padding(.vertical, DS.Spacing.xs)
         .background(
             RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
-                .fill(.ultraThinMaterial)
+                .fill(Color(white: 0, opacity: 0.5))
                 .overlay(
                     RoundedRectangle(cornerRadius: DS.Toolbar.cornerRadius)
                         .stroke(Color.white.opacity(0.1), lineWidth: 1)
@@ -296,7 +296,7 @@ struct QuickViewerOverlay: View {
                 .font(.title2)
                 .foregroundColor(.white.opacity(enabled ? 0.9 : 0.25))
                 .frame(width: 44, height: 44)
-                .background(enabled ? AnyShapeStyle(.regularMaterial) : AnyShapeStyle(.ultraThinMaterial))
+                .background(Color(white: 0, opacity: enabled ? 0.45 : 0.2))
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
@@ -310,7 +310,7 @@ struct QuickViewerOverlay: View {
                 .font(.body)
                 .foregroundColor(.white.opacity(0.85))
                 .frame(width: 32, height: 32)
-                .background(.ultraThinMaterial)
+                .background(Color(white: 0, opacity: 0.4))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
