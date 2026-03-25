@@ -62,7 +62,7 @@ func showTrafficLights() {
 | 场景 | 处理 |
 |------|------|
 | 全屏状态下进入 QuickViewer | `guard !isFullScreen` 跳过，系统已隐藏 Traffic Light，不重复操作 |
-| 全屏状态下退出 QuickViewer | 同上，保持系统全屏行为不干预 |
+| 全屏状态下退出 QuickViewer | `showTrafficLights()` 不加 `isFullScreen` guard，始终恢复 `isHidden = false`。全屏下系统靠 hover 显示按钮，但前提是 `isHidden == false`，若跳过恢复则按钮永久消失 |
 | QuickViewer 打开时切换全屏（按 F） | 全屏进入后 Traffic Light 已被系统隐藏，状态一致，无需额外处理 |
 | QuickViewer 打开时 App 失去焦点再恢复 | macOS 会在 App 重新激活时自动恢复 window button 状态，`.onAppear` 不会重复触发，无副作用 |
 | `AppState.window` 为 nil（极端情况） | `window?.standardWindowButton` 用可选链，静默跳过，不 crash |

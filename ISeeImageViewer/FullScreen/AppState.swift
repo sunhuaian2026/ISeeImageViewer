@@ -53,7 +53,8 @@ class AppState: ObservableObject {
     }
 
     func showTrafficLights() {
-        guard !isFullScreen else { return }
+        // 不加 isFullScreen guard：全屏下系统靠 hover 显示 traffic light，
+        // 但前提是 isHidden == false。若之前显式隐藏过，此处必须恢复，否则按钮永久消失。
         [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].forEach {
             window?.standardWindowButton($0)?.isHidden = false
         }
