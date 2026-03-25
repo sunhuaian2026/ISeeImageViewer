@@ -71,6 +71,7 @@ struct FolderSidebarView: View {
                     .background(.ultraThinMaterial, in: Capsule())
             }
         }
+        .listRowBackground(DS.Color.appBackground)
         .contextMenu {
             Button("在 Finder 中显示") {
                 NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: node.url.path)
