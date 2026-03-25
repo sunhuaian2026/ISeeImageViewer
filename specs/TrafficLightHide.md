@@ -38,7 +38,8 @@ func hideTrafficLights() {
 
 // 恢复 Traffic Light（退出 QuickViewer 时调用）
 func showTrafficLights() {
-    guard !isFullScreen else { return }   // 全屏下保持系统行为，不干预
+    // 不加 isFullScreen guard：全屏下系统靠 hover 显示按钮，
+    // 但前提是 isHidden == false，若跳过恢复则按钮永久消失。
     [NSWindow.ButtonType.closeButton,
      .miniaturizeButton,
      .zoomButton].forEach {
@@ -50,9 +51,14 @@ func showTrafficLights() {
 ### QuickViewerOverlay.swift 新增
 
 ```swift
-// 在 QuickViewerOverlay 的最外层 View 上添加：
+// hide/show 必须挂在同一个最外层 view 节点，保证 appear/disappear 对称触发。
+// 不能把 hideTrafficLights() 放在内层 GeometryReader 的 ZStack.onAppear，
+// 否则极端情况下 onDisappear 先于 onAppear 执行，traffic light 永久隐藏。
 .onAppear  { appState.hideTrafficLights() }
-.onDisappear { appState.showTrafficLights() }
+.onDisappear {
+    hideTask?.cancel()
+    appState.showTrafficLights()
+}
 ```
 
 ---
