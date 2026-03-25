@@ -21,7 +21,10 @@ ISeeImageViewer/
 │   ├── QuickViewer.md               ← ✅ 已完成
 │   ├── SortFilter.md                ← ✅ 已完成
 │   ├── KeyboardShortcuts.md         ← ✅ 已完成
-│   └── Inspector.md                 ← ✅ 已完成
+│   ├── Inspector.md                 ← ✅ 已完成
+│   ├── TrafficLightHide.md          ← ✅ 已完成
+│   ├── ThumbnailSizeSlider.md       ← 待开发
+│   └── Prefetch.md                  ← 待开发
 ├── docs/
 │   └── archive/                     ← 已归档的历史规范文档
 │       ├── UIRefresh.md             ← 已归档

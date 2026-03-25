@@ -44,4 +44,18 @@ class AppState: ObservableObject {
         guard isFullScreen else { return }
         window?.toggleFullScreen(nil)
     }
+
+    func hideTrafficLights() {
+        guard !isFullScreen else { return }
+        [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].forEach {
+            window?.standardWindowButton($0)?.isHidden = true
+        }
+    }
+
+    func showTrafficLights() {
+        guard !isFullScreen else { return }
+        [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].forEach {
+            window?.standardWindowButton($0)?.isHidden = false
+        }
+    }
 }

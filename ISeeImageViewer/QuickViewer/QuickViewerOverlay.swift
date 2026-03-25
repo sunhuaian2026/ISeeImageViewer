@@ -87,6 +87,7 @@ struct QuickViewerOverlay: View {
                 viewModel.applyViewportSize(geo.size)
                 isFocused = true
                 showControlsTemporarily()
+                appState.hideTrafficLights()
             }
             .onChange(of: geo.size) { _, newSize in
                 viewModel.applyViewportSize(newSize)
@@ -95,7 +96,10 @@ struct QuickViewerOverlay: View {
         .preferredColorScheme(.dark)
         .focusable()
         .focused($isFocused)
-        .onDisappear { hideTask?.cancel() }
+        .onDisappear {
+            hideTask?.cancel()
+            appState.showTrafficLights()
+        }
         .onContinuousHover { phase in
             switch phase {
             case .active: showControlsTemporarily()
