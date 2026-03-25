@@ -1,4 +1,4 @@
-这是一个 macOS 本地看图 app，SwiftUI 开发，目标上架 App Store。
+这是一个 macOS 本地看图 app，SwiftUI 开发。
 核心功能是本地文件夹浏览和图片查看。
 需要遵守 App Sandbox 限制，使用 Security Scoped Bookmark 处理文件权限。
 
@@ -23,7 +23,7 @@ ISeeImageViewer/
 │   ├── KeyboardShortcuts.md         ← ✅ 已完成
 │   ├── Inspector.md                 ← ✅ 已完成
 │   ├── TrafficLightHide.md          ← ✅ 已完成
-│   ├── ThumbnailSizeSlider.md       ← 待开发
+│   ├── ThumbnailSizeSlider.md       ← ✅ 已完成
 │   └── Prefetch.md                  ← 待开发
 ├── docs/
 │   └── archive/                     ← 已归档的历史规范文档

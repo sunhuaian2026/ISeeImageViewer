@@ -13,10 +13,12 @@ struct ImageGridView: View {
     @FocusState private var isFocused: Bool
     @State private var highlightedIndex: Int? = nil
 
-    private let columns = [GridItem(.adaptive(
-        minimum: DS.Thumbnail.defaultSize,
-        maximum: DS.Thumbnail.defaultSize + DS.Spacing.xl
-    ))]
+    private var gridColumns: [GridItem] {
+        [GridItem(.adaptive(
+            minimum: folderStore.thumbnailSize,
+            maximum: folderStore.thumbnailSize + 20
+        ), spacing: DS.Thumbnail.spacing)]
+    }
 
     var body: some View {
         Group {
@@ -51,6 +53,23 @@ struct ImageGridView: View {
         }
         .toolbar {
             ToolbarItem(placement: .automatic) {
+                HStack(spacing: 6) {
+                    Image(systemName: "square.grid.3x3")
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                    Slider(
+                        value: $folderStore.thumbnailSize,
+                        in: DS.Thumbnail.minSize...DS.Thumbnail.maxSize,
+                        step: 10
+                    )
+                    .frame(width: 88)
+                    Image(systemName: "square.grid.2x2")
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                }
+                .help("调整缩略图大小")
+            }
+            ToolbarItem(placement: .automatic) {
                 Menu {
                     ForEach(SortOrder.allCases, id: \.self) { order in
                         Button {
@@ -78,10 +97,10 @@ struct ImageGridView: View {
 
         return ScrollViewReader { scrollProxy in
             ScrollView {
-                LazyVGrid(columns: columns, spacing: DS.Thumbnail.spacing) {
+                LazyVGrid(columns: gridColumns, spacing: DS.Thumbnail.spacing) {
                     ForEach(Array(images.enumerated()), id: \.element) { index, url in
                         VStack(spacing: DS.Spacing.xs) {
-                            ThumbnailCell(url: url, isHighlighted: highlightedIndex == index)
+                            ThumbnailCell(url: url, isHighlighted: highlightedIndex == index, size: folderStore.thumbnailSize)
                                 .onTapGesture(count: 2) {
                                     onDoubleClick(index)
                                 }
@@ -94,11 +113,12 @@ struct ImageGridView: View {
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
                                 .truncationMode(.middle)
-                                .frame(maxWidth: DS.Thumbnail.defaultSize)
+                                .frame(maxWidth: folderStore.thumbnailSize)
                         }
                         .id(index)
                     }
                 }
+                .animation(DS.Anim.fast, value: folderStore.thumbnailSize)
                 .padding(DS.Spacing.sm)
             }
             .background(DS.Color.gridBackground)
@@ -134,7 +154,7 @@ struct ImageGridView: View {
 
     private func columnCount() -> Int {
         // 估算列数，用于上下方向键步进
-        let cellWidth = DS.Thumbnail.defaultSize + DS.Thumbnail.spacing
+        let cellWidth = folderStore.thumbnailSize + DS.Thumbnail.spacing
         let windowWidth = NSApp.keyWindow?.contentView?.bounds.width ?? 800
         return max(1, Int(windowWidth / cellWidth))
     }
@@ -145,6 +165,7 @@ struct ImageGridView: View {
 struct ThumbnailCell: View {
     let url: URL
     var isHighlighted: Bool = false
+    var size: CGFloat = DS.Thumbnail.defaultSize
     @State private var thumbnail: NSImage? = nil
     @State private var isHovered = false
 
@@ -154,16 +175,16 @@ struct ThumbnailCell: View {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFill()
-                    .frame(width: DS.Thumbnail.defaultSize, height: DS.Thumbnail.defaultSize)
+                    .frame(width: size, height: size)
                     .clipped()
             } else {
                 Rectangle()
                     .fill(Color.secondary.opacity(0.15))
-                    .frame(width: DS.Thumbnail.defaultSize, height: DS.Thumbnail.defaultSize)
+                    .frame(width: size, height: size)
                     .overlay { ProgressView() }
             }
         }
-        .frame(width: DS.Thumbnail.defaultSize, height: DS.Thumbnail.defaultSize)
+        .frame(width: size, height: size)
         .clipShape(RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius))
         .overlay {
             if isHovered && !isHighlighted {
@@ -184,6 +205,7 @@ struct ThumbnailCell: View {
         .scaleEffect(isHovered && !isHighlighted ? 1.03 : 1.0)
         .animation(.easeOut(duration: 0.15), value: isHovered)
         .animation(DS.Anim.fast, value: isHighlighted)
+        .animation(DS.Anim.fast, value: size)
         .onHover { isHovered = $0 }
         .task { thumbnail = await loadThumbnail(url: url) }
     }

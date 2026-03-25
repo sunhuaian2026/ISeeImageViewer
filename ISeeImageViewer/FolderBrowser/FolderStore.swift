@@ -57,6 +57,12 @@ class FolderStore: ObservableObject {
         }
     }
 
+    @Published var thumbnailSize: CGFloat = DS.Thumbnail.defaultSize {
+        didSet {
+            UserDefaults.standard.set(Double(thumbnailSize), forKey: "thumbnailSize")
+        }
+    }
+
     private let bookmarkManager: BookmarkManager
 
     private static let supportedExtensions: Set<String> = [
@@ -65,6 +71,10 @@ class FolderStore: ObservableObject {
 
     init(bookmarkManager: BookmarkManager) {
         self.bookmarkManager = bookmarkManager
+        let saved = UserDefaults.standard.double(forKey: "thumbnailSize")
+        if saved >= Double(DS.Thumbnail.minSize) && saved <= Double(DS.Thumbnail.maxSize) {
+            thumbnailSize = CGFloat(saved)
+        }
     }
 
     // MARK: - Public

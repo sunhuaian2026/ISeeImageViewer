@@ -2,13 +2,13 @@
 
 ## 总体目标
 
-打造一款 macOS 原生风格、界面精致的本地看图 app，上架 App Store。
+打造一款 macOS 原生风格、界面精致的本地看图 app。
 
 ---
 
 ## 当前进度（2026-03-25）
 
-**所有模块已完成，Bug 修复中，待上架 App Store**
+**所有模块已完成，Bug 修复中**
 
 ---
 
@@ -31,6 +31,7 @@
 | Liquid Glass UI | UI.md | 9a0cfde | DS.Anim / 新色系 / 毛玻璃控件 / 光晕 / 浮动气泡 Toolbar |
 | 树形侧边栏 | FolderBrowserView.md | e8aec40 | FolderNode + discoverTree，List(children:) 展开/折叠 |
 | AppearanceMode | AppState.md | b4363e7 | 深/浅/系统三档外观切换，UserDefaults 持久化 |
+| ThumbnailSizeSlider | ThumbnailSizeSlider.md | TBD | Toolbar 滑块调整缩略图尺寸（80~280pt），UserDefaults 持久化 |
 
 ---
 
