@@ -35,6 +35,7 @@ struct ISeeImageViewerApp: App {
                     folderStore.loadSavedFolders()
                 }
         }
+        .defaultSize(width: 1280, height: 800)
     }
 }
 
