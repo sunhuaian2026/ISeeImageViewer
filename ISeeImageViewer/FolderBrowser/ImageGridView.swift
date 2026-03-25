@@ -52,40 +52,42 @@ struct ImageGridView: View {
             highlightedIndex = nil
         }
         .toolbar {
-            ToolbarItem(placement: .automatic) {
-                HStack(spacing: 8) {
-                    Image(systemName: "square.grid.3x3")
-                        .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
-                    Slider(
-                        value: $folderStore.thumbnailSize,
-                        in: DS.Thumbnail.minSize...DS.Thumbnail.maxSize,
-                        step: 10
-                    )
-                    .labelsHidden()
-                    .frame(width: 140)
-                    Image(systemName: "square.grid.2x2")
-                        .font(.system(size: 13))
-                        .foregroundStyle(.secondary)
-                }
-                .help("调整缩略图大小")
-            }
-            ToolbarItem(placement: .automatic) {
-                Menu {
-                    ForEach(SortOrder.allCases, id: \.self) { order in
-                        Button {
-                            folderStore.sortOrder = order
-                        } label: {
-                            Label(
-                                order.rawValue,
-                                systemImage: folderStore.sortOrder == order ? "checkmark" : ""
-                            )
-                        }
+            if folderStore.selectedImageIndex == nil {
+                ToolbarItem(placement: .automatic) {
+                    HStack(spacing: 8) {
+                        Image(systemName: "square.grid.3x3")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.secondary)
+                        Slider(
+                            value: $folderStore.thumbnailSize,
+                            in: DS.Thumbnail.minSize...DS.Thumbnail.maxSize,
+                            step: 10
+                        )
+                        .labelsHidden()
+                        .frame(width: 140)
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
                     }
-                } label: {
-                    Image(systemName: "arrow.up.arrow.down")
+                    .help("调整缩略图大小")
                 }
-                .help("排序方式")
+                ToolbarItem(placement: .automatic) {
+                    Menu {
+                        ForEach(SortOrder.allCases, id: \.self) { order in
+                            Button {
+                                folderStore.sortOrder = order
+                            } label: {
+                                Label(
+                                    order.rawValue,
+                                    systemImage: folderStore.sortOrder == order ? "checkmark" : ""
+                                )
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "arrow.up.arrow.down")
+                    }
+                    .help("排序方式")
+                }
             }
         }
     }

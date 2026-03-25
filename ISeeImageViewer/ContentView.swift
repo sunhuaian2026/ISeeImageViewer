@@ -100,30 +100,32 @@ struct ContentView: View {
 
     @ViewBuilder
     private var mainContent: some View {
-        if let idx = folderStore.selectedImageIndex {
-            ImagePreviewView(
-                images: folderStore.images,
-                startIndex: idx,
-                focusTrigger: previewFocusTrigger,
-                onDismiss: {
-                    folderStore.selectedImageIndex = nil
-                },
-                onQuickView: { index in
-                    quickViewerIndex = index
-                }
-            )
-            .transition(.asymmetric(
-                insertion: .scale(scale: 0.97).combined(with: .opacity),
-                removal:   .scale(scale: 0.97).combined(with: .opacity)
-            ))
-        } else {
+        ZStack {
+            // ImageGridView 始终保留在层级里，避免返回时缩略图全部重载
             ImageGridView(onDoubleClick: { index in
                 // 双击时单击 handler 也会触发并设置 selectedImageIndex，
                 // 此处清除，确保 QuickViewer 关闭后回到列表页而非预览页。
                 folderStore.selectedImageIndex = nil
                 quickViewerIndex = index
             })
-            .transition(.opacity)
+
+            if let idx = folderStore.selectedImageIndex {
+                ImagePreviewView(
+                    images: folderStore.images,
+                    startIndex: idx,
+                    focusTrigger: previewFocusTrigger,
+                    onDismiss: {
+                        folderStore.selectedImageIndex = nil
+                    },
+                    onQuickView: { index in
+                        quickViewerIndex = index
+                    }
+                )
+                .transition(.asymmetric(
+                    insertion: .scale(scale: 0.97).combined(with: .opacity),
+                    removal:   .scale(scale: 0.97).combined(with: .opacity)
+                ))
+            }
         }
     }
 }

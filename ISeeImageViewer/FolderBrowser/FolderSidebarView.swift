@@ -74,7 +74,7 @@ struct FolderSidebarView: View {
         }
         .listRowBackground(Group {
             if isSelected {
-                Color.accentColor.opacity(0.2)
+                Color.clear
             } else {
                 DS.Color.appBackground
             }
