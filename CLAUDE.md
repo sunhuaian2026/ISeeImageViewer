@@ -12,21 +12,23 @@ ISeeImageViewer/
 ├── Makefile                         ← make build / make run / make clean
 ├── ISeeImageViewer.xcodeproj/
 ├── specs/                           ← 所有模块规范文档
-│   ├── UI.md                        ← UI 设计规范（唯一来源）
+│   ├── UI.md                        ← UI 设计规范（唯一来源），含颜色自适应方案
 │   ├── Roadmap.md                   ← 总体进度与 TODO
+│   ├── AppState.md                  ← ✅ 全屏 + 外观模式（AppState / WindowAccessor）
 │   ├── BookmarkManager.md           ← ✅ 已完成
 │   ├── FolderStore.md               ← ✅ 已完成
 │   ├── FolderBrowserView.md         ← ✅ 已完成
-│   ├── ImageViewerView.md           ← ✅ 已完成（已被 QuickViewer 替代）
 │   ├── QuickViewer.md               ← ✅ 已完成
 │   ├── SortFilter.md                ← ✅ 已完成
 │   ├── KeyboardShortcuts.md         ← ✅ 已完成
-│   ├── Inspector.md                 ← ✅ 已完成
-│   ├── FullScreen.md                ← ✅ 已完成
-│   └── 2026-03-24-appearance-mode-design.md  ← ✅ 已完成
+│   └── Inspector.md                 ← ✅ 已完成
 ├── docs/
 │   └── archive/                     ← 已归档的历史规范文档
-│       └── UIRefresh.md             ← ✅ 已完成（已归档）
+│       ├── UIRefresh.md             ← 已归档
+│       ├── FullScreen.md            ← 已归档（内容合并入 AppState.md）
+│       ├── ImageViewerView.md       ← 已归档（已被 QuickViewer 替代）
+│       ├── 2026-03-24-appearance-mode-design.md  ← 已归档（合并入 AppState.md + UI.md）
+│       └── 2026-03-24-appearance-mode-plan.md    ← 已归档（实施记录）
 └── ISeeImageViewer/                 ← Swift 源码（PBXFileSystemSynchronizedRootGroup，新文件自动加入编译）
     ├── ISeeImageViewerApp.swift      ← App 入口，注入 BookmarkManager / FolderStore / AppState
     ├── ContentView.swift            ← NavigationSplitView + 内嵌预览/QuickViewer 覆盖层

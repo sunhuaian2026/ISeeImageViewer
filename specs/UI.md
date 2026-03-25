@@ -291,12 +291,41 @@ enum DS {
 
 ## 深浅色模式
 
+App 支持深色 / 浅色 / 跟随系统三档切换（AppearanceMode），由 `AppState.appearanceMode` 驱动 `ISeeImageViewerApp` 的 `preferredColorScheme`。**QuickViewerOverlay 保留 `.preferredColorScheme(.dark)`，始终强制深色。**
+
+### AdaptiveColor（颜色自适应方案）
+
+背景层和交互色使用 `AdaptiveColor` 结构体，实现 `ShapeStyle.resolve(in:)`，从 `EnvironmentValues.colorScheme` 读取外观——可正确响应 SwiftUI per-view `preferredColorScheme` 覆盖：
+
 ```swift
-// 整个 App 强制深色（包括侧边栏和网格区）
-// 在 WindowGroup 级别设置：
-.preferredColorScheme(.dark)
-// 不再区分「看图界面深色 / 其他跟随系统」，统一深色
+struct AdaptiveColor: ShapeStyle, View {
+    let light: SwiftUI.Color
+    let dark: SwiftUI.Color
+
+    func resolve(in environment: EnvironmentValues) -> some ShapeStyle {
+        environment.colorScheme == .dark ? dark : light
+    }
+}
 ```
+
+> ⚠️ 不要用 `NSColor(dynamicProvider:)`——该方案响应 NSWindow 级别的 NSAppearance，无法响应 per-view colorScheme 覆盖，会导致 QuickViewer 在浅色模式下颜色错误。
+
+### 色票（自适应）
+
+| 常量 | Light | Dark |
+|------|-------|------|
+| `DS.Color.appBackground` | `#F2F2F7` | `#121217` |
+| `DS.Color.gridBackground` | `#EBEBF0` | `#141419` |
+| `DS.Color.hoverOverlay` | `black.opacity(0.05)` | `white.opacity(0.06)` |
+| `DS.Color.separatorColor` | `black.opacity(0.08)` | `white.opacity(0.08)` |
+| `DS.Color.glowPrimary` | 不变（紫色） | 不变（紫色） |
+| `DS.Color.glowSecondary` | 不变（青绿） | 不变（青绿） |
+
+`glowPrimary` / `glowSecondary` 不需要自适应，保持 `SwiftUI.Color` 类型。
+
+### 系统材质注意事项
+
+`.ultraThinMaterial` / `.regularMaterial` 响应 NSWindow 级别的 NSAppearance，**不**响应 per-view `preferredColorScheme` 覆盖。QuickViewerOverlay 内所有材质已替换为明确深色半透明色（`Color(white: 0, opacity:)`）。其他视图（侧边栏、Inspector）使用系统材质时，外观跟随 `NSWindow.appearance`，行为正确。
 
 ---
 
