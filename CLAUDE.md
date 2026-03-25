@@ -66,7 +66,7 @@ ISeeImageViewer/
 - **所有 UI 常量必须引用 DesignSystem.swift（DS.*）**，禁止硬编码颜色、间距、动画。
 - 详细规范见 specs/UI.md。
 - 核心原则：内容优先、克制、原生、深色优先。
-- 看图界面强制深色（`.preferredColorScheme(.dark)`），不加装饰性元素。
+- `QuickViewerOverlay`（全窗口看图）强制深色（`.preferredColorScheme(.dark)`）；`ImagePreviewView`（内嵌预览）跟随全局外观，前景色使用 `Color.primary`。
 - 禁止在看图界面使用 `.spring` 动画，用 `DS.Anim.normal / fast`。
 
 ## 持久化规范

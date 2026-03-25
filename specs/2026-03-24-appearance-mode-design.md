@@ -2,7 +2,7 @@
 
 **项目**：ISeeImageViewer
 **日期**：2026-03-24
-**状态**：待实现
+**状态**：✅ 已完成
 
 ---
 
@@ -52,20 +52,26 @@ init() {
 
 ### 2. 颜色系统（DesignSystem.swift）
 
-新增 `Color(light:dark:)` 扩展，基于 `NSColor` appearance 动态返回对应色值。
+> ⚠️ 实际实现与原设计不同。原计划使用 `NSColor(dynamicProvider:)` 方案，上线后发现该方案响应 NSWindow 级别的 NSAppearance，无法响应 SwiftUI per-view `preferredColorScheme` 覆盖，导致 QuickViewer 在浅色模式下颜色错误。已全面替换为以下方案。
 
-**最低系统要求**：`NSColor.init(_ color: Color)` 需要 macOS 12+。若部署目标升级至 macOS 14+，Apple 原生提供了同名 `Color.init(light:dark:)`，届时可删除此自定义扩展。
+新增 `AdaptiveColor` 结构体，实现 `ShapeStyle` 和 `View` 协议。`ShapeStyle.resolve(in:)` 从 `EnvironmentValues.colorScheme` 读取当前外观，可正确响应 per-view `preferredColorScheme` 覆盖：
 
 ```swift
-extension SwiftUI.Color {
-    init(light: SwiftUI.Color, dark: SwiftUI.Color) {
-        self.init(NSColor(name: nil) { appearance in
-            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
-                ? NSColor(dark) : NSColor(light)
-        })
+struct AdaptiveColor: ShapeStyle, View {
+    let light: SwiftUI.Color
+    let dark: SwiftUI.Color
+
+    func resolve(in environment: EnvironmentValues) -> some ShapeStyle {
+        environment.colorScheme == .dark ? dark : light
+    }
+
+    var body: some View {
+        _AdaptiveColorBody(light: light, dark: dark)
     }
 }
 ```
+
+`glowPrimary` / `glowSecondary` 不需要自适应，保持 `SwiftUI.Color` 类型不变。
 
 `DS.Color.*` 改造（仅背景层和交互色需要双值，光晕色保持不变）：
 
@@ -129,9 +135,9 @@ ToolbarItem(placement: .automatic) {
 
 ### 6. QuickViewer（QuickViewerOverlay.swift）
 
-**不改动**。`QuickViewerOverlay` 保留自身的 `.preferredColorScheme(.dark)`，独立于全局外观设置，始终强制深色。
+`QuickViewerOverlay` 保留 `.preferredColorScheme(.dark)`，`DS.Color.*` 在其内部通过 `AdaptiveColor.resolve(in:)` 正确解析为 dark 值。
 
-**重要**：`DS.Color.appBackground` 等动态色在 `QuickViewerOverlay` 内部会自动解析为 dark 值，正是依赖这个 `.preferredColorScheme(.dark)` 生效。若未来移除该修饰符，背景色也会随之改变。
+**实际改动**：所有系统材质（`.regularMaterial` / `.ultraThinMaterial`）已替换为明确的深色半透明色（`Color(white:0, opacity:)`）。原因：系统材质响应 NSWindow 级别的 NSAppearance，当全局为浅色模式时，QuickViewer 内的材质仍渲染为浅色，导致白色图标不可见。由于 QuickViewer 永远深色，不需要材质的自适应能力，直接使用明确深色更可靠。
 
 ---
 
@@ -146,7 +152,7 @@ ISeeImageViewerApp (.preferredColorScheme 动态绑定)
     ↓
 所有子视图（自动继承，包括 ContentView / ImagePreviewView 等）
     ↓
-DS.Color.* (Color(light:dark:) 动态响应 colorScheme)
+DS.Color.* (AdaptiveColor.resolve(in:) 从 EnvironmentValues 读取 colorScheme)
 
 QuickViewerOverlay → .preferredColorScheme(.dark) 独立，不受影响
                    → DS.Color.* 在此上下文中始终解析为 dark 值
@@ -161,7 +167,7 @@ QuickViewerOverlay → .preferredColorScheme(.dark) 独立，不受影响
 | 首次启动无 UserDefaults 记录 | 默认 `.system`，行为与系统一致 |
 | QuickViewer 打开时切换外观 | 无影响，QuickViewer 强制深色独立 |
 | 全屏模式下切换外观 | `preferredColorScheme` 实时生效，无需额外处理 |
-| 系统材质（`.ultraThinMaterial` 等） | 自动跟随 `preferredColorScheme`，无需额外处理 |
+| 系统材质（`.ultraThinMaterial` 等） | ⚠️ 响应 NSWindow 级别 NSAppearance，不响应 per-view colorScheme 覆盖。QuickViewer 内已全部替换为明确深色半透明色 |
 | 光晕在浅色模式下 | 固定色 + 低 opacity，浅色背景下自然柔和，可接受 |
 | 移除 QuickViewerOverlay 的强制深色 | 会导致 DS.Color.* 在其内部解析为 light 值，破坏看图界面，不可移除 |
 
@@ -172,11 +178,11 @@ QuickViewerOverlay → .preferredColorScheme(.dark) 独立，不受影响
 | 文件 | 变更类型 |
 |------|---------|
 | `ISeeImageViewer/FullScreen/AppState.swift` | 新增 `AppearanceMode` 枚举 + `appearanceMode` 属性 + `init()` |
-| `ISeeImageViewer/DesignSystem.swift` | 新增 `Color(light:dark:)` 扩展，更新 `DS.Color.*` 四个色票 |
+| `ISeeImageViewer/DesignSystem.swift` | 新增 `AdaptiveColor(ShapeStyle, View)`，更新 `DS.Color.*` 四个色票 |
 | `ISeeImageViewer/ISeeImageViewerApp.swift` | 移除强制深色，新增动态 colorScheme 绑定 |
 | `ISeeImageViewer/ImageViewer/ImagePreviewView.swift` | 移除 `.preferredColorScheme(.dark)` |
 | `ISeeImageViewer/ContentView.swift` | 新增外观切换 Toolbar Menu |
-| `ISeeImageViewer/QuickViewer/QuickViewerOverlay.swift` | 不改动 |
+| `ISeeImageViewer/QuickViewer/QuickViewerOverlay.swift` | 材质替换为明确深色半透明色 |
 
 ---
 
