@@ -208,7 +208,10 @@ struct ThumbnailCell: View {
         .animation(DS.Anim.fast, value: isHighlighted)
         .animation(DS.Anim.fast, value: size)
         .onHover { isHovered = $0 }
-        .task { thumbnail = await loadThumbnail(url: url) }
+        .task {
+            let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+            thumbnail = await loadThumbnail(url: url, maxPixelSize: Int(size * scale))
+        }
     }
 }
 
