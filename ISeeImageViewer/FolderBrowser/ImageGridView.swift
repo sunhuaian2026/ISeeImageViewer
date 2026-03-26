@@ -123,7 +123,7 @@ struct ImageGridView: View {
                                 .truncationMode(.middle)
                                 .frame(maxWidth: folderStore.thumbnailSize)
                         }
-                        .id(index)
+                        .id(url)
                     }
                 }
                 .animation(DS.Anim.fast, value: folderStore.thumbnailSize)
@@ -156,7 +156,7 @@ struct ImageGridView: View {
         let next = max(0, min(total - 1, current + delta))
         highlightedIndex = next
         withAnimation(DS.Anim.fast) {
-            proxy.scrollTo(next, anchor: .center)
+            proxy.scrollTo(folderStore.images[next], anchor: .center)
         }
     }
 
