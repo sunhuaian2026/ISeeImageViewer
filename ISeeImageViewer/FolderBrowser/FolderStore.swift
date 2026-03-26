@@ -61,38 +61,14 @@ class FolderStore: ObservableObject {
         return SortDirection(rawValue: raw) ?? .asc
     }()
 
-    // 统一入口：同时更新 key + direction，只触发一次排序
+    // 统一入口：同步排序，消除异步竞态
     func applySortKey(_ key: SortKey, direction: SortDirection) {
-        let logPath = FileManager.default.temporaryDirectory.appendingPathComponent("isee_debug.log").path
-        logToFile("[Sort] log at: \(logPath)")
-        logToFile("[Sort] applySortKey called: key=\(key.rawValue) dir=\(direction.rawValue) images.count=\(images.count)")
         sortKey = key
         sortDirection = direction
         UserDefaults.standard.set(key.rawValue, forKey: "sortKey")
         UserDefaults.standard.set(direction.rawValue, forKey: "sortDirection")
-        guard !images.isEmpty else {
-            logToFile("[Sort] images is empty, skip sort")
-            return
-        }
-        Task {
-            let sorted = await sortImages(images)
-            logToFile("[Sort] sorted done, count=\(sorted.count), first=\(sorted.first?.lastPathComponent ?? "-")")
-            images = sorted
-        }
-    }
-
-    private func logToFile(_ msg: String) {
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
-        let logURL = appSupport.appendingPathComponent("isee_debug.log")
-        let line = "\(Date()) \(msg)\n"
-        guard let data = line.data(using: .utf8) else { return }
-        if FileManager.default.fileExists(atPath: logURL.path),
-           let handle = try? FileHandle(forWritingTo: logURL) {
-            handle.seekToEndOfFile(); handle.write(data); try? handle.close()
-        } else {
-            try? FileManager.default.createDirectory(at: appSupport, withIntermediateDirectories: true)
-            try? data.write(to: logURL)
-        }
+        guard !images.isEmpty else { return }
+        images = sortImagesSync(images)
     }
 
     @Published var thumbnailSize: CGFloat = DS.Thumbnail.defaultSize {
@@ -262,6 +238,34 @@ class FolderStore: ObservableObject {
         isLoadingImages = false
     }
 
+    // 同步排序：供 applySortKey 使用，URL 已在内存，无 I/O，毫秒级
+    private func sortImagesSync(_ urls: [URL]) -> [URL] {
+        let key = sortKey
+        let asc = sortDirection == .asc
+        switch key {
+        case .name:
+            return urls.sorted {
+                let cmp = $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent)
+                return asc ? cmp == .orderedAscending : cmp == .orderedDescending
+            }
+        case .date:
+            let keys: Set<URLResourceKey> = [.contentModificationDateKey]
+            let dated: [(URL, Date)] = urls.map { url in
+                let date = (try? url.resourceValues(forKeys: keys))?.contentModificationDate
+                return (url, date ?? .distantPast)
+            }
+            return dated.sorted { asc ? $0.1 < $1.1 : $0.1 > $1.1 }.map { $0.0 }
+        case .size:
+            let keys: Set<URLResourceKey> = [.fileSizeKey]
+            let sized: [(URL, Int)] = urls.map { url in
+                let size = (try? url.resourceValues(forKeys: keys))?.fileSize
+                return (url, size ?? Int.max)
+            }
+            return sized.sorted { asc ? $0.1 < $1.1 : $0.1 > $1.1 }.map { $0.0 }
+        }
+    }
+
+    // 异步排序：供 scanImages 使用，避免扫描时阻塞主线程
     private func sortImages(_ urls: [URL]) async -> [URL] {
         let key = sortKey
         let asc = sortDirection == .asc
