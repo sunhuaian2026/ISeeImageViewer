@@ -103,7 +103,6 @@ struct ImagePreviewView: View {
                     .padding(.bottom, DS.Spacing.md)
             }
         }
-        .navigationTitle(images[currentIndex].lastPathComponent)
         .focusable()
         .focused($isFocused)
         .onAppear { loadImage(); isFocused = true }
@@ -112,6 +111,14 @@ struct ImagePreviewView: View {
         .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
         .onKeyPress(.rightArrow) { navigate(by: +1); return .handled }
         .onKeyPress(.space) { onQuickView(currentIndex); return .handled }
+        .onChange(of: images) { oldImages, newImages in
+            guard oldImages.indices.contains(currentIndex) else { return }
+            let currentURL = oldImages[currentIndex]
+            if let newIdx = newImages.firstIndex(of: currentURL) {
+                currentIndex = newIdx
+                folderStore.selectedImageIndex = newIdx
+            }
+        }
     }
 
     // MARK: - Navigation

@@ -47,7 +47,13 @@ struct ImageGridView: View {
                 gridContent
             }
         }
-        .navigationTitle(folderStore.selectedFolder?.lastPathComponent ?? "")
+        .navigationTitle({
+            if let idx = folderStore.selectedImageIndex,
+               folderStore.images.indices.contains(idx) {
+                return folderStore.images[idx].lastPathComponent
+            }
+            return folderStore.selectedFolder?.lastPathComponent ?? ""
+        }())
         .onChange(of: folderStore.images) { _, _ in
             highlightedIndex = nil
         }
