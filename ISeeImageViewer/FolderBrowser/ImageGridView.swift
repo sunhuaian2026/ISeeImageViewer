@@ -73,16 +73,17 @@ struct ImageGridView: View {
                 }
                 ToolbarItem(placement: .automatic) {
                     Menu {
-                        ForEach(SortKey.allCases, id: \.self) { key in
-                            Button {
-                                if folderStore.sortKey == key {
-                                    folderStore.applySortKey(key, direction: folderStore.sortDirection.toggled)
-                                } else {
-                                    folderStore.applySortKey(key, direction: .asc)
-                                }
-                            } label: {
-                                sortMenuLabel(for: key)
-                            }
+                        Button(sortMenuTitle(for: .name)) {
+                            logToFile("[Button] name tapped")
+                            folderStore.applySortKey(.name, direction: folderStore.sortKey == .name ? folderStore.sortDirection.toggled : .asc)
+                        }
+                        Button(sortMenuTitle(for: .date)) {
+                            logToFile("[Button] date tapped")
+                            folderStore.applySortKey(.date, direction: folderStore.sortKey == .date ? folderStore.sortDirection.toggled : .asc)
+                        }
+                        Button(sortMenuTitle(for: .size)) {
+                            logToFile("[Button] size tapped")
+                            folderStore.applySortKey(.size, direction: folderStore.sortKey == .size ? folderStore.sortDirection.toggled : .asc)
                         }
                     } label: {
                         Image(systemName: folderStore.sortDirection == .asc ? "arrow.up" : "arrow.down")
@@ -163,13 +164,25 @@ struct ImageGridView: View {
         return max(1, Int(windowWidth / cellWidth))
     }
 
-    @ViewBuilder
-    private func sortMenuLabel(for key: SortKey) -> some View {
-        if folderStore.sortKey == key {
-            Label("\(key.rawValue) \(folderStore.sortDirection.icon)", systemImage: "checkmark")
+    private func logToFile(_ msg: String) {
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
+        let logURL = appSupport.appendingPathComponent("isee_debug.log")
+        let line = "\(Date()) \(msg)\n"
+        guard let data = line.data(using: .utf8) else { return }
+        if FileManager.default.fileExists(atPath: logURL.path),
+           let handle = try? FileHandle(forWritingTo: logURL) {
+            handle.seekToEndOfFile(); handle.write(data); try? handle.close()
         } else {
-            Text(key.rawValue)
+            try? FileManager.default.createDirectory(at: appSupport, withIntermediateDirectories: true)
+            try? data.write(to: logURL)
         }
+    }
+
+    private func sortMenuTitle(for key: SortKey) -> String {
+        if folderStore.sortKey == key {
+            return "\(key.rawValue) \(folderStore.sortDirection.icon)"
+        }
+        return key.rawValue
     }
 }
 

@@ -63,12 +63,36 @@ class FolderStore: ObservableObject {
 
     // 统一入口：同时更新 key + direction，只触发一次排序
     func applySortKey(_ key: SortKey, direction: SortDirection) {
+        let logPath = FileManager.default.temporaryDirectory.appendingPathComponent("isee_debug.log").path
+        logToFile("[Sort] log at: \(logPath)")
+        logToFile("[Sort] applySortKey called: key=\(key.rawValue) dir=\(direction.rawValue) images.count=\(images.count)")
         sortKey = key
         sortDirection = direction
         UserDefaults.standard.set(key.rawValue, forKey: "sortKey")
         UserDefaults.standard.set(direction.rawValue, forKey: "sortDirection")
-        guard !images.isEmpty else { return }
-        Task { images = await sortImages(images) }
+        guard !images.isEmpty else {
+            logToFile("[Sort] images is empty, skip sort")
+            return
+        }
+        Task {
+            let sorted = await sortImages(images)
+            logToFile("[Sort] sorted done, count=\(sorted.count), first=\(sorted.first?.lastPathComponent ?? "-")")
+            images = sorted
+        }
+    }
+
+    private func logToFile(_ msg: String) {
+        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
+        let logURL = appSupport.appendingPathComponent("isee_debug.log")
+        let line = "\(Date()) \(msg)\n"
+        guard let data = line.data(using: .utf8) else { return }
+        if FileManager.default.fileExists(atPath: logURL.path),
+           let handle = try? FileHandle(forWritingTo: logURL) {
+            handle.seekToEndOfFile(); handle.write(data); try? handle.close()
+        } else {
+            try? FileManager.default.createDirectory(at: appSupport, withIntermediateDirectories: true)
+            try? data.write(to: logURL)
+        }
     }
 
     @Published var thumbnailSize: CGFloat = DS.Thumbnail.defaultSize {

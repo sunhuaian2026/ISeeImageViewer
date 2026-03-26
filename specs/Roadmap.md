@@ -68,6 +68,12 @@
 
 ---
 
+## 待修复 Bug
+
+| 状态 | 模块 | 问题描述 | 已知信息 |
+|------|------|----------|----------|
+| ❌ 未修复 | SortFilter | 排序菜单（名称/日期/大小）点击无任何响应，Button action 未触发 | 菜单能正常打开，条目可见，但 action closure 从未执行（文件日志确认）。多次尝试：@ViewBuilder label 函数、inline Label、Button(String) 均无效。疑似 macOS SwiftUI Menu 中 Button 与 NSMenuItem action 桥接问题。调试日志已内置（写入 ~/Library/Containers/uupt.ISeeImageViewer/Data/Library/Application Support/isee_debug.log）。下次 session 需排查 macOS Menu + EnvironmentObject 的交互，或改用 Picker/menuStyle 等替代方案。 |
+
 ## 待开发
 
 | 阶段 | 模块 | Spec | 优先级 | 前置依赖 |
