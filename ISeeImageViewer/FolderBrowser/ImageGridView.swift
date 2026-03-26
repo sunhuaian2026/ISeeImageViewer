@@ -76,22 +76,16 @@ struct ImageGridView: View {
                         ForEach(SortKey.allCases, id: \.self) { key in
                             Button {
                                 if folderStore.sortKey == key {
-                                    folderStore.sortDirection = folderStore.sortDirection.toggled
+                                    folderStore.applySortKey(key, direction: folderStore.sortDirection.toggled)
                                 } else {
-                                    folderStore.sortKey = key
-                                    folderStore.sortDirection = .asc
+                                    folderStore.applySortKey(key, direction: .asc)
                                 }
                             } label: {
-                                let isSelected = folderStore.sortKey == key
-                                let label = isSelected
-                                    ? "\(key.rawValue) \(folderStore.sortDirection.icon)"
-                                    : key.rawValue
-                                Label(label, systemImage: isSelected ? "checkmark" : "")
+                                sortMenuLabel(for: key)
                             }
                         }
                     } label: {
-                        Image(systemName: folderStore.sortDirection == .asc
-                              ? "arrow.up" : "arrow.down")
+                        Image(systemName: folderStore.sortDirection == .asc ? "arrow.up" : "arrow.down")
                     }
                     .help("排序方式")
                 }
@@ -167,6 +161,15 @@ struct ImageGridView: View {
         let cellWidth = folderStore.thumbnailSize + DS.Thumbnail.spacing
         let windowWidth = NSApp.keyWindow?.contentView?.bounds.width ?? 800
         return max(1, Int(windowWidth / cellWidth))
+    }
+
+    @ViewBuilder
+    private func sortMenuLabel(for key: SortKey) -> some View {
+        if folderStore.sortKey == key {
+            Label("\(key.rawValue) \(folderStore.sortDirection.icon)", systemImage: "checkmark")
+        } else {
+            Text(key.rawValue)
+        }
     }
 }
 

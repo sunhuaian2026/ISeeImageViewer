@@ -54,23 +54,21 @@ class FolderStore: ObservableObject {
     @Published var sortKey: SortKey = {
         let raw = UserDefaults.standard.string(forKey: "sortKey") ?? ""
         return SortKey(rawValue: raw) ?? .name
-    }() {
-        didSet {
-            UserDefaults.standard.set(sortKey.rawValue, forKey: "sortKey")
-            guard !images.isEmpty else { return }
-            Task { images = await sortImages(images) }
-        }
-    }
+    }()
 
     @Published var sortDirection: SortDirection = {
         let raw = UserDefaults.standard.string(forKey: "sortDirection") ?? ""
         return SortDirection(rawValue: raw) ?? .asc
-    }() {
-        didSet {
-            UserDefaults.standard.set(sortDirection.rawValue, forKey: "sortDirection")
-            guard !images.isEmpty else { return }
-            Task { images = await sortImages(images) }
-        }
+    }()
+
+    // 统一入口：同时更新 key + direction，只触发一次排序
+    func applySortKey(_ key: SortKey, direction: SortDirection) {
+        sortKey = key
+        sortDirection = direction
+        UserDefaults.standard.set(key.rawValue, forKey: "sortKey")
+        UserDefaults.standard.set(direction.rawValue, forKey: "sortDirection")
+        guard !images.isEmpty else { return }
+        Task { images = await sortImages(images) }
     }
 
     @Published var thumbnailSize: CGFloat = DS.Thumbnail.defaultSize {
