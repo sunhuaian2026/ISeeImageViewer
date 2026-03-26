@@ -72,23 +72,26 @@ struct ImageGridView: View {
                     .help("调整缩略图大小")
                 }
                 ToolbarItem(placement: .automatic) {
-                    Menu {
-                        Button(sortMenuTitle(for: .name)) {
-                            logToFile("[Button] name tapped")
-                            folderStore.applySortKey(.name, direction: folderStore.sortKey == .name ? folderStore.sortDirection.toggled : .asc)
+                    HStack(spacing: 4) {
+                        Picker("", selection: Binding<SortKey>(
+                            get: { folderStore.sortKey },
+                            set: { key in folderStore.applySortKey(key, direction: .asc) }
+                        )) {
+                            ForEach(SortKey.allCases, id: \.self) { key in
+                                Text(key.rawValue).tag(key)
+                            }
                         }
-                        Button(sortMenuTitle(for: .date)) {
-                            logToFile("[Button] date tapped")
-                            folderStore.applySortKey(.date, direction: folderStore.sortKey == .date ? folderStore.sortDirection.toggled : .asc)
+                        .labelsHidden()
+                        .pickerStyle(.menu)
+                        .help("排序方式")
+                        Button {
+                            folderStore.applySortKey(folderStore.sortKey, direction: folderStore.sortDirection.toggled)
+                        } label: {
+                            Image(systemName: folderStore.sortDirection == .asc ? "arrow.up" : "arrow.down")
                         }
-                        Button(sortMenuTitle(for: .size)) {
-                            logToFile("[Button] size tapped")
-                            folderStore.applySortKey(.size, direction: folderStore.sortKey == .size ? folderStore.sortDirection.toggled : .asc)
-                        }
-                    } label: {
-                        Image(systemName: folderStore.sortDirection == .asc ? "arrow.up" : "arrow.down")
+                        .buttonStyle(.borderless)
+                        .help(folderStore.sortDirection == .asc ? "升序（点击切换降序）" : "降序（点击切换升序）")
                     }
-                    .help("排序方式")
                 }
             }
         }
@@ -164,26 +167,6 @@ struct ImageGridView: View {
         return max(1, Int(windowWidth / cellWidth))
     }
 
-    private func logToFile(_ msg: String) {
-        guard let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else { return }
-        let logURL = appSupport.appendingPathComponent("isee_debug.log")
-        let line = "\(Date()) \(msg)\n"
-        guard let data = line.data(using: .utf8) else { return }
-        if FileManager.default.fileExists(atPath: logURL.path),
-           let handle = try? FileHandle(forWritingTo: logURL) {
-            handle.seekToEndOfFile(); handle.write(data); try? handle.close()
-        } else {
-            try? FileManager.default.createDirectory(at: appSupport, withIntermediateDirectories: true)
-            try? data.write(to: logURL)
-        }
-    }
-
-    private func sortMenuTitle(for key: SortKey) -> String {
-        if folderStore.sortKey == key {
-            return "\(key.rawValue) \(folderStore.sortDirection.icon)"
-        }
-        return key.rawValue
-    }
 }
 
 // MARK: - ThumbnailCell
