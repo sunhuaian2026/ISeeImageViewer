@@ -25,15 +25,20 @@ struct FolderNode: Identifiable, Hashable {
     }
 }
 
-// MARK: - SortOrder
+// MARK: - Sort
 
-enum SortOrder: String, CaseIterable {
-    case nameAsc  = "名称 ↑"
-    case nameDesc = "名称 ↓"
-    case dateAsc  = "日期 ↑"
-    case dateDesc = "日期 ↓"
-    case sizeAsc  = "大小 ↑"
-    case sizeDesc = "大小 ↓"
+enum SortKey: String, CaseIterable {
+    case name = "名称"
+    case date = "日期"
+    case size = "大小"
+}
+
+enum SortDirection: String {
+    case asc  = "asc"
+    case desc = "desc"
+
+    var toggled: SortDirection { self == .asc ? .desc : .asc }
+    var icon: String { self == .asc ? "↑" : "↓" }
 }
 
 // MARK: - FolderStore
@@ -46,12 +51,23 @@ class FolderStore: ObservableObject {
     @Published var selectedImageIndex: Int? = nil
     @Published var isLoadingImages: Bool = false
     @Published var imageCountByFolder: [URL: Int] = [:]
-    @Published var sortOrder: SortOrder = {
-        let raw = UserDefaults.standard.string(forKey: "sortOrder") ?? ""
-        return SortOrder(rawValue: raw) ?? .nameAsc
+    @Published var sortKey: SortKey = {
+        let raw = UserDefaults.standard.string(forKey: "sortKey") ?? ""
+        return SortKey(rawValue: raw) ?? .name
     }() {
         didSet {
-            UserDefaults.standard.set(sortOrder.rawValue, forKey: "sortOrder")
+            UserDefaults.standard.set(sortKey.rawValue, forKey: "sortKey")
+            guard !images.isEmpty else { return }
+            Task { images = await sortImages(images) }
+        }
+    }
+
+    @Published var sortDirection: SortDirection = {
+        let raw = UserDefaults.standard.string(forKey: "sortDirection") ?? ""
+        return SortDirection(rawValue: raw) ?? .asc
+    }() {
+        didSet {
+            UserDefaults.standard.set(sortDirection.rawValue, forKey: "sortDirection")
             guard !images.isEmpty else { return }
             Task { images = await sortImages(images) }
         }
@@ -225,33 +241,29 @@ class FolderStore: ObservableObject {
     }
 
     private func sortImages(_ urls: [URL]) async -> [URL] {
-        let order = sortOrder
+        let key = sortKey
+        let asc = sortDirection == .asc
         return await Task.detached(priority: .userInitiated) {
-            switch order {
-            case .nameAsc:
+            switch key {
+            case .name:
                 return urls.sorted {
-                    $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending
+                    let cmp = $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent)
+                    return asc ? cmp == .orderedAscending : cmp == .orderedDescending
                 }
-            case .nameDesc:
-                return urls.sorted {
-                    $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedDescending
-                }
-            case .dateAsc, .dateDesc:
+            case .date:
                 let keys: Set<URLResourceKey> = [.contentModificationDateKey]
                 let dated: [(URL, Date)] = urls.map { url in
                     let date = (try? url.resourceValues(forKeys: keys))?.contentModificationDate
                     return (url, date ?? .distantPast)
                 }
-                let sorted = dated.sorted { order == .dateAsc ? $0.1 < $1.1 : $0.1 > $1.1 }
-                return sorted.map { $0.0 }
-            case .sizeAsc, .sizeDesc:
+                return dated.sorted { asc ? $0.1 < $1.1 : $0.1 > $1.1 }.map { $0.0 }
+            case .size:
                 let keys: Set<URLResourceKey> = [.fileSizeKey]
                 let sized: [(URL, Int)] = urls.map { url in
                     let size = (try? url.resourceValues(forKeys: keys))?.fileSize
                     return (url, size ?? Int.max)
                 }
-                let sorted = sized.sorted { order == .sizeAsc ? $0.1 < $1.1 : $0.1 > $1.1 }
-                return sorted.map { $0.0 }
+                return sized.sorted { asc ? $0.1 < $1.1 : $0.1 > $1.1 }.map { $0.0 }
             }
         }.value
     }

@@ -73,18 +73,25 @@ struct ImageGridView: View {
                 }
                 ToolbarItem(placement: .automatic) {
                     Menu {
-                        ForEach(SortOrder.allCases, id: \.self) { order in
+                        ForEach(SortKey.allCases, id: \.self) { key in
                             Button {
-                                folderStore.sortOrder = order
+                                if folderStore.sortKey == key {
+                                    folderStore.sortDirection = folderStore.sortDirection.toggled
+                                } else {
+                                    folderStore.sortKey = key
+                                    folderStore.sortDirection = .asc
+                                }
                             } label: {
-                                Label(
-                                    order.rawValue,
-                                    systemImage: folderStore.sortOrder == order ? "checkmark" : ""
-                                )
+                                let isSelected = folderStore.sortKey == key
+                                let label = isSelected
+                                    ? "\(key.rawValue) \(folderStore.sortDirection.icon)"
+                                    : key.rawValue
+                                Label(label, systemImage: isSelected ? "checkmark" : "")
                             }
                         }
                     } label: {
-                        Image(systemName: "arrow.up.arrow.down")
+                        Image(systemName: folderStore.sortDirection == .asc
+                              ? "arrow.up" : "arrow.down")
                     }
                     .help("排序方式")
                 }
