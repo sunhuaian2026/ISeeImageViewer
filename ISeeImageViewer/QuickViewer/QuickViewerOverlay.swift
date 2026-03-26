@@ -62,11 +62,11 @@ struct QuickViewerOverlay: View {
 
                 // 左右导航
                 HStack {
-                    navButton(systemImage: DS.Icon.previous, enabled: viewModel.canGoBack) {
+                    navButton(systemImage: DS.Icon.previous, enabled: viewModel.canGoBack, help: "上一张 (←)") {
                         viewModel.goBack()
                     }
                     Spacer()
-                    navButton(systemImage: DS.Icon.next, enabled: viewModel.canGoForward) {
+                    navButton(systemImage: DS.Icon.next, enabled: viewModel.canGoForward, help: "下一张 (→)") {
                         viewModel.goForward()
                     }
                 }
@@ -180,6 +180,7 @@ struct QuickViewerOverlay: View {
                     .background(Color(white: 0, opacity: 0.35), in: Circle())
             }
             .buttonStyle(.plain)
+            .help("关闭 (ESC)")
 
             Spacer()
 
@@ -219,13 +220,13 @@ struct QuickViewerOverlay: View {
 
     private var bottomToolbar: some View {
         HStack(spacing: DS.Spacing.sm) {
-            toolbarButton(title: "适合", systemImage: "arrow.up.left.and.down.right.magnifyingglass") {
+            toolbarButton(title: "适合 (⌘0)", systemImage: "arrow.up.left.and.down.right.magnifyingglass") {
                 viewModel.resetToFit()
             }
-            toolbarButton(title: "1:1", systemImage: "1.magnifyingglass") {
+            toolbarButton(title: "1:1 (0)", systemImage: "1.magnifyingglass") {
                 viewModel.resetToOneToOne()
             }
-            toolbarButton(title: "缩小", systemImage: "minus.magnifyingglass") {
+            toolbarButton(title: "缩小 (⌘−)", systemImage: "minus.magnifyingglass") {
                 viewModel.zoomOut()
             }
             Text(viewModel.zoomPercent)
@@ -236,7 +237,7 @@ struct QuickViewerOverlay: View {
                 .frame(height: 32)
                 .background(Color(white: 1, opacity: 0.12))
                 .clipShape(RoundedRectangle(cornerRadius: 8))
-            toolbarButton(title: "放大", systemImage: "plus.magnifyingglass") {
+            toolbarButton(title: "放大 (⌘=)", systemImage: "plus.magnifyingglass") {
                 viewModel.zoomIn()
             }
             toolbarButton(title: "全屏 (F)", systemImage: appState.isFullScreen ? "arrow.down.right.and.arrow.up.left" : DS.Icon.fullscreen) {
@@ -295,7 +296,7 @@ struct QuickViewerOverlay: View {
     // MARK: - Helpers
 
     @ViewBuilder
-    private func navButton(systemImage: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+    private func navButton(systemImage: String, enabled: Bool, help: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.title2)
@@ -306,6 +307,7 @@ struct QuickViewerOverlay: View {
         }
         .buttonStyle(.plain)
         .disabled(!enabled)
+        .help(help)
     }
 
     @ViewBuilder
