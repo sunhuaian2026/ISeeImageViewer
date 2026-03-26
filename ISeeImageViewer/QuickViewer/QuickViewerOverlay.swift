@@ -99,6 +99,7 @@ struct QuickViewerOverlay: View {
         .onDisappear {
             hideTask?.cancel()
             appState.showTrafficLights()
+            viewModel.clearPrefetchCache()
         }
         .onContinuousHover { phase in
             switch phase {
