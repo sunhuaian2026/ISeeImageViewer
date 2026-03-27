@@ -127,6 +127,7 @@ struct ContentView: View {
                         quickViewerIndex = index
                     }
                 )
+                .id(idx)
                 .transition(.asymmetric(
                     insertion: .scale(scale: 0.97).combined(with: .opacity),
                     removal:   .scale(scale: 0.97).combined(with: .opacity)

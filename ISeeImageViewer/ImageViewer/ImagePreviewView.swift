@@ -11,6 +11,7 @@ struct ImagePreviewView: View {
     @EnvironmentObject var folderStore: FolderStore
 
     let images: [URL]
+    let startIndex: Int
     let focusTrigger: UUID
     let onDismiss: () -> Void
     let onQuickView: (Int) -> Void
@@ -24,6 +25,7 @@ struct ImagePreviewView: View {
          onDismiss: @escaping () -> Void,
          onQuickView: @escaping (Int) -> Void) {
         self.images = images
+        self.startIndex = startIndex
         self.focusTrigger = focusTrigger
         _currentIndex = State(initialValue: max(0, min(startIndex, images.count - 1)))
         self.onDismiss = onDismiss
@@ -118,6 +120,10 @@ struct ImagePreviewView: View {
                 currentIndex = newIdx
                 folderStore.selectedImageIndex = newIdx
             }
+        }
+        .onChange(of: startIndex) { _, newValue in
+            currentIndex = newValue
+            loadImage()
         }
     }
 
