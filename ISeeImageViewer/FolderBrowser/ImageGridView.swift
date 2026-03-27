@@ -11,7 +11,7 @@ struct ImageGridView: View {
     var onDoubleClick: (Int) -> Void = { _ in }
 
     @FocusState private var isFocused: Bool
-    @State private var highlightedIndex: Int? = nil
+    @State private var highlightedURL: URL? = nil
 
     private var gridColumns: [GridItem] {
         [GridItem(.adaptive(
@@ -55,7 +55,7 @@ struct ImageGridView: View {
             return folderStore.selectedFolder?.lastPathComponent ?? ""
         }())
         .onChange(of: folderStore.images) { _, _ in
-            highlightedIndex = nil
+            highlightedURL = nil
         }
         .toolbar {
             if folderStore.selectedImageIndex == nil {
@@ -112,15 +112,16 @@ struct ImageGridView: View {
         return ScrollViewReader { scrollProxy in
             ScrollView {
                 LazyVGrid(columns: gridColumns, spacing: DS.Thumbnail.spacing) {
-                    ForEach(Array(images.enumerated()), id: \.element) { index, url in
+                    ForEach(Array(images.enumerated()), id: \.element) { _, url in
                         VStack(spacing: DS.Spacing.xs) {
-                            ThumbnailCell(url: url, isHighlighted: highlightedIndex == index, size: folderStore.thumbnailSize)
+                            ThumbnailCell(url: url, isHighlighted: highlightedURL == url, size: folderStore.thumbnailSize)
                                 .onTapGesture(count: 2) {
-                                    onDoubleClick(index)
+                                    guard let idx = folderStore.images.firstIndex(of: url) else { return }
+                                    onDoubleClick(idx)
                                 }
                                 .onTapGesture(count: 1) {
-                                    highlightedIndex = index
-                                    folderStore.selectedImageIndex = index
+                                    highlightedURL = url
+                                    folderStore.selectedImageIndex = folderStore.images.firstIndex(of: url)
                                 }
                             Text(url.deletingPathExtension().lastPathComponent)
                                 .font(.caption2)
@@ -141,8 +142,8 @@ struct ImageGridView: View {
             .onAppear { isFocused = true }
             // Space：进入全窗口查看器
             .onKeyPress(.space) {
-                let target = highlightedIndex ?? 0
                 guard !images.isEmpty else { return .ignored }
+                let target = highlightedURL.flatMap({ folderStore.images.firstIndex(of: $0) }) ?? 0
                 onDoubleClick(target)
                 return .handled
             }
@@ -158,9 +159,10 @@ struct ImageGridView: View {
 
     private func moveHighlight(by delta: Int, colCount: Int, total: Int, proxy: ScrollViewProxy) {
         guard total > 0 else { return }
-        let current = highlightedIndex ?? (delta > 0 ? -1 : 0)
+        let current = highlightedURL.flatMap({ folderStore.images.firstIndex(of: $0) })
+            ?? (delta > 0 ? -1 : 0)
         let next = max(0, min(total - 1, current + delta))
-        highlightedIndex = next
+        highlightedURL = folderStore.images[next]
         withAnimation(DS.Anim.fast) {
             proxy.scrollTo(folderStore.images[next], anchor: .center)
         }
