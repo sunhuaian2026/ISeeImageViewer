@@ -91,6 +91,12 @@ struct ContentView: View {
                 withAnimation(DS.Anim.normal) { showInspector = false }
             }
         }
+        // 排序导致 images 数组变化时，关闭 QuickViewer 防止旧索引错位
+        .onChange(of: folderStore.images) { _, _ in
+            if quickViewerIndex != nil {
+                quickViewerIndex = nil
+            }
+        }
         .background {
             WindowAccessor(appState: appState)
         }

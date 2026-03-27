@@ -68,6 +68,8 @@ class FolderStore: ObservableObject {
         UserDefaults.standard.set(key.rawValue, forKey: "sortKey")
         UserDefaults.standard.set(direction.rawValue, forKey: "sortDirection")
         guard !images.isEmpty else { return }
+        // 排序前清除选中状态，防止旧索引在新数组中指向错误图片
+        selectedImageIndex = nil
         images = sortImagesSync(images)
     }
 
