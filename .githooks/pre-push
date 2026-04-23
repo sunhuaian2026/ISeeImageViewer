@@ -164,19 +164,35 @@ PROMPT_EOF
     "$(git log "$RANGE" --pretty='%h %s')" \
     "$DIFF")
 
-  # run codex (stdin gets the payload; prompt carries the rules)
-  REVIEW=$(printf '%s' "$PAYLOAD" | $TO \
-    codex exec \
-      -s read-only \
-      --ephemeral \
-      --color never \
-      -c 'model_reasoning_effort="high"' \
-      "$PROMPT" 2>&1) || {
+  # run codex (stdin gets payload; prompt carries the rules)
+  # `-o <file>` writes ONLY the agent's final message — avoids grepping the
+  # prompt echoed in codex's startup log.
+  REVIEW_FILE=$(mktemp -t codex-review.XXXXXX)
+  STDERR_FILE=$(mktemp -t codex-stderr.XXXXXX)
+
+  if ! printf '%s' "$PAYLOAD" | $TO \
+      codex exec \
+        -s read-only \
+        --ephemeral \
+        --color never \
+        -o "$REVIEW_FILE" \
+        -c 'model_reasoning_effort="high"' \
+        "$PROMPT" >/dev/null 2>"$STDERR_FILE"; then
     ec=$?
     echo "codex: review failed (exit $ec), allowing push" >&2
+    sed -n '1,15p' "$STDERR_FILE" >&2
     echo "      retry push, or bypass: git push --no-verify" >&2
+    rm -f "$REVIEW_FILE" "$STDERR_FILE"
     continue
-  }
+  fi
+
+  REVIEW=$(cat "$REVIEW_FILE")
+  rm -f "$REVIEW_FILE" "$STDERR_FILE"
+
+  if [ -z "$REVIEW" ]; then
+    echo "codex: empty review output, allowing push" >&2
+    continue
+  fi
 
   # verdict
   if printf '%s\n' "$REVIEW" | grep -q '\[P1\]'; then
