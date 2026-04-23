@@ -87,7 +87,7 @@ class QuickViewerViewModel: ObservableObject {
 }
 ```
 
-**fitScale 计算**（Preview.app + Quick Look 混合策略，commit `<pending>` 修复）：
+**fitScale 计算**（Preview.app + Quick Look 混合策略，commit 4f9fb18 修复）：
 ```swift
 let fit = min(viewport.w / image.w, viewport.h / image.h)
 return fit >= DS.Viewer.nativeScale ? DS.Viewer.nativeScale : fit * DS.Viewer.fitPadding
