@@ -109,16 +109,25 @@ git commit 前的强制 checklist，逐条检查，全部通过才能提交：
 - 发现与 spec 不符的地方，先修复再 commit，不允许带问题提交。
 - 每次 commit 前做一次自我 review：检查有没有硬编码、未处理的错误、遗漏的边界条件。
 
-### 任务收尾：`/go` 自查
+### 任务收尾：`/go` 五步
 
-任务涉及 `.swift` 改动时，收尾前必须跑 `/go`（定义在 `.claude/commands/go.md`）。例外：纯文档 / WIP / 明确是探索性代码实验不走 `/go`。
+任务涉及 `.swift` 改动时，收尾前必须跑 `/go`（定义在 `.claude/commands/go.md`）。纯文档 / scripts / specs 改动 → 跳 Step 1，commit message 末尾加 `[docs-only]`。
 
-`/go` 三步：
-1. **机械自检**：`./scripts/verify.sh`（build 零错零警告 + 规则 grep + 文档同步 + hook 装没装）。exit 0 才继续。
-2. **可选 codex 全项目审查**：`./scripts/verify.sh --with-codex`（跨 3+ 模块或架构重构时才跑，单模块 bugfix 靠 pre-push hook 兜底）。
-3. **PENDING 人工清单**：根据本次改动模块挑相关项给用户真机验证。
+`/go` 五步：
 
-`make verify` / `make verify-codex` 为便捷入口。
+1. **三段式 verify**（`./scripts/verify.sh`，成本递增、遇红即停）：
+   - Stage 1 静态规则（ms）：grep/awk + 文档同步 + git hygiene
+   - Stage 2 编译（30-60s）：`xcodebuild build -quiet`，0 error 才过；warning 非阻塞但必须修
+   - Stage 3 单测（暂 skip，项目无 XCTest target）
+   - 红 → 修 → 重跑，**最多 5 轮**。5 轮仍红就停下来问用户
+2. **文档同步**：对照 `.swift` diff 按「⚠️ 文档同步强制规则」补 Roadmap / CLAUDE.md / specs/<module>.md
+3. **PENDING 人工清单**：追加到 `specs/PENDING-USER-ACTIONS.md`（durable 文件，入库累积），只加本次改动相关项
+4. **commit + push**：`git add` 逐文件明确；push 触发 pre-push hook 做第二道 codex 评审
+5. **一段话汇报**：self-fix 几轮 / 文档动了啥 / PENDING 加几项 / commit hash / hook 结果
+
+可选 `./scripts/verify.sh --with-codex` 在 verify 后追加 codex 全项目审查（跨 3+ 模块或架构重构时才跑）。
+
+`make verify` / `make verify-codex` 便捷入口。完整 log 留 `.verify-logs/`（gitignored）。
 
 ## Pre-Push Codex Review Hook
 

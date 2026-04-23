@@ -1,85 +1,88 @@
 ---
-description: 任务收尾前的完整性自查 — 跑 scripts/verify.sh，然后给用户 PENDING 人工清单
+description: 任务收尾 5 步 — verify 三段 / 文档同步 / PENDING / commit+push / 汇报
 ---
 
-你正在收尾一个任务。按以下步骤逐条执行，**不得跳步、不得草率**。
+任务收尾必跑。5 步依次执行，不得跳步、不得草率。
 
-## Step 1：机械自检
+## Scope 例外（先判断）
 
-运行：
+**0 个 `.swift` 变化**（纯文档 / specs / scripts / .githooks / Makefile 改动）→ **跳 Step 1**，commit message 末尾加 `[docs-only]` 标签，直接进 Step 2-5。
+
+pre-push hook 本身已对 docs-only 短路跳过 codex，`[docs-only]` 是给未来 reviewer 看的语义标签。
+
+---
+
+## Step 1: 三段式 verify（stop on red）
 
 ```bash
 ./scripts/verify.sh
 ```
 
-- 退出码 = 0 → 继续 Step 2
-- 退出码 ≠ 0 → 逐条修到 0 错，再重跑，直到通过。**不允许带失败项往下走。**
-- 如果脚本报 "force unwrap" / "magic number" / "TODO format" 等规则违反，那是你的责任，不是规则太严 —— 修代码，不要改规则或绕过。
+三段成本递增：
+- **Stage 1 静态规则**（毫秒）：grep/awk 扫 `.swift` + 文档同步 + git hygiene
+- **Stage 2 编译**（30-60s）：`xcodebuild build -quiet`，0 error 才过；warning 非阻塞但必须修
+- **Stage 3 单测**（暂 skip，项目无 XCTest target）
 
-## Step 2：codex 全项目审查（可选，慢且花钱）
+**红 → 修代码 → 重跑，最多 5 轮**。
 
-仅在满足以下任一条件时执行：
-- 近期改动跨 3 个以上模块；或
-- 做了架构/交互层面的重构；或
-- 用户明确要求 "跑一次完整审查"
+每轮必须实际修代码，不允许改 `verify.sh` / 改规则 / 加 exception 来绕过。规则是死的，违反就是违反了。
 
-命令：`./scripts/verify.sh --with-codex`
+5 轮仍红 → 停下，向用户说明：
+- 哪一段卡住
+- 每轮做了什么修复
+- 为什么没修掉
+- 你的判断：是规则需要调整，还是需要用户介入
 
-如果只是小 bugfix / 单模块改动 → **跳过 Step 2**，依赖 pre-push hook 的 diff 审查兜底。
+**Warning 观察口子**：Stage 2 成功但有 warning → 不 FAIL 但必须在 Step 5 汇报里列出并说明"下次修掉"或"这次一并修了"。全局规则"没有引入新 warning"是强制的。
 
-## Step 3：产出 PENDING 人工清单
+## Step 2: 文档同步
 
-以下项目**不能自动验证**（远程 Mac 无 GUI，app 运行时表现需真机看）。根据你刚改过的模块挑相关项列给用户，无关的不要硬塞。
+对照本次 `.swift` diff，按 `CLAUDE.md` 的「⚠️ 文档同步强制规则」检查：
 
-### 启动与基本浏览
-- [ ] `make run` 正常启动，无 crash
-- [ ] 授权过的文件夹能展开，缩略图加载
-- [ ] Add Folder 授权新文件夹流程顺畅
+| 改动类型 | 必改文档 |
+|---|---|
+| Bug fix | `specs/Roadmap.md` Bug Fix 记录加行（commit hash 可先占位 `<pending>`） |
+| 新/删/移 `.swift` 文件 | `CLAUDE.md` 文件结构更新 |
+| 完成模块或子功能 | `specs/<module>.md` 当前进度更新 |
+| 模块进入已完成 | `specs/Roadmap.md` 已完成表格加行 |
+| 架构/交互逻辑变化 | `specs/Roadmap.md` 关键架构决策更新 |
 
-### 排序交互
-- [ ] 切换排序方式后，单击缩略图 → 预览显示同一张图（不错位）
-- [ ] 切换排序后双击缩略图 → QuickViewer 打开同一张图
-- [ ] 切换排序后 Space / 方向键导航 → 高亮跟着当前排序顺序
-- [ ] 排序中途关闭 QuickViewer → 不会卡在错误的预览页
+需要更新的文档一起 staged 进同一个 commit。pre-push hook 的文档同步 P1 规则会在 push 时独立校验 —— 这是第二道防线。
 
-### QuickViewer
-- [ ] 双击进入；ESC 退出回列表
-- [ ] 全屏中 ESC → 先退全屏，不关 QuickViewer
-- [ ] 左右方向键切图；滚轮/双击缩放；拖拽平移
-- [ ] 进入时 traffic light 隐藏；退出后恢复（全屏下也能恢复）
+## Step 3: PENDING 人工清单
 
-### 全屏 / 外观
-- [ ] F 键切全屏正常
-- [ ] 外观切换（系统/浅/深）→ `DS.Color.appBackground` / 侧边栏背景 / grid 背景全部跟着变
-- [ ] 浅色模式下 `ImagePreviewView` 方向箭头可见（用 `Color.primary`，不是硬编码 `.white`）
+不能自动验证的项**追加**到 `specs/PENDING-USER-ACTIONS.md`，不要每次都复制全清单。格式：
 
-### Inspector
-- [ ] `⌘I` 开关正常
-- [ ] 选中一张 JPEG → EXIF 字段有值（相机/快门/ISO/GPS）
-- [ ] 切文件夹或取消选图 → Inspector 自动收起；无选图时按钮灰掉
-
-### 缩略图滑块
-- [ ] 拖滑块 → 缩略图尺寸实时响应
-- [ ] 关闭重开 app → 尺寸记住
-
-### 侧边栏
-- [ ] 树形展开/折叠
-- [ ] 选中行在聚焦时是 Accent Color，失焦时是灰色（系统原生行为，别自定义覆盖）
-- [ ] 子文件夹继承父文件夹权限，能打开
-
----
-
-## 输出格式（给用户）
-
-```
-## /go 自查报告
-
-**Step 1 机械自检**: 10 passed, 0 failed
-（如有失败项，列明并已修复；或说明为何未修）
-
-**Step 3 PENDING**（你手动测，测完告诉我）：
-- [ ] <根据本次改动挑的项>
-- [ ] ...
+```markdown
+- [ ] (YYYY-MM-DD / <短 hash>) **类别**: 具体怎么测，要看到什么现象
 ```
 
-修改范围只动 1 个模块时，PENDING 只列该模块相关项。**不要每次都把整份清单全抄给用户 —— 那是懒，不是完整。**
+类别：启动 / 排序 / QuickViewer / 全屏外观 / Inspector / 缩略图 / 侧边栏 / 其他。
+
+判断原则：**本次 `.swift` 改动可能影响的运行时行为 → 追加**；无关的不加。比如只改了 `ImageGridView` 的排序 bug，就只追加"排序交互"类别相关项，不追加 Inspector / QuickViewer 的。
+
+commit hash 在 Step 4 commit 完成后回填到这里（先 `<pending>`，commit 后 edit 改成真的 hash）。
+
+## Step 4: commit + push
+
+- `git add` **逐文件明确**（绝不 `git add -A` / `git add .`，避免带 `.DS_Store` / `xcuserstate` / 其他无关变更进 commit）
+- commit message 简洁有信息量，docs-only 改动末尾加 `[docs-only]`
+- `git push origin main` → 触发 `.githooks/pre-push`（codex 再 review 一次，独立 gate）
+- hook 阻了 `[P1]` → 修 → 从 Step 1 重来（不要用 `--no-verify` 绕过，除非真的误报且你能写清误报理由）
+
+## Step 5: 一段话汇报
+
+格式：
+
+```
+## /go 完成
+
+- **verify**: N 轮 self-fix（第 1 轮挂了 X，修 Y；第 2 轮 …）；最终 K passed / 0 failed
+- **文档同步**: Roadmap Bug Fix 加 M 行 / CLAUDE.md 文件结构更新 / specs/<x>.md 当前进度前进到 …
+- **PENDING 加 J 项**: <类别>（具体测什么）× J
+- **commits**: <hash1> <标题>; <hash2> <标题>
+- **pre-push hook**: CLEAN / 或 [P2] 警告（列出）
+- **warning 观察**: Stage 2 build 有 N 条新 warning，已修 / 保留到下次（原因）
+```
+
+汇报务必真实 —— self-fix 几轮就写几轮，PENDING 加几项就写几项，不虚报。

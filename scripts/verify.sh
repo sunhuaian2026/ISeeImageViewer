@@ -1,8 +1,21 @@
 #!/bin/bash
-# scripts/verify.sh — ISeeImageViewer 机械自检
-#   ./scripts/verify.sh              mechanical only (~30-60s)
-#   ./scripts/verify.sh --with-codex  加 codex 全项目审查 (~2-5min, costs $)
-# 返回 0 = 全过；非 0 = 有失败项
+# scripts/verify.sh — 三段式 oracle (cheap → expensive, stop on red)
+#
+#   stage 1/3  静态规则查      毫秒     grep/awk + 文档同步 + git hygiene
+#   stage 2/3  编译             30-60s   xcodebuild build -quiet (isolated derived data)
+#   stage 3/3  单测             skipped  ISeeImageViewer 暂无 XCTest target
+#
+# flags:
+#   --with-codex   追加 codex 全项目审查（慢且花钱，~2-5min, ~$0.1-0.3）
+#
+# logs:
+#   完整日志留 .verify-logs/*.log（gitignored）— stderr 只喂前 N 行 actionable
+#
+# 设计原则：
+#   - 按成本递增，红即停（前面挂了，后面更贵的没必要跑）
+#   - -quiet + grep 过滤，只喂 CC actionable 那几十行
+#   - Warning 非阻塞但打印（留观察口子；"不引入新 warning" 靠 CC 自查）
+#   - DerivedData 与 make build 的 ./build 隔离，不互相污染
 
 set -u
 
@@ -10,66 +23,53 @@ WITH_CODEX=0
 for arg in "$@"; do
   case "$arg" in
     --with-codex) WITH_CODEX=1 ;;
-    -h|--help)
-      sed -n '2,6p' "$0"; exit 0 ;;
-    *) echo "unknown arg: $arg" >&2; exit 2 ;;
+    -h|--help) sed -n '2,21p' "$0"; exit 0 ;;
+    *) echo "unknown: $arg" >&2; exit 2 ;;
   esac
 done
 
-PASS=0
-FAIL=0
+LOG_DIR=.verify-logs
+DERIVED=./.derived-verify
+mkdir -p "$LOG_DIR"
+STAMP=$(date +%Y%m%d-%H%M%S)
+
+PASS=0; FAIL=0
 pass() { printf '  [\xe2\x9c\x93] %s\n' "$1"; PASS=$((PASS+1)); }
 fail() { printf '  [\xe2\x9c\x97] %s\n' "$1"; FAIL=$((FAIL+1)); }
+skip() { printf '  [\xe2\x9c\x88] %s\n' "$1"; }
+note() { printf '      %s\n' "$1"; }
 
+die_if_red() {
+  if [ "$FAIL" -gt 0 ]; then
+    echo
+    echo "━━ STOP: stage $1 red ($FAIL fail), later stages skipped ━━" >&2
+    echo "━━ summary: $PASS passed, $FAIL failed ━━"
+    exit 1
+  fi
+}
+
+echo "=== verify.sh — 三段式 oracle (cheap → expensive, stop on red) ==="
+
+# ═══════════════════════════════════════════════════════════════════
+# Stage 1/3: 静态规则查（ms）
+# ═══════════════════════════════════════════════════════════════════
+echo
+echo "── Stage 1/3: 静态规则查 ──"
 SRC=$(find ISeeImageViewer -name '*.swift' 2>/dev/null)
 
-echo "=== /go verify ==="
-
-# ── 1. build ──────────────────────────────────────────────
-echo
-echo "1. make build"
-LOG=$(mktemp -t verify-build.XXXXXX)
-# 源码级 warning/error 才算数：匹配 <file>.swift|m|mm|h:<line>:<col>: warning|error:
-# 其他（如 appintentsmetadataprocessor 的 toolchain 提示）忽略。
-if make build >"$LOG" 2>&1; then
-  CODE_WARNS=$(grep -cE '\.(swift|m|mm|h):[0-9]+:[0-9]+: warning: ' "$LOG" || true)
-  CODE_WARNS=${CODE_WARNS:-0}
-  if [ "$CODE_WARNS" -eq 0 ]; then
-    TOTAL_WARNS=$(grep -cE ' warning: ' "$LOG" || true)
-    TOTAL_WARNS=${TOTAL_WARNS:-0}
-    NON_CODE=$((TOTAL_WARNS - CODE_WARNS))
-    if [ "$NON_CODE" -gt 0 ]; then
-      pass "build: 0 errors, 0 code warnings (${NON_CODE} non-code toolchain warnings ignored)"
-    else
-      pass "build: 0 errors, 0 warnings"
-    fi
-  else
-    fail "build: $CODE_WARNS code warnings"
-    grep -E '\.(swift|m|mm|h):[0-9]+:[0-9]+: warning: ' "$LOG" | head -5 | sed 's/^/      /'
-  fi
-else
-  fail "build: xcodebuild exited non-zero"
-  tail -20 "$LOG" | sed 's/^/      /'
-fi
-rm -f "$LOG"
-
-# ── 2. code rules (grep) ─────────────────────────────────
-echo
-echo "2. code rules"
-
+# 1a. 代码规则 grep ───────────────────────────────
 TB=$(grep -nE 'try!' $SRC 2>/dev/null || true)
-if [ -z "$TB" ]; then pass "no try!"; else fail "try! found"; printf '%s\n' "$TB" | sed 's/^/      /'; fi
+[ -z "$TB" ] && pass "no try!" || { fail "try! found"; printf '%s\n' "$TB" | sed 's/^/      /'; }
 
 AB=$(grep -nE '\bas![^=]' $SRC 2>/dev/null || true)
-if [ -z "$AB" ]; then pass "no as!"; else fail "as! found"; printf '%s\n' "$AB" | sed 's/^/      /'; fi
+[ -z "$AB" ] && pass "no as!" || { fail "as! found"; printf '%s\n' "$AB" | sed 's/^/      /'; }
 
 BT=$(grep -nE '//[[:space:]]*TODO:' $SRC 2>/dev/null \
      | grep -vE '//[[:space:]]*TODO:[[:space:]]*\[[0-9]{4}-[0-9]{2}-[0-9]{2}\]' || true)
 if [ -z "$BT" ]; then
   pass "TODO format: all match // TODO: [YYYY-MM-DD]"
 else
-  fail "TODO format violations"
-  printf '%s\n' "$BT" | sed 's/^/      /'
+  fail "TODO format violations"; printf '%s\n' "$BT" | sed 's/^/      /'
 fi
 
 APPLE='^(SwiftUI|Foundation|AppKit|Combine|ImageIO|UniformTypeIdentifiers|CoreGraphics|CoreImage|CoreText|CoreFoundation|CoreServices|OSLog|Security|IOKit|QuartzCore|Metal|AVFoundation|AVKit|MapKit|PhotosUI|Photos|PDFKit|WebKit|StoreKit|LocalAuthentication|AuthenticationServices|Network|NetworkExtension|SystemConfiguration|UserNotifications|EventKit|Contacts|Intents|CoreLocation|CoreBluetooth|CoreMotion|CoreML|Vision|NaturalLanguage|Speech|Accelerate|simd|os|Darwin|Dispatch|XCTest)$'
@@ -79,8 +79,7 @@ if [ -z "$BAD_IMPS" ]; then
   NUM=$(printf '%s\n' "$IMPS" | sed '/^$/d' | wc -l | tr -d ' ')
   pass "imports: Apple frameworks only ($NUM unique)"
 else
-  fail "non-Apple imports"
-  printf '%s\n' "$BAD_IMPS" | sed 's/^/      /'
+  fail "non-Apple imports"; printf '%s\n' "$BAD_IMPS" | sed 's/^/      /'
 fi
 
 VIEWER_FILES=""
@@ -91,8 +90,7 @@ if [ -n "$(echo $VIEWER_FILES | tr -d ' ')" ]; then
   if [ -z "$SP" ]; then
     pass ".spring: none in viewer-family files"
   else
-    fail ".spring in viewer files (use DS.Anim.*)"
-    printf '%s\n' "$SP" | sed 's/^/      /'
+    fail ".spring in viewer files (use DS.Anim.*)"; printf '%s\n' "$SP" | sed 's/^/      /'
   fi
 fi
 
@@ -102,15 +100,11 @@ if [ -f "$IPV" ]; then
   if [ -z "$HC" ]; then
     pass "ImagePreviewView: no hardcoded .white/.black"
   else
-    fail "ImagePreviewView: hardcoded .white/.black"
-    printf '%s\n' "$HC" | sed 's/^/      /'
+    fail "ImagePreviewView hardcoded .white/.black"; printf '%s\n' "$HC" | sed 's/^/      /'
   fi
 fi
 
-# ── 3. doc sync ──────────────────────────────────────────
-echo
-echo "3. doc sync"
-
+# 1b. 文档同步 ───────────────────────────────
 RM=specs/Roadmap.md
 if [ -f "$RM" ]; then
   MH=$(awk '
@@ -120,14 +114,9 @@ if [ -f "$RM" ]; then
       n=split($0, a, "|"); if (n<5) next
       h=a[4]; gsub(/^ +| +$/, "", h)
       if (h=="" || h !~ /^[0-9a-f]{6,}$/) print NR": "a[2]"—hash=["h"]"
-    }
-  ' "$RM")
-  if [ -z "$MH" ]; then
-    pass "Roadmap 已完成 rows have commit hashes"
-  else
-    fail "Roadmap rows missing hash"
-    printf '%s\n' "$MH" | sed 's/^/      /'
-  fi
+    }' "$RM")
+  [ -z "$MH" ] && pass "Roadmap 已完成 rows have commit hashes" \
+               || { fail "Roadmap rows missing hash"; printf '%s\n' "$MH" | sed 's/^/      /'; }
 
   MS=$(awk -F'|' '/^## 已完成模块/{i=1;next} /^## /&&i{i=0} i&&/^\|/&&!/^\| 模块/&&!/^\|---/&&!/^\|:---/{s=$3;gsub(/^ +| +$/,"",s); if(s~/\.md$/) print s}' "$RM" | sort -u)
   MISSING=""
@@ -137,65 +126,102 @@ if [ -f "$RM" ]; then
       MISSING="$MISSING$s\n"
     fi
   done <<< "$MS"
-  if [ -z "$MISSING" ]; then
-    pass "all Roadmap-referenced specs exist"
-  else
-    fail "missing specs"
-    printf '%b' "$MISSING" | sed 's/^/      /'
-  fi
+  [ -z "$MISSING" ] && pass "all Roadmap-referenced specs exist" \
+                    || { fail "missing specs"; printf '%b' "$MISSING" | sed 's/^/      /'; }
 else
   fail "$RM not found"
 fi
 
-# ── 4. git hygiene ───────────────────────────────────────
-echo
-echo "4. git hygiene"
+# 1c. git hygiene ───────────────────────────────
 HP=$(git config --get core.hooksPath 2>/dev/null || echo "")
-if [ "$HP" = ".githooks" ]; then
-  pass "core.hooksPath=.githooks"
+[ "$HP" = ".githooks" ] && pass "core.hooksPath=.githooks" \
+                        || fail "core.hooksPath unset — run: make hooks-install"
+[ -x .githooks/pre-push ] && pass ".githooks/pre-push executable" \
+                          || fail ".githooks/pre-push not executable — run: make hooks-install"
+
+die_if_red 1
+
+# ═══════════════════════════════════════════════════════════════════
+# Stage 2/3: 编译（30-60s）
+# ═══════════════════════════════════════════════════════════════════
+echo
+echo "── Stage 2/3: xcodebuild build -quiet ──"
+BUILD_LOG="$LOG_DIR/build-$STAMP.log"
+
+xcodebuild build \
+  -project ISeeImageViewer.xcodeproj \
+  -scheme ISeeImageViewer \
+  -configuration Debug \
+  -derivedDataPath "$DERIVED" \
+  -quiet >"$BUILD_LOG" 2>&1
+BUILD_EXIT=$?
+
+if [ "$BUILD_EXIT" -eq 0 ]; then
+  CODE_WARNS=$(grep -cE '\.(swift|m|mm|h):[0-9]+:[0-9]+: warning: ' "$BUILD_LOG" || true)
+  CODE_WARNS=${CODE_WARNS:-0}
+  if [ "$CODE_WARNS" -eq 0 ]; then
+    pass "build: SUCCEEDED, 0 code warnings"
+  else
+    # warning 非阻塞（不计 FAIL），但必须打印提示 — "不引入新 warning" 靠 CC 自查
+    pass "build: SUCCEEDED"
+    echo "      [!] $CODE_WARNS code warnings — 按全局规则不得引入新 warning，请 CC 自查修复："
+    grep -E '\.(swift|m|mm|h):[0-9]+:[0-9]+: warning: ' "$BUILD_LOG" | head -10 | sed 's/^/        /'
+    echo "      完整 log: $BUILD_LOG"
+  fi
 else
-  fail "core.hooksPath not set — run: make hooks-install"
-fi
-if [ -x .githooks/pre-push ]; then
-  pass ".githooks/pre-push executable"
-else
-  fail ".githooks/pre-push not executable — run: make hooks-install"
+  fail "build: xcodebuild exit=$BUILD_EXIT"
+  note "first 30 actionable lines:"
+  grep -E ' error: |undefined symbol|Swift Compiler Error|fatal error' "$BUILD_LOG" | head -30 | sed 's/^/        /'
+  note "完整 log: $BUILD_LOG"
 fi
 
-# ── 5. optional codex audit ──────────────────────────────
+die_if_red 2
+
+# ═══════════════════════════════════════════════════════════════════
+# Stage 3/3: 单测（当前 skip）
+# ═══════════════════════════════════════════════════════════════════
+echo
+echo "── Stage 3/3: xcodebuild test ──"
+skip "skipped: ISeeImageViewer 暂无 XCTest target"
+note "补 test bundle 后在 verify.sh 取消下方注释启用:"
+note "  xcodebuild test -project ... -scheme ... -destination 'platform=macOS' \\"
+note "    -derivedDataPath \"$DERIVED\" -quiet >\"\$TEST_LOG\" 2>&1"
+
+# ═══════════════════════════════════════════════════════════════════
+# Optional: codex 全项目审查
+# ═══════════════════════════════════════════════════════════════════
 if [ "$WITH_CODEX" -eq 1 ]; then
   echo
-  echo "5. codex full-project audit (slow)"
+  echo "── Optional: codex 全项目审查 ──"
   if ! command -v codex >/dev/null 2>&1; then
     fail "codex binary not found"
   else
-    RF=$(mktemp -t verify-codex.XXXXXX)
-    TO=""
-    command -v timeout >/dev/null 2>&1 && TO="timeout 600"
-    PROMPT='Audit the current working tree of ISeeImageViewer against CLAUDE.md + specs/UI.md hard rules. Output ONLY issues, one per line:
+    CODEX_LOG="$LOG_DIR/codex-$STAMP.log"
+    TO=""; command -v timeout >/dev/null 2>&1 && TO="timeout 600"
+    PROMPT='Audit the ISeeImageViewer working tree against CLAUDE.md + specs/UI.md hard rules. Output ONLY issues, one per line:
 [P1|P2] <path>:<line> — <issue>
 If no issues: output exactly: CLEAN
 
 Focus on: force unwrap / magic numbers / single public type per file / TODO format / non-Apple imports / async-await compliance / DS.* usage in UI constants / .spring in viewer-family / hardcoded .white or .black in ImagePreviewView / QuickViewerOverlay dark-only colors.'
     if $TO codex exec -s read-only --ephemeral --color never \
-        -o "$RF" -c 'model_reasoning_effort="high"' "$PROMPT" >/dev/null 2>&1; then
-      R=$(cat "$RF")
+        -o "$CODEX_LOG" -c 'model_reasoning_effort="high"' "$PROMPT" >/dev/null 2>&1; then
+      R=$(cat "$CODEX_LOG")
       if [ -z "$R" ]; then
         fail "codex returned empty output"
       elif printf '%s\n' "$R" | grep -q '\[P1\]'; then
-        fail "codex found [P1] issues"
+        fail "codex [P1] issues"
         printf '%s\n' "$R" | sed 's/^/      /'
       elif printf '%s\n' "$R" | grep -q '\[P2\]'; then
         pass "codex: no [P1]"
-        echo "      [P2] warnings:"
+        note "[P2] warnings:"
         printf '%s\n' "$R" | grep '\[P2\]' | sed 's/^/        /'
       else
         pass "codex: CLEAN"
       fi
     else
       fail "codex exec failed or timed out"
+      note "log: $CODEX_LOG"
     fi
-    rm -f "$RF"
   fi
 fi
 
