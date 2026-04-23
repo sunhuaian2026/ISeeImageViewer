@@ -90,7 +90,9 @@ class QuickViewerViewModel: ObservableObject {
 **fitScale 计算**（Preview.app + Quick Look 混合策略，commit `<pending>` 修复）：
 ```swift
 let fit = min(viewport.w / image.w, viewport.h / image.h)
-return fit >= 1.0 ? 1.0 : fit * DS.Viewer.fitPadding  // 0.9
+return fit >= DS.Viewer.nativeScale ? DS.Viewer.nativeScale : fit * DS.Viewer.fitPadding
+// DS.Viewer.nativeScale = 1.0（1:1 原生像素 sentinel）
+// DS.Viewer.fitPadding  = 0.9（大图 fit 的窗口占比）
 // 图 ≤ 窗口：保 1:1 原生像素（不上采样，小图不拉伸变糊）
 // 图 >  窗口：缩到窗口 90% 占比，四周留呼吸边
 ```

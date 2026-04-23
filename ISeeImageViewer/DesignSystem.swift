@@ -56,7 +56,9 @@ enum DS {
         // 缩放范围（QuickViewerViewModel 依赖）
         static let minZoom: CGFloat = 0.1
         static let maxZoom: CGFloat = 16.0
-        // 适合窗口缩放：大图缩到窗口 fitPadding 占比，四周留呼吸边；小图 (≤ 窗口) 保 1:1 不放大
+        // 原生 1:1 scale sentinel（视图不做任何变换，按图片原生像素尺寸呈现）
+        static let nativeScale: CGFloat = 1.0
+        // 适合窗口缩放：大图缩到窗口 fitPadding 占比，四周留呼吸边；小图 (≤ 窗口) 保 nativeScale 不上采样
         static let fitPadding: CGFloat = 0.9
     }
 
