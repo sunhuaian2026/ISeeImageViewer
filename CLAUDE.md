@@ -123,7 +123,7 @@ git commit 前的强制 checklist，逐条检查，全部通过才能提交：
 2. **文档同步**：对照 `.swift` diff 按「⚠️ 文档同步强制规则」补 Roadmap / CLAUDE.md / specs/<module>.md
 3. **PENDING 人工清单**：追加到 `specs/PENDING-USER-ACTIONS.md`（durable 文件，入库累积），只加本次改动相关项
 4. **commit + push**：`git add` 逐文件明确；push 触发 pre-push hook 做第二道 codex 评审
-5. **一段话汇报**：self-fix 几轮 / 文档动了啥 / PENDING 加几项 / commit hash / hook 结果
+5. **一段话汇报**：**第一行必须独立显示编译结果**（`BUILD SUCCEEDED — 0 errors, 0 code warnings`），不得仅用 verify 的汇总数字替代；其后 self-fix 几轮 / 文档动了啥 / PENDING 加几项 / commit hash / hook 结果
 
 可选 `./scripts/verify.sh --with-codex` 在 verify 后追加 codex 全项目审查（跨 3+ 模块或架构重构时才跑）。
 

@@ -77,6 +77,7 @@ commit hash 在 Step 4 commit 完成后回填到这里（先 `<pending>`，commi
 ```
 ## /go 完成
 
+- **编译**: ✓ BUILD SUCCEEDED — 0 errors, 0 code warnings（xcodebuild Debug）
 - **verify**: N 轮 self-fix（第 1 轮挂了 X，修 Y；第 2 轮 …）；最终 K passed / 0 failed
 - **文档同步**: Roadmap Bug Fix 加 M 行 / CLAUDE.md 文件结构更新 / specs/<x>.md 当前进度前进到 …
 - **PENDING 加 J 项**: <类别>（具体测什么）× J
@@ -85,4 +86,10 @@ commit hash 在 Step 4 commit 完成后回填到这里（先 `<pending>`，commi
 - **warning 观察**: Stage 2 build 有 N 条新 warning，已修 / 保留到下次（原因）
 ```
 
-汇报务必真实 —— self-fix 几轮就写几轮，PENDING 加几项就写几项，不虚报。
+**编译行是硬约束**：交付用户人工测试前必须显眼独立展示 `BUILD SUCCEEDED + 0 errors/warnings`，**禁止**仅用 verify 的 `11 passed / 0 failed` 数字替代（汇总数字读者需要脑补是否含编译，不够直接）。
+
+编译失败或有 warnings 时，编译行改成具体信息（错误数/前几条错误路径+行号），而不是跳过这一行。
+
+纯 docs-only 改动（0 .swift 变化）无需编译，但编译行必须写 `[docs-only] 跳过`，让用户一眼看到没编译是合理的。
+
+汇报务必真实 —— self-fix 几轮就写几轮，PENDING 加几项就写几项，编译过就过、挂就挂，不虚报。
