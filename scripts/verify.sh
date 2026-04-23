@@ -29,7 +29,7 @@ for arg in "$@"; do
 done
 
 LOG_DIR=.verify-logs
-DERIVED=./.derived-verify
+BUILD_DIR=./build     # 必须与 Makefile 的 BUILD_DIR 一致：verify 编的 .app 就是 make run 打开的那个
 mkdir -p "$LOG_DIR"
 STAMP=$(date +%Y%m%d-%H%M%S)
 
@@ -152,7 +152,7 @@ xcodebuild build \
   -project ISeeImageViewer.xcodeproj \
   -scheme ISeeImageViewer \
   -configuration Debug \
-  -derivedDataPath "$DERIVED" \
+  CONFIGURATION_BUILD_DIR="$BUILD_DIR" \
   -quiet >"$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
 
@@ -185,7 +185,7 @@ echo "── Stage 3/3: xcodebuild test ──"
 skip "skipped: ISeeImageViewer 暂无 XCTest target"
 note "补 test bundle 后在 verify.sh 取消下方注释启用:"
 note "  xcodebuild test -project ... -scheme ... -destination 'platform=macOS' \\"
-note "    -derivedDataPath \"$DERIVED\" -quiet >\"\$TEST_LOG\" 2>&1"
+note "    CONFIGURATION_BUILD_DIR=\"$BUILD_DIR\" -quiet >\"\$TEST_LOG\" 2>&1"
 
 # ═══════════════════════════════════════════════════════════════════
 # Optional: codex 全项目审查
