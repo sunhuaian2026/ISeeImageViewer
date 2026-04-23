@@ -109,6 +109,17 @@ git commit 前的强制 checklist，逐条检查，全部通过才能提交：
 - 发现与 spec 不符的地方，先修复再 commit，不允许带问题提交。
 - 每次 commit 前做一次自我 review：检查有没有硬编码、未处理的错误、遗漏的边界条件。
 
+### 任务收尾：`/go` 自查
+
+任务涉及 `.swift` 改动时，收尾前必须跑 `/go`（定义在 `.claude/commands/go.md`）。例外：纯文档 / WIP / 明确是探索性代码实验不走 `/go`。
+
+`/go` 三步：
+1. **机械自检**：`./scripts/verify.sh`（build 零错零警告 + 规则 grep + 文档同步 + hook 装没装）。exit 0 才继续。
+2. **可选 codex 全项目审查**：`./scripts/verify.sh --with-codex`（跨 3+ 模块或架构重构时才跑，单模块 bugfix 靠 pre-push hook 兜底）。
+3. **PENDING 人工清单**：根据本次改动模块挑相关项给用户真机验证。
+
+`make verify` / `make verify-codex` 为便捷入口。
+
 ## Pre-Push Codex Review Hook
 
 `.githooks/pre-push` 在 `git push` 时调用 codex（read-only sandbox + high reasoning）审查待推 diff（`.swift` + `*.md`），发现 `[P1]` 阻塞 push，`[P2]` 仅告警。

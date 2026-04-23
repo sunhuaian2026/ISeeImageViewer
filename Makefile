@@ -1,4 +1,4 @@
-.PHONY: build run clean hooks-install hooks-uninstall
+.PHONY: build run clean hooks-install hooks-uninstall verify verify-codex
 
 BUILD_DIR = ./build
 
@@ -13,7 +13,7 @@ clean:
 	rm -rf $(BUILD_DIR)
 
 hooks-install:
-	chmod +x .githooks/pre-push
+	chmod +x .githooks/pre-push scripts/verify.sh
 	git config core.hooksPath .githooks
 	@echo "✓ git hooks installed (core.hooksPath=.githooks)"
 	@echo "  bypass one push:  git push --no-verify"
@@ -23,3 +23,11 @@ hooks-install:
 hooks-uninstall:
 	-git config --unset core.hooksPath
 	@echo "✓ git hooks disabled (core.hooksPath unset)"
+
+verify:
+	@chmod +x scripts/verify.sh 2>/dev/null || true
+	@./scripts/verify.sh
+
+verify-codex:
+	@chmod +x scripts/verify.sh 2>/dev/null || true
+	@./scripts/verify.sh --with-codex
