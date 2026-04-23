@@ -108,3 +108,18 @@ git commit 前的强制 checklist，逐条检查，全部通过才能提交：
 - 编译通过后，对照 specs/[模块名].md 逐条检查接口和边界条件是否都已实现。
 - 发现与 spec 不符的地方，先修复再 commit，不允许带问题提交。
 - 每次 commit 前做一次自我 review：检查有没有硬编码、未处理的错误、遗漏的边界条件。
+
+## Pre-Push Codex Review Hook
+
+`.githooks/pre-push` 在 `git push` 时调用 codex（read-only sandbox + high reasoning）审查待推 diff（`.swift` + `*.md`），发现 `[P1]` 阻塞 push，`[P2]` 仅告警。
+
+**安装一次**：`make hooks-install`（设 `core.hooksPath=.githooks`）
+
+**绕过方式**：
+- 单次紧急：`git push --no-verify`
+- 本次 session：`SKIP_CODEX_REVIEW=1 git push`
+- 按 commit 跳过：commit message 含 `[skip-codex]` 或 `[wip]`
+
+**规则覆盖**（见 `.githooks/pre-push` 的 PROMPT）：通用代码规则 + UI 硬编码/DS.* / `.spring` 禁用 / QuickViewerOverlay 深色 / 文档同步硬规则。
+
+**缓存**：通过的 `local_sha` 写入 `.git/codex-reviewed-<sha>`，retry 不重复审。
