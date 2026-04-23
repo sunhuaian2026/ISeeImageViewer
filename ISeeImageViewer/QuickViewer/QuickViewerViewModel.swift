@@ -151,11 +151,15 @@ class QuickViewerViewModel: ObservableObject {
 
     // MARK: - Private
 
+    // 打开默认自适应策略（Preview + Quick Look 混合）：
+    //   图 ≤ 窗口：保 1:1 原生像素（避免上采样模糊，小图不强拉伸）
+    //   图 >  窗口：缩到窗口 DS.Viewer.fitPadding 占比，四周留呼吸边
     func fitScale(for image: NSImage, in viewport: CGSize) -> CGFloat {
         guard image.size.width > 0, image.size.height > 0 else { return 1.0 }
         let scaleW = viewport.width / image.size.width
         let scaleH = viewport.height / image.size.height
-        return min(scaleW, scaleH, 1.0)
+        let fit = min(scaleW, scaleH)
+        return fit >= 1.0 ? 1.0 : fit * DS.Viewer.fitPadding
     }
 
     private func clampOffset() {

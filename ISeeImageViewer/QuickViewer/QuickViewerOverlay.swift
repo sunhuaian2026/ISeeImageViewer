@@ -151,10 +151,15 @@ struct QuickViewerOverlay: View {
     @ViewBuilder
     private var imageLayer: some View {
         if let nsImage = viewModel.currentNSImage {
+            // Explicit frame = nativeSize × scale，替代 .scaledToFit() + .scaleEffect 的双变换。
+            // 原先双变换导致 scale 被 fit 容器的隐式缩放再乘一次，图只剩窗口 30-40%。
+            // 现在 scale 的语义与 ViewModel 一致：相对原生像素尺寸的缩放倍率。
             Image(nsImage: nsImage)
                 .resizable()
-                .scaledToFit()
-                .scaleEffect(viewModel.scale)
+                .frame(
+                    width: nsImage.size.width * viewModel.scale,
+                    height: nsImage.size.height * viewModel.scale
+                )
                 .offset(viewModel.offset)
                 .animation(nil, value: viewModel.scale)
                 .animation(nil, value: viewModel.offset)

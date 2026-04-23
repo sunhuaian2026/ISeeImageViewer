@@ -87,11 +87,15 @@ class QuickViewerViewModel: ObservableObject {
 }
 ```
 
-**fitScale 计算：**
+**fitScale 计算**（Preview.app + Quick Look 混合策略，commit `<pending>` 修复）：
 ```swift
-min(viewport.width / image.width, viewport.height / image.height, 1.0)
-// 大图缩小适应，小图不放大（保持原始尺寸）
+let fit = min(viewport.w / image.w, viewport.h / image.h)
+return fit >= 1.0 ? 1.0 : fit * DS.Viewer.fitPadding  // 0.9
+// 图 ≤ 窗口：保 1:1 原生像素（不上采样，小图不拉伸变糊）
+// 图 >  窗口：缩到窗口 90% 占比，四周留呼吸边
 ```
+
+> **历史**：旧实现 `min(scaleW, scaleH, 1.0)` 和 `QuickViewerOverlay.imageLayer` 的 `.scaledToFit() + .scaleEffect(scale)` 双变换叠加，导致大图打开只占窗口 30-40%（双 fit 再乘一次 scale）。修复把 imageLayer 改用 `.frame(width: native * scale, height: native * scale)` 单一变换，scale 语义统一为"相对原生像素的倍率"。
 
 ---
 
