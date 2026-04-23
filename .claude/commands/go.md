@@ -77,24 +77,21 @@ commit hash 在 Step 4 commit 完成后回填到这里（先 `<pending>`，commi
 ```
 ## /go 完成
 
-- **编译**: ✓ BUILD SUCCEEDED — 0 errors, 0 code warnings；./build/ISeeImageViewer.app mtime <HH:MM>（HEAD commit time <HH:MM>）
+- **编译**: ✓ BUILD SUCCEEDED — 0 errors, 0 code warnings；./build/ISeeImageViewer.app mtime <HH:MM>（HEAD commit time <HH:MM>，用户本地脚本可拉取）
 - **verify**: N 轮 self-fix（第 1 轮挂了 X，修 Y；第 2 轮 …）；最终 K passed / 0 failed
 - **文档同步**: Roadmap Bug Fix 加 M 行 / CLAUDE.md 文件结构更新 / specs/<x>.md 当前进度前进到 …
 - **PENDING 加 J 项**: <类别>（具体测什么）× J
 - **commits**: <hash1> <标题>; <hash2> <标题>
 - **pre-push hook**: CLEAN / 或 [P2] 警告（列出）
 - **warning 观察**: Stage 2 build 有 N 条新 warning，已修 / 保留到下次（原因）
-
-## 请先 Cmd+Q 完全退出 app 旧实例，再：
-  make run        # 或 open ./build/ISeeImageViewer.app
 ```
 
-**编译行是硬约束**：交付用户人工测试前必须显眼独立展示 `BUILD SUCCEEDED + 0 errors/warnings + ./build/.app mtime`，**禁止**仅用 verify 的 `11 passed / 0 failed` 数字替代。`./build/.app` mtime 要用 `stat -f %Sm -t %H:%M build/ISeeImageViewer.app/Contents/MacOS/ISeeImageViewer` 取实时值，证明二进制就是当前 HEAD 的产物（这是"verify.sh 和 make run 共用 ./build/"的单一事实源，不能绕过）。
+**工作流**：CC 在**开发机**写代码 + `./scripts/verify.sh` 跑 Stage 2 编译到 `./build/ISeeImageViewer.app`；用户在**本地机**通过脚本直接拉取 `./build/` 下的二进制到本地测试。CC 的责任终点 = `./build/.app` 必须是当前 HEAD 的产物，**不必**教用户怎么 open / Cmd+Q / make run —— 那是用户本地自动化的事。
+
+**编译行是硬约束**：交付前必须显眼独立展示 `BUILD SUCCEEDED + 0 errors/warnings + ./build/.app mtime`，**禁止**仅用 verify 的 `11 passed / 0 failed` 数字替代。mtime 必须用 `stat -f %Sm -t %H:%M build/ISeeImageViewer.app/Contents/MacOS/ISeeImageViewer` 取**实时值**，证明二进制与当前 HEAD 一致，不是几小时前残留。
 
 编译失败或有 warnings 时，编译行改成具体信息（错误数/前几条错误路径+行号），而不是跳过这一行。
 
-纯 docs-only 改动（0 .swift 变化）无需编译，编译行写 `[docs-only] 跳过`，让用户一眼看到没编译是合理的；交付指令段也可省略（没东西可测）。
-
-**"Cmd+Q 退旧实例"是硬约束**：macOS 的 `open` 对同路径已 open 的 app 只唤起旧进程，**不会自动重启**加载新二进制。每次交付都必须显眼提醒，不能省。
+纯 docs-only 改动（0 .swift 变化）无需编译，编译行写 `[docs-only] 跳过`，让用户一眼看到没编译是合理的。
 
 汇报务必真实 —— self-fix 几轮就写几轮，PENDING 加几项就写几项，编译过就过、挂就挂，二进制时间戳就是实际读到的值，不虚报。
