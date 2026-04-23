@@ -7,6 +7,7 @@ import SwiftUI
 
 struct FolderSidebarView: View {
     @EnvironmentObject var folderStore: FolderStore
+    @State private var isDropTargeted: Bool = false
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -49,6 +50,24 @@ struct FolderSidebarView: View {
             }
             .navigationTitle("文件夹")
         } // ZStack
+        // Finder 拖拽入口：整个 sidebar 接 URL，filter 目录后走 FolderStore 批量入口
+        .dropDestination(for: URL.self) { urls, _ in
+            folderStore.addFolders(from: urls)
+            return true
+        } isTargeted: { hovering in
+            withAnimation(DS.Anim.fast) { isDropTargeted = hovering }
+        }
+        .overlay {
+            if isDropTargeted {
+                RoundedRectangle(cornerRadius: DS.Sidebar.dropBorderCornerRadius)
+                    .strokeBorder(
+                        DS.Color.glowPrimary.opacity(DS.Sidebar.dropBorderOpacity),
+                        lineWidth: DS.Sidebar.dropBorderWidth
+                    )
+                    .padding(DS.Sidebar.dropBorderPadding)
+                    .allowsHitTesting(false)
+            }
+        }
     }
 
     // MARK: - 行视图

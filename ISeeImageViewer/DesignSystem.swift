@@ -39,6 +39,11 @@ enum DS {
         static let rowHeight: CGFloat = 36
         static let rowPaddingH: CGFloat = 8
         static let iconSize: CGFloat = 16
+        // 拖拽添加文件夹 drop target 高亮
+        static let dropBorderWidth: CGFloat = 2
+        static let dropBorderPadding: CGFloat = 4
+        static let dropBorderCornerRadius: CGFloat = 10
+        static let dropBorderOpacity: Double = 0.45
     }
 
     // MARK: - Viewer

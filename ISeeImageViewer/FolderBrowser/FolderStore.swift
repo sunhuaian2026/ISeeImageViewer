@@ -123,9 +123,16 @@ class FolderStore: ObservableObject {
         panel.allowsMultipleSelection = false
         panel.prompt = "选择文件夹"
         guard panel.runModal() == .OK, let url = panel.url else { return }
+        addFolder(from: url)
+    }
+
+    // Finder 拖入 / 程序化入口。非目录 URL 静默忽略；已存在则跳到选中。
+    // autoSelect 默认 true；批量添加（addFolders 多 URL 分支）时传 false 保留原选择。
+    func addFolder(from url: URL, autoSelect: Bool = true) {
+        guard url.hasDirectoryPath else { return }
 
         if rootFolders.contains(where: { $0.url == url }) {
-            selectFolder(url)
+            if autoSelect { selectFolder(url) }
             return
         }
 
@@ -145,7 +152,22 @@ class FolderStore: ObservableObject {
                 $0.url.lastPathComponent.localizedStandardCompare($1.url.lastPathComponent) == .orderedAscending
             }
             await countImagesInTree(node)
-            selectFolder(url)
+            if autoSelect { selectFolder(url) }
+        }
+    }
+
+    // 批量添加（Finder 多选拖入）：单个 auto-select，多个保留当前选择避免焦点跳。
+    func addFolders(from urls: [URL]) {
+        let folders = urls.filter { $0.hasDirectoryPath }
+        switch folders.count {
+        case 0:
+            return
+        case 1:
+            addFolder(from: folders[0], autoSelect: true)
+        default:
+            for url in folders {
+                addFolder(from: url, autoSelect: false)
+            }
         }
     }
 
