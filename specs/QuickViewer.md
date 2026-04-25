@@ -166,7 +166,11 @@ ZStack {
 
 负责：
 - **滚轮缩放**（以光标位置为中心）
-- **拖拽平移**（scale > fitScale 时启用）
+- **拖拽平移**（`canPan == scale > fitScale` 时启用，1:1 倍率：鼠标 1pt = 图 1pt）
+  - `mouseDragged` 把 `event.deltaX / -event.deltaY` 累加到 VM `panBy(deltaX:deltaY:)`
+  - `event.deltaX/Y` 是自上次 event 的 **incremental** 位移（不是 cumulative），直接累加；y 反转因为 AppKit y↑、SwiftUI offset y↓
+  - VM `panBy` 内部 `clampOffset()` 兜底边界，不漏白
+  - 旧实现用 `dragStartOffset` 做"基准 + cumulative delta"，但 re-accumulate 是 NO-OP，导致 offset 永远 = `mouseDown 时 offset + 当前 event 的小 delta`，连续拖图像在小范围内跳变（用户感觉抖动 + 拖不动）
 - **双击切换** Fit ↔ 1:1
 
 ```swift
@@ -224,7 +228,7 @@ MagnificationGesture()
 |------|------|
 | 图片比窗口小（小图） | fitScale ≤ 1.0，不放大，居中显示 |
 | 缩放到最小/大继续操作 | clamp 到 DS.Viewer.minZoom / maxZoom，静默限制 |
-| 拖拽超出图片边界 | clampOffset() 阻止图片拖离视口 |
+| 拖拽超出图片边界 | `panBy` 内部调 `clampOffset()` 阻止图片拖离视口 |
 | 切换图片时 | resetToFit()，offset = .zero |
 | 图片加载中 | ProgressView 居中，加载完后 fade in |
 | 图片列表为空 | 不显示覆盖层（selectedImageIndex 不会被设置）|

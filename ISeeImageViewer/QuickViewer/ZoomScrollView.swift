@@ -23,7 +23,6 @@ struct ZoomScrollView: NSViewRepresentable {
 
     class ZoomView: NSView {
         var viewModel: QuickViewerViewModel?
-        private var dragStartOffset: CGSize = .zero
 
         override var acceptsFirstResponder: Bool { true }
 
@@ -48,29 +47,21 @@ struct ZoomScrollView: NSViewRepresentable {
 
         override func mouseDown(with event: NSEvent) {
             guard let vm = viewModel else { return }
-            if event.clickCount == 2 {
-                switch vm.zoomMode {
-                case .fit: vm.resetToOneToOne()
-                default:   vm.resetToFit()
-                }
-            } else {
-                dragStartOffset = vm.offset
+            guard event.clickCount == 2 else { return }
+            switch vm.zoomMode {
+            case .fit: vm.resetToOneToOne()
+            default:   vm.resetToFit()
             }
         }
 
         // MARK: Drag → pan
-
+        //
+        // event.deltaX/Y 是 NSEvent 自上次 mouseDragged 以来的 incremental 位移，
+        // 直接累加到 vm.offset。AppKit y 朝上、SwiftUI .offset y 朝下，y 取反。
+        // VM.panBy 内部 clampOffset 兜底边界。
         override func mouseDragged(with event: NSEvent) {
             guard let vm = viewModel, vm.canPan else { return }
-            vm.offset = CGSize(
-                width: dragStartOffset.width + event.deltaX * 2,
-                height: dragStartOffset.height - event.deltaY * 2
-            )
-            // Re-accumulate drag delta
-            dragStartOffset = CGSize(
-                width: vm.offset.width - event.deltaX * 2,
-                height: vm.offset.height + event.deltaY * 2
-            )
+            vm.panBy(deltaX: event.deltaX, deltaY: -event.deltaY)
         }
     }
 }

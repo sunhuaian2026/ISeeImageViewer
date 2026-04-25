@@ -132,6 +132,16 @@ class QuickViewerViewModel: ObservableObject {
         clampOffset()
     }
 
+    // 拖拽平移：每次 mouseDragged 累加增量，由 VM 内 clampOffset 兜底边界。
+    // 由 ZoomScrollView.mouseDragged 调用；event.delta 是自上次 event 的 incremental 位移。
+    func panBy(deltaX: CGFloat, deltaY: CGFloat) {
+        offset = CGSize(
+            width: offset.width + deltaX,
+            height: offset.height + deltaY
+        )
+        clampOffset()
+    }
+
     func applyViewportSize(_ size: CGSize) {
         guard size != viewportSize else { return }
         viewportSize = size
