@@ -18,11 +18,15 @@ struct ImagePreviewView: View {
 
     @FocusState private var isFocused: Bool
     @State private var currentIndex: Int
-    @StateObject private var vm = ImagePreviewViewModel()
+    // vm 由 ContentView 通过 @StateObject 持有并注入：ContentView.body 上有 .id(idx)
+    // 会让 ImagePreviewView 在每次方向键切换时整个重建，若 vm 用 @StateObject 跟视图
+    // 生命周期绑定，cache 会被一并销毁。提到 ContentView 后 cache 跨重建持续。
+    @ObservedObject var vm: ImagePreviewViewModel
 
-    init(images: [URL], startIndex: Int, focusTrigger: UUID = UUID(),
+    init(vm: ImagePreviewViewModel, images: [URL], startIndex: Int, focusTrigger: UUID = UUID(),
          onDismiss: @escaping () -> Void,
          onQuickView: @escaping (Int) -> Void) {
+        self._vm = ObservedObject(wrappedValue: vm)
         self.images = images
         self.startIndex = startIndex
         self.focusTrigger = focusTrigger
@@ -107,14 +111,14 @@ struct ImagePreviewView: View {
         .focusable()
         .focused($isFocused)
         .onAppear { loadImage(); isFocused = true }
-        .onDisappear { vm.clearCache() }
         .onChange(of: focusTrigger) { isFocused = true }
         .onKeyPress(.escape)     { onDismiss(); return .handled }
         .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
         .onKeyPress(.rightArrow) { navigate(by: +1); return .handled }
         .onKeyPress(.space) { onQuickView(currentIndex); return .handled }
+        // cache clearCache 由 ContentView 统一在 selectedFolder / selectedImageIndex==nil /
+        // images 变化时触发；这里只做 currentIndex 的 URL 重映射，避免与 ContentView 重复
         .onChange(of: images) { oldImages, newImages in
-            vm.clearCache()
             guard oldImages.indices.contains(currentIndex) else { return }
             let currentURL = oldImages[currentIndex]
             if let newIdx = newImages.firstIndex(of: currentURL) {

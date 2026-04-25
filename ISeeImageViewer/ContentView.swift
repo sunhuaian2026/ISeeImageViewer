@@ -11,6 +11,9 @@ struct ContentView: View {
     @State private var showInspector = false
     @State private var quickViewerIndex: Int? = nil
     @State private var previewFocusTrigger: UUID = UUID()
+    // ImagePreviewView 上的 .id(idx) 会让它在每次方向键切换时整个重建；vm 提到 ContentView
+    // 用 @StateObject 持有，跨重建保留 prefetchCache，方向键命中即时显示无 spinner
+    @StateObject private var previewVM = ImagePreviewViewModel()
 
     private var inspectorURL: URL? {
         guard let idx = folderStore.selectedImageIndex,
@@ -85,10 +88,12 @@ struct ContentView: View {
         // 切换文件夹或取消图片选择时，自动关闭 Inspector
         .onChange(of: folderStore.selectedFolder) { _, _ in
             withAnimation(DS.Anim.normal) { showInspector = false }
+            previewVM.clearCache()
         }
         .onChange(of: folderStore.selectedImageIndex) { _, newValue in
             if newValue == nil {
                 withAnimation(DS.Anim.normal) { showInspector = false }
+                previewVM.clearCache()
             }
         }
         // 排序导致 images 数组变化时，关闭 QuickViewer 防止旧索引错位
@@ -96,6 +101,7 @@ struct ContentView: View {
             if quickViewerIndex != nil {
                 quickViewerIndex = nil
             }
+            previewVM.clearCache()
         }
         .background {
             WindowAccessor(appState: appState)
@@ -117,6 +123,7 @@ struct ContentView: View {
 
             if let idx = folderStore.selectedImageIndex {
                 ImagePreviewView(
+                    vm: previewVM,
                     images: folderStore.images,
                     startIndex: idx,
                     focusTrigger: previewFocusTrigger,
