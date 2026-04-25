@@ -39,6 +39,8 @@ final class ImagePreviewViewModel: ObservableObject {
         }
 
         nsImage = nil
+        // prefetch 与当前张磁盘读并发启动；不等首张读完才排队，避免用户 < 1s 按方向键时 prefetch 还没跑
+        prefetchAdjacent(images: images, currentIndex: index)
         imageLoadTask = Task { [weak self] in
             let result: NSImage? = await Task.detached(priority: .userInitiated) {
                 guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
@@ -47,7 +49,6 @@ final class ImagePreviewViewModel: ObservableObject {
             }.value
             guard let self, !Task.isCancelled else { return }
             self.nsImage = result
-            self.prefetchAdjacent(images: images, currentIndex: index)
         }
     }
 
@@ -70,7 +71,7 @@ final class ImagePreviewViewModel: ObservableObject {
         for idx in targets {
             let url = images[idx]
             prefetchTasks[idx] = Task { [weak self] in
-                let img: CGImage? = await Task.detached(priority: .background) {
+                let img: CGImage? = await Task.detached(priority: .utility) {
                     guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
                           let cg = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return nil }
                     return cg
