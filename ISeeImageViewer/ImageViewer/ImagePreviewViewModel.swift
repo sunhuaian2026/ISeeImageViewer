@@ -11,6 +11,10 @@ import AppKit
 import Combine
 
 final class ImagePreviewViewModel: ObservableObject {
+    // 预加载/缓存窗口（与 QuickViewerViewModel 策略对齐）
+    private static let prefetchRadius = 1   // 预加载 currentIndex ± 1
+    private static let cacheKeepRadius = 2  // 缓存保留 currentIndex ± 2，超出 evict
+
     @Published var nsImage: NSImage?
 
     private var imageLoadTask: Task<Void, Never>?
@@ -53,7 +57,10 @@ final class ImagePreviewViewModel: ObservableObject {
     }
 
     private func prefetchAdjacent(images: [URL], currentIndex: Int) {
-        let targets = [currentIndex - 1, currentIndex + 1]
+        let r = Self.prefetchRadius
+        let targets = (-r...r)
+            .filter { $0 != 0 }
+            .map { currentIndex + $0 }
             .filter { $0 >= 0 && $0 < images.count }
             .filter { prefetchCache[$0] == nil && prefetchTasks[$0] == nil }
 
@@ -74,7 +81,8 @@ final class ImagePreviewViewModel: ObservableObject {
     }
 
     private func evictCacheIfNeeded(currentIndex: Int) {
-        let keepRange = (currentIndex - 2)...(currentIndex + 2)
+        let r = Self.cacheKeepRadius
+        let keepRange = (currentIndex - r)...(currentIndex + r)
         prefetchCache.keys
             .filter { !keepRange.contains($0) }
             .forEach { prefetchCache.removeValue(forKey: $0) }
