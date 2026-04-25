@@ -18,8 +18,7 @@ struct ImagePreviewView: View {
 
     @FocusState private var isFocused: Bool
     @State private var currentIndex: Int
-    @State private var nsImage: NSImage?
-    @State private var loadTask: Task<Void, Never>?
+    @StateObject private var vm = ImagePreviewViewModel()
 
     init(images: [URL], startIndex: Int, focusTrigger: UUID = UUID(),
          onDismiss: @escaping () -> Void,
@@ -47,7 +46,7 @@ struct ImagePreviewView: View {
             .allowsHitTesting(false)
 
             // 图片
-            if let img = nsImage {
+            if let img = vm.nsImage {
                 Image(nsImage: img)
                     .resizable()
                     .scaledToFit()
@@ -108,12 +107,14 @@ struct ImagePreviewView: View {
         .focusable()
         .focused($isFocused)
         .onAppear { loadImage(); isFocused = true }
+        .onDisappear { vm.clearCache() }
         .onChange(of: focusTrigger) { isFocused = true }
         .onKeyPress(.escape)     { onDismiss(); return .handled }
         .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
         .onKeyPress(.rightArrow) { navigate(by: +1); return .handled }
         .onKeyPress(.space) { onQuickView(currentIndex); return .handled }
         .onChange(of: images) { oldImages, newImages in
+            vm.clearCache()
             guard oldImages.indices.contains(currentIndex) else { return }
             let currentURL = oldImages[currentIndex]
             if let newIdx = newImages.firstIndex(of: currentURL) {
@@ -140,16 +141,8 @@ struct ImagePreviewView: View {
     // MARK: - Image Loading
 
     private func loadImage() {
-        let url = images[currentIndex]
-        nsImage = nil
-        loadTask?.cancel()
-        loadTask = Task {
-            let img: NSImage? = await Task.detached(priority: .userInitiated) {
-                NSImage(contentsOf: url)
-            }.value
-            guard !Task.isCancelled else { return }
-            nsImage = img
-        }
+        guard images.indices.contains(currentIndex) else { return }
+        vm.load(images: images, index: currentIndex)
     }
 
     // MARK: - Nav Button

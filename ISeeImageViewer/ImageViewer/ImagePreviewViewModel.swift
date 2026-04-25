@@ -1,0 +1,82 @@
+//
+//  ImagePreviewViewModel.swift
+//  ISeeImageViewer
+//
+//  ImagePreviewView 的状态管理 + ±1 预加载缓存。
+//  与 QuickViewerViewModel 的 prefetch 策略对齐：方向键切换命中缓存零延迟。
+//
+
+import Foundation
+import AppKit
+import Combine
+
+final class ImagePreviewViewModel: ObservableObject {
+    @Published var nsImage: NSImage?
+
+    private var imageLoadTask: Task<Void, Never>?
+    private var prefetchCache: [Int: CGImage] = [:]
+    private var prefetchTasks: [Int: Task<Void, Never>] = [:]
+
+    func load(images: [URL], index: Int) {
+        guard images.indices.contains(index) else {
+            nsImage = nil
+            return
+        }
+        let url = images[index]
+
+        if let cached = prefetchCache[index] {
+            nsImage = NSImage(cgImage: cached, size: NSSize(width: cached.width, height: cached.height))
+            prefetchAdjacent(images: images, currentIndex: index)
+            return
+        }
+
+        nsImage = nil
+        imageLoadTask?.cancel()
+        imageLoadTask = Task { [weak self] in
+            let result: NSImage? = await Task.detached(priority: .userInitiated) {
+                guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
+                      let cg = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return nil }
+                return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+            }.value
+            guard let self, !Task.isCancelled else { return }
+            self.nsImage = result
+            self.prefetchAdjacent(images: images, currentIndex: index)
+        }
+    }
+
+    func clearCache() {
+        imageLoadTask?.cancel()
+        imageLoadTask = nil
+        prefetchTasks.values.forEach { $0.cancel() }
+        prefetchTasks.removeAll()
+        prefetchCache.removeAll()
+    }
+
+    private func prefetchAdjacent(images: [URL], currentIndex: Int) {
+        let targets = [currentIndex - 1, currentIndex + 1]
+            .filter { $0 >= 0 && $0 < images.count }
+            .filter { prefetchCache[$0] == nil && prefetchTasks[$0] == nil }
+
+        for idx in targets {
+            let url = images[idx]
+            prefetchTasks[idx] = Task { [weak self] in
+                let img: CGImage? = await Task.detached(priority: .background) {
+                    guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
+                          let cg = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return nil }
+                    return cg
+                }.value
+                guard let self, !Task.isCancelled, let img else { return }
+                self.prefetchCache[idx] = img
+                self.prefetchTasks.removeValue(forKey: idx)
+                self.evictCacheIfNeeded(currentIndex: currentIndex)
+            }
+        }
+    }
+
+    private func evictCacheIfNeeded(currentIndex: Int) {
+        let keepRange = (currentIndex - 2)...(currentIndex + 2)
+        prefetchCache.keys
+            .filter { !keepRange.contains($0) }
+            .forEach { prefetchCache.removeValue(forKey: $0) }
+    }
+}

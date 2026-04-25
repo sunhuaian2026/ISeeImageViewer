@@ -52,7 +52,8 @@ ISeeImageViewer/
     │   ├── FolderSidebarView.swift  ← 侧边栏（树形展开/折叠、badge、右键菜单）
     │   └── ImageGridView.swift      ← 缩略图网格 + ThumbnailCell + loadThumbnail()
     ├── ImageViewer/
-    │   └── ImagePreviewView.swift   ← 单击后内嵌预览（简单展示，双击触发 QuickViewer）
+    │   ├── ImagePreviewView.swift       ← 单击后内嵌预览（简单展示，双击触发 QuickViewer）
+    │   └── ImagePreviewViewModel.swift  ← 预览页 ±1 预加载缓存，方向键切换零延迟
     ├── QuickViewer/
     │   ├── QuickViewerViewModel.swift  ← ZoomMode + 缩放/导航逻辑
     │   ├── ZoomScrollView.swift        ← NSViewRepresentable（滚轮/双击/拖拽）
