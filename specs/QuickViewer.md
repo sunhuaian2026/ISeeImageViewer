@@ -167,10 +167,11 @@ ZStack {
 负责：
 - **滚轮缩放**（以光标位置为中心）
 - **拖拽平移**（`canPan == scale > fitScale` 时启用，1:1 倍率：鼠标 1pt = 图 1pt）
-  - `mouseDragged` 把 `event.deltaX / -event.deltaY` 累加到 VM `panBy(deltaX:deltaY:)`
-  - `event.deltaX/Y` 是自上次 event 的 **incremental** 位移（不是 cumulative），直接累加；y 反转因为 AppKit y↑、SwiftUI offset y↓
+  - `mouseDragged` 把 `event.deltaX / event.deltaY` 累加到 VM `panBy(deltaX:deltaY:)`
+  - `event.deltaX/Y` 是自上次 event 的 **incremental** 位移（不是 cumulative），直接累加
+  - y 不取反：`NSEvent.mouseDragged.deltaY` 是 device/screen 坐标系（y↓ 为正：鼠标向下拖 deltaY > 0），跟 SwiftUI `.offset` 同向，直接累加。早期实现误以为 deltaY 跟 AppKit view 坐标 y↑ 同向所以取反，结果鼠标向上→图向下（98573e9 之后由用户实测发现，方向修正后 commit 跟随补丁）
   - VM `panBy` 内部 `clampOffset()` 兜底边界，不漏白
-  - 旧实现用 `dragStartOffset` 做"基准 + cumulative delta"，但 re-accumulate 是 NO-OP，导致 offset 永远 = `mouseDown 时 offset + 当前 event 的小 delta`，连续拖图像在小范围内跳变（用户感觉抖动 + 拖不动）
+  - 旧实现（第一版 fix 前）用 `dragStartOffset` 做"基准 + cumulative delta"，但 re-accumulate 是 NO-OP，导致 offset 永远 = `mouseDown 时 offset + 当前 event 的小 delta`，连续拖图像在小范围内跳变（用户感觉抖动 + 拖不动）
 - **双击切换** Fit ↔ 1:1
 
 ```swift

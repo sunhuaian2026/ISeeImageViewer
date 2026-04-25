@@ -57,11 +57,13 @@ struct ZoomScrollView: NSViewRepresentable {
         // MARK: Drag → pan
         //
         // event.deltaX/Y 是 NSEvent 自上次 mouseDragged 以来的 incremental 位移，
-        // 直接累加到 vm.offset。AppKit y 朝上、SwiftUI .offset y 朝下，y 取反。
-        // VM.panBy 内部 clampOffset 兜底边界。
+        // 直接累加到 vm.offset。NSEvent.mouseDragged 的 deltaY 跟 SwiftUI .offset
+        // 同向（y↓ 为正：鼠标向下 deltaY > 0），不需要取反 —— 早期注释写"AppKit y↑
+        // → SwiftUI y↓ 取反"是错的，那是 view 坐标的语义，mouseDragged.delta 是
+        // device/screen 坐标。VM.panBy 内部 clampOffset 兜底边界。
         override func mouseDragged(with event: NSEvent) {
             guard let vm = viewModel, vm.canPan else { return }
-            vm.panBy(deltaX: event.deltaX, deltaY: -event.deltaY)
+            vm.panBy(deltaX: event.deltaX, deltaY: event.deltaY)
         }
     }
 }
