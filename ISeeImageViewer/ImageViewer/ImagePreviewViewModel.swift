@@ -28,6 +28,10 @@ final class ImagePreviewViewModel: ObservableObject {
         }
         let url = images[index]
 
+        // 任何切换都先取消上一张未完成的磁盘读取，避免后到的旧 task 覆盖当前图
+        imageLoadTask?.cancel()
+        imageLoadTask = nil
+
         if let cached = prefetchCache[index] {
             nsImage = NSImage(cgImage: cached, size: NSSize(width: cached.width, height: cached.height))
             prefetchAdjacent(images: images, currentIndex: index)
@@ -35,7 +39,6 @@ final class ImagePreviewViewModel: ObservableObject {
         }
 
         nsImage = nil
-        imageLoadTask?.cancel()
         imageLoadTask = Task { [weak self] in
             let result: NSImage? = await Task.detached(priority: .userInitiated) {
                 guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
