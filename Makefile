@@ -5,6 +5,8 @@ BUILD_DIR = ./build
 build:
 	xcodebuild -project ISeeImageViewer.xcodeproj -scheme ISeeImageViewer \
 		-configuration Debug CONFIGURATION_BUILD_DIR=$(BUILD_DIR) build
+	@touch $(BUILD_DIR)/ISeeImageViewer.app
+	@echo "  ✓ touched $(BUILD_DIR)/ISeeImageViewer.app — Finder mtime 同步到当前编译时刻"
 
 run: build
 	open $(BUILD_DIR)/ISeeImageViewer.app
