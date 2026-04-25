@@ -9,22 +9,32 @@
 ```
 ISeeImageViewer/
 ├── CLAUDE.md                        ← 本文件（开发规范 + 上下文）
-├── Makefile                         ← make build / make run / make clean
+├── Makefile                         ← make build / run / clean / hooks-install / verify / verify-codex
 ├── ISeeImageViewer.xcodeproj/
+├── .githooks/
+│   └── pre-push                     ← codex 自动 review 待推 .swift+.md diff，[P1] 阻塞
+├── scripts/
+│   └── verify.sh                    ← /go Step 1 三段 oracle（grep + xcodebuild + 单测占位）
+├── .claude/
+│   └── commands/
+│       └── go.md                    ← /go 五步收尾命令（CC slash command）
+├── .verify-logs/                    ← gitignored，verify.sh 完整 log 留存
+├── build/                           ← gitignored，xcodebuild 产物（make run 和 verify.sh 共用）
 ├── specs/                           ← 所有模块规范文档
 │   ├── UI.md                        ← UI 设计规范（唯一来源），含颜色自适应方案
-│   ├── Roadmap.md                   ← 总体进度与 TODO
+│   ├── Roadmap.md                   ← 总体进度 + Bug Fix 记录 + 关键架构决策
+│   ├── PENDING-USER-ACTIONS.md      ← 不能自动验证的人工测试项 durable 队列（Pending / Done 两段）
 │   ├── AppState.md                  ← ✅ 全屏 + 外观模式（AppState / WindowAccessor）
 │   ├── BookmarkManager.md           ← ✅ 已完成
 │   ├── FolderStore.md               ← ✅ 已完成
-│   ├── FolderBrowserView.md         ← ✅ 已完成
+│   ├── FolderBrowserView.md         ← ✅ 已完成（含 Finder 拖拽添加文件夹 子节）
 │   ├── QuickViewer.md               ← ✅ 已完成
 │   ├── SortFilter.md                ← ✅ 已完成
 │   ├── KeyboardShortcuts.md         ← ✅ 已完成
 │   ├── Inspector.md                 ← ✅ 已完成
 │   ├── TrafficLightHide.md          ← ✅ 已完成
 │   ├── ThumbnailSizeSlider.md       ← ✅ 已完成
-│   └── Prefetch.md                  ← 待开发
+│   └── Prefetch.md                  ← 已完成
 ├── docs/
 │   └── archive/                     ← 已归档的历史规范文档
 │       ├── UIRefresh.md             ← 已归档
