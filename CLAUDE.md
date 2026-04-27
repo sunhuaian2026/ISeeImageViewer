@@ -20,6 +20,9 @@ ISeeImageViewer/
 │       └── go.md                    ← /go 五步收尾命令（CC slash command）
 ├── .verify-logs/                    ← gitignored，verify.sh 完整 log 留存
 ├── build/                           ← gitignored，xcodebuild 产物（make run 和 verify.sh 共用）
+├── assets/
+│   └── icon-1024.png                ← AppIcon master（Claude Design 出，眼睛 Cool Violet 方向）
+│                                       10 个尺寸由 sips 派生到 Assets.xcassets/AppIcon.appiconset/
 ├── specs/                           ← 所有模块规范文档
 │   ├── UI.md                        ← UI 设计规范（唯一来源），含颜色自适应方案
 │   ├── Roadmap.md                   ← 总体进度 + Bug Fix 记录 + 关键架构决策
