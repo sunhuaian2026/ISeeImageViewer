@@ -24,10 +24,10 @@
 
 （本段 CC 维护，追加新项。测完移到 Done。）
 
-- [ ] (2026-04-27 / `<pending>`) **缩略图**：含同名不同后缀文件夹（如 4.jpg + 4.png）→ 点击各 cell（含相邻同基名两张）→ 视觉点的就是预览出的，多次切换不漂移
-- [ ] (2026-04-27 / `<pending>`) **缩略图**：单击 highlight 高亮跟随点击；双击进 QuickViewer；Space 进 QuickViewer；ESC 关 QuickViewer 回到原 cell highlight 不丢
-- [ ] (2026-04-27 / `<pending>`) **缩略图**：方向键导航在 grid 上还能用（左右/上下，wrap 在边界正确，scrollTo center）
-- [ ] (2026-04-27 / `<pending>`) **排序**：切换排序后再点缩略图 → 视觉与预览一致（之前 ScrollView `.id(sortKey-direction)` 强制重建已删，要确认 LazyVGrid 自身能正确响应数组重排）
+- [ ] (2026-04-27 / `c112059`) **缩略图**：含同名不同后缀文件夹（如 4.jpg + 4.png）→ 点击各 cell（含相邻同基名两张）→ 视觉点的就是预览出的，多次切换不漂移
+- [ ] (2026-04-27 / `c112059`) **缩略图**：单击 highlight 高亮跟随点击；双击进 QuickViewer；Space 进 QuickViewer；ESC 关 QuickViewer 回到原 cell highlight 不丢
+- [ ] (2026-04-27 / `c112059`) **缩略图**：方向键导航在 grid 上还能用（左右/上下，wrap 在边界正确，scrollTo center）
+- [ ] (2026-04-27 / `c112059`) **排序**：切换排序后再点缩略图 → 视觉与预览一致（之前 ScrollView `.id(sortKey-direction)` 强制重建已删，要确认 LazyVGrid 自身能正确响应数组重排）
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
 
 ---
