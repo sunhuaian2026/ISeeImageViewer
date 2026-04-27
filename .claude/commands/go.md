@@ -77,7 +77,7 @@ commit hash 在 Step 4 commit 完成后回填到这里（先 `<pending>`，commi
 ```
 ## /go 完成
 
-- **编译**: ✓ BUILD SUCCEEDED — 0 errors, 0 code warnings；./build/ISeeImageViewer.app mtime <HH:MM>（HEAD commit time <HH:MM>，用户本地脚本可拉取）
+- **编译**: ✓ BUILD SUCCEEDED — 0 errors, 0 code warnings；./build/Glance.app mtime <HH:MM>（HEAD commit time <HH:MM>，用户本地脚本可拉取）
 - **verify**: N 轮 self-fix（第 1 轮挂了 X，修 Y；第 2 轮 …）；最终 K passed / 0 failed
 - **文档同步**: Roadmap Bug Fix 加 M 行 / CLAUDE.md 文件结构更新 / specs/<x>.md 当前进度前进到 …
 - **PENDING 加 J 项**: <类别>（具体测什么）× J
@@ -86,9 +86,9 @@ commit hash 在 Step 4 commit 完成后回填到这里（先 `<pending>`，commi
 - **warning 观察**: Stage 2 build 有 N 条新 warning，已修 / 保留到下次（原因）
 ```
 
-**工作流**：CC 在**开发机**写代码 + `./scripts/verify.sh` 跑 Stage 2 编译到 `./build/ISeeImageViewer.app`；用户在**本地机**通过脚本直接拉取 `./build/` 下的二进制到本地测试。CC 的责任终点 = `./build/.app` 必须是当前 HEAD 的产物，**不必**教用户怎么 open / Cmd+Q / make run —— 那是用户本地自动化的事。
+**工作流**：CC 在**开发机**写代码 + `./scripts/verify.sh` 跑 Stage 2 编译到 `./build/Glance.app`；用户在**本地机**通过脚本直接拉取 `./build/` 下的二进制到本地测试。CC 的责任终点 = `./build/.app` 必须是当前 HEAD 的产物，**不必**教用户怎么 open / Cmd+Q / make run —— 那是用户本地自动化的事。
 
-**编译行是硬约束**：交付前必须显眼独立展示 `BUILD SUCCEEDED + 0 errors/warnings + ./build/.app mtime`，**禁止**仅用 verify 的 `11 passed / 0 failed` 数字替代。mtime 必须用 `stat -f %Sm -t %H:%M build/ISeeImageViewer.app/Contents/MacOS/ISeeImageViewer` 取**实时值**，证明二进制与当前 HEAD 一致，不是几小时前残留。
+**编译行是硬约束**：交付前必须显眼独立展示 `BUILD SUCCEEDED + 0 errors/warnings + ./build/.app mtime`，**禁止**仅用 verify 的 `11 passed / 0 failed` 数字替代。mtime 必须用 `stat -f %Sm -t %H:%M build/Glance.app/Contents/MacOS/Glance` 取**实时值**，证明二进制与当前 HEAD 一致，不是几小时前残留。
 
 编译失败或有 warnings 时，编译行改成具体信息（错误数/前几条错误路径+行号），而不是跳过这一行。
 
