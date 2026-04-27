@@ -1,4 +1,4 @@
-# UI 规范 — ISeeImageViewer
+# UI 规范 — Glance（原 ISeeImageViewer）
 > 设计方向：Liquid Glass 沉浸感 · 内容优先 · 深色打底
 > 参考：macOS Tahoe 26 Liquid Glass、Pixea、Viso、Apple HIG macOS
 > 最后更新：2026-03
@@ -291,7 +291,7 @@ enum DS {
 
 ## 深浅色模式
 
-App 支持深色 / 浅色 / 跟随系统三档切换（AppearanceMode），由 `AppState.appearanceMode` 驱动 `ISeeImageViewerApp` 的 `preferredColorScheme`。**QuickViewerOverlay 保留 `.preferredColorScheme(.dark)`，始终强制深色。**
+App 支持深色 / 浅色 / 跟随系统三档切换（AppearanceMode），由 `AppState.appearanceMode` 驱动 `GlanceApp` 的 `preferredColorScheme`。**QuickViewerOverlay 保留 `.preferredColorScheme(.dark)`，始终强制深色。**
 
 ### AdaptiveColor（颜色自适应方案）
 

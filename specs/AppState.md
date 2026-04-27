@@ -91,9 +91,9 @@ struct WindowAccessor: NSViewRepresentable {
 ```
 UserDefaults
     ↑↓
-AppState.appearanceMode   (@Published, @StateObject in ISeeImageViewerApp)
+AppState.appearanceMode   (@Published, @StateObject in GlanceApp)
     ↓
-ISeeImageViewerApp (.preferredColorScheme 动态绑定)
+GlanceApp (.preferredColorScheme 动态绑定)
     ↓
 所有子视图（自动继承 colorScheme）
     ↓
@@ -102,7 +102,7 @@ DS.Color.* (AdaptiveColor.resolve(in:) 从 EnvironmentValues 读取 colorScheme)
 QuickViewerOverlay → .preferredColorScheme(.dark) 独立，始终深色
 ```
 
-### 根视图绑定（ISeeImageViewerApp.swift）
+### 根视图绑定（GlanceApp.swift）
 
 ```swift
 ContentView()

@@ -25,10 +25,15 @@
 （本段 CC 维护，追加新项。测完移到 Done。）
 
 - [ ] (2026-04-27 / `fb6231c`) **AppIcon · Dock**：启动 app → Dock 显示新图标（眼睛 Cool Violet 方向，紫底青绿瞳孔），不再是 Xcode 默认占位
-- [ ] (2026-04-27 / `fb6231c`) **AppIcon · Finder column 16px**：在 Finder 用 column 视图看 ISeeImageViewer.app → 16px 缩略图下眼睛形状仍可辨认（不糊成色块）
+- [ ] (2026-04-27 / `fb6231c`) **AppIcon · Finder column 16px**：在 Finder 用 column 视图看 Glance.app → 16px 缩略图下眼睛形状仍可辨认（不糊成色块）
 - [ ] (2026-04-27 / `fb6231c`) **AppIcon · Get Info**：右键 .app → 显示简介 → 左上角图标显示完整图标 + 大尺寸预览清晰
 - [ ] (2026-04-27 / `fb6231c`) **AppIcon · 浅色 Dock**：系统切到浅色模式 → Dock 里图标过渡仍 OK（紫底在浅色 Dock 上不应过黑过硬）
-- [ ] (2026-04-27 / `fb6231c`) **AppIcon · 关于本机**：app 菜单栏 → 关于 ISeeImageViewer → 弹窗左侧大图标显示新图标
+- [ ] (2026-04-27 / `fb6231c`) **AppIcon · 关于本机**：app 菜单栏 → 关于 Glance（中文系统：关于一眼）→ 弹窗左侧大图标显示新图标
+- [ ] (2026-04-27 / `<pending>`) **重命名 · Dock 中文系统**：系统语言中文 → Dock hover Glance.app 显示「一眼」
+- [ ] (2026-04-27 / `<pending>`) **重命名 · Dock 英文系统**：系统语言切到英文 → Dock hover 显示 "Glance"
+- [ ] (2026-04-27 / `<pending>`) **重命名 · 活动监视器**：打开 Glance.app → 活动监视器进程列表显示 "Glance"（不再是 ISeeImageViewer）
+- [ ] (2026-04-27 / `<pending>`) **重命名 · 顶部菜单栏**：app 运行时屏幕顶部菜单栏第一项显示「一眼」/ "Glance"
+- [ ] (2026-04-27 / `<pending>`) **重命名 · Bookmark 重新授权**：旧 ISeeImageViewer 的 bookmark 已失效（Bundle ID 改了），重新拖文件夹进侧边栏可正常授权浏览
 
 ---
 

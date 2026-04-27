@@ -1,16 +1,19 @@
-这是一个 macOS 本地看图 app，SwiftUI 开发。
+这是一个 macOS 本地看图 app（**Glance · 一眼**，原名 ISeeImageViewer，2026-04-27 重命名），SwiftUI 开发。
 核心功能是本地文件夹浏览和图片查看。
 需要遵守 App Sandbox 限制，使用 Security Scoped Bookmark 处理文件权限。
+
+> Bundle ID: `com.sunhongjun.glance`；CFBundleDisplayName 走 i18n（zh-Hans 显示「一眼」/ en 显示「Glance」）。
+> 注意：项目根目录磁盘路径仍是 `~/Documents/projects/claude/ISeeImageViewer/`（保 auto-memory 路径不断），仓库内部全部统一为 Glance。GitHub 仓库名暂未改。
 
 ---
 
 ## 项目文件结构
 
 ```
-ISeeImageViewer/
+ISeeImageViewer/                    ← 磁盘路径未改，repo 内部一切都已是 Glance
 ├── CLAUDE.md                        ← 本文件（开发规范 + 上下文）
 ├── Makefile                         ← make build / run / clean / hooks-install / verify / verify-codex
-├── ISeeImageViewer.xcodeproj/
+├── Glance.xcodeproj/
 ├── .githooks/
 │   └── pre-push                     ← codex 自动 review 待推 .swift+.md diff，[P1] 阻塞
 ├── scripts/
@@ -45,11 +48,14 @@ ISeeImageViewer/
 │       ├── ImageViewerView.md       ← 已归档（已被 QuickViewer 替代）
 │       ├── 2026-03-24-appearance-mode-design.md  ← 已归档（合并入 AppState.md + UI.md）
 │       └── 2026-03-24-appearance-mode-plan.md    ← 已归档（实施记录）
-└── ISeeImageViewer/                 ← Swift 源码（PBXFileSystemSynchronizedRootGroup，新文件自动加入编译）
-    ├── ISeeImageViewerApp.swift      ← App 入口，注入 BookmarkManager / FolderStore / AppState
+└── Glance/                         ← Swift 源码（PBXFileSystemSynchronizedRootGroup，新文件自动加入编译）
+    ├── GlanceApp.swift              ← App 入口（struct GlanceApp），注入 BookmarkManager / FolderStore / AppState
+    ├── Glance.entitlements          ← sandbox entitlements（当前未被 pbxproj 引用，由 build settings 自动生成）
     ├── ContentView.swift            ← NavigationSplitView + 内嵌预览/QuickViewer 覆盖层
     ├── DesignSystem.swift           ← DS.Spacing / DS.Color / DS.Anim 等所有 UI 常量
     ├── BookmarkManager.swift
+    ├── en.lproj/InfoPlist.strings   ← 英文 locale 显示名 "Glance"
+    ├── zh-Hans.lproj/InfoPlist.strings ← 中文 locale 显示名「一眼」
     ├── FolderBrowser/
     │   ├── FolderStore.swift        ← 状态管理（FolderNode 树形结构、图片列表、排序）
     │   ├── FolderSidebarView.swift  ← 侧边栏（树形展开/折叠、badge、右键菜单）
@@ -75,8 +81,8 @@ ISeeImageViewer/
 
 - 所有模块开发前必须有对应的 specs/ 文件。
 - **新开 session 第一步**：读取 CLAUDE.md + specs/Roadmap.md 恢复上下文。
-- 开发环境为远程 Mac，无法使用 Xcode GUI。所有编译和验证使用命令行。
-- 构建命令：`make build`（在 ISeeImageViewer/ 目录下）
+- 开发环境是远程 Mac mini（已装 Xcode，平时用命令行；GUI 仅作 pbxproj 损坏救场用）。所有编译和验证使用命令行。
+- 构建命令：`make build`（在项目根目录下）
 - 运行命令：`make run`
 - 清理命令：`make clean`
 
@@ -91,12 +97,12 @@ ISeeImageViewer/
 ## 持久化规范
 
 - 每次计划生成后，立刻将计划追加到对应的 specs/[模块名].md 的「实现步骤」章节。
-- 每个模块完成后立刻 git commit，commit message 格式：「完成 [模块名]」，然后执行 `git push` 同步到 GitHub（remote: git@github.com:sunhuaian2026/ISeeImageViewer.git）。
+- 每个模块完成后立刻 git commit，commit message 格式：「完成 [模块名]」，然后执行 `git push` 同步到 GitHub（remote: git@github.com:sunhuaian2026/ISeeImageViewer.git，仓库名暂未跟随重命名为 Glance）。
 - **模块完成后必须同步更新文档**：
   1. 更新 specs/[模块名].md 里的「当前进度：第 X 步已完成」
   2. 更新 specs/Roadmap.md：将该模块移入「已完成」表格，标注 commit hash
   3. 如涉及新文件或目录，同步更新 CLAUDE.md 的文件结构
-- xcodeproj 使用 PBXFileSystemSynchronizedRootGroup，在 ISeeImageViewer/ 目录下新建 .swift 文件会自动被编译，无需手改 xcodeproj。
+- xcodeproj 使用 PBXFileSystemSynchronizedRootGroup，在 `Glance/` 目录下新建 .swift 文件会自动被编译，无需手改 xcodeproj。
 
 ## ⚠️ 文档同步强制规则（每次必须执行，不得跳过）
 
