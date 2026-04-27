@@ -115,7 +115,7 @@ struct ImageGridView: View {
                     ForEach(images, id: \.self) { url in
                         VStack(spacing: DS.Spacing.xs) {
                             ThumbnailCell(url: url, isHighlighted: highlightedURL == url, size: folderStore.thumbnailSize)
-                            Text(url.deletingPathExtension().lastPathComponent)
+                            Text(url.lastPathComponent)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(1)
