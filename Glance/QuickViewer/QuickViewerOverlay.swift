@@ -1,6 +1,6 @@
 //
 //  QuickViewerOverlay.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import SwiftUI

@@ -1,6 +1,6 @@
 //
-//  ISeeImageViewerApp.swift
-//  ISeeImageViewer
+//  GlanceApp.swift
+//  Glance
 //
 //  Created by 孙红军 on 2026/3/16.
 //
@@ -8,7 +8,7 @@
 import SwiftUI
 
 @main
-struct ISeeImageViewerApp: App {
+struct GlanceApp: App {
     @StateObject private var bookmarkManager: BookmarkManager
     @StateObject private var folderStore: FolderStore
     @StateObject private var appState = AppState()

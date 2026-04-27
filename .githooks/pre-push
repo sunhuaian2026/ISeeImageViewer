@@ -110,9 +110,9 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   echo "codex: reviewing $FILE_COUNT file(s) [$SWIFT_COUNT swift, $MD_COUNT md], ~$DIFF_LINES lines (60-180s)..." >&2
 
   PROMPT=$(cat <<'PROMPT_EOF'
-You are reviewing a git diff for the ISeeImageViewer project before it is pushed to the remote.
+You are reviewing a git diff for the Glance project before it is pushed to the remote.
 
-ISeeImageViewer is a native macOS SwiftUI local image viewer app (App Sandbox, Security-Scoped Bookmarks). No third-party libraries.
+Glance (formerly ISeeImageViewer) is a native macOS SwiftUI local image viewer app (App Sandbox, Security-Scoped Bookmarks). No third-party libraries.
 
 OUTPUT FORMAT (strict):
 - Report ONLY issues. One per line, in the form:

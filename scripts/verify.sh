@@ -3,7 +3,7 @@
 #
 #   stage 1/3  静态规则查      毫秒     grep/awk + 文档同步 + git hygiene
 #   stage 2/3  编译             30-60s   xcodebuild build -quiet (isolated derived data)
-#   stage 3/3  单测             skipped  ISeeImageViewer 暂无 XCTest target
+#   stage 3/3  单测             skipped  Glance 暂无 XCTest target
 #
 # flags:
 #   --with-codex   追加 codex 全项目审查（慢且花钱，~2-5min, ~$0.1-0.3）
@@ -55,7 +55,7 @@ echo "=== verify.sh — 三段式 oracle (cheap → expensive, stop on red) ==="
 # ═══════════════════════════════════════════════════════════════════
 echo
 echo "── Stage 1/3: 静态规则查 ──"
-SRC=$(find ISeeImageViewer -name '*.swift' 2>/dev/null)
+SRC=$(find Glance -name '*.swift' 2>/dev/null)
 
 # 1a. 代码规则 grep ───────────────────────────────
 TB=$(grep -nE 'try!' $SRC 2>/dev/null || true)
@@ -83,8 +83,8 @@ else
 fi
 
 VIEWER_FILES=""
-[ -d ISeeImageViewer/QuickViewer ] && VIEWER_FILES="$VIEWER_FILES $(ls ISeeImageViewer/QuickViewer/*.swift 2>/dev/null)"
-[ -d ISeeImageViewer/ImageViewer ] && VIEWER_FILES="$VIEWER_FILES $(ls ISeeImageViewer/ImageViewer/*.swift 2>/dev/null)"
+[ -d Glance/QuickViewer ] && VIEWER_FILES="$VIEWER_FILES $(ls Glance/QuickViewer/*.swift 2>/dev/null)"
+[ -d Glance/ImageViewer ] && VIEWER_FILES="$VIEWER_FILES $(ls Glance/ImageViewer/*.swift 2>/dev/null)"
 if [ -n "$(echo $VIEWER_FILES | tr -d ' ')" ]; then
   SP=$(grep -nE '\.spring\(' $VIEWER_FILES 2>/dev/null || true)
   if [ -z "$SP" ]; then
@@ -94,7 +94,7 @@ if [ -n "$(echo $VIEWER_FILES | tr -d ' ')" ]; then
   fi
 fi
 
-IPV=ISeeImageViewer/ImageViewer/ImagePreviewView.swift
+IPV=Glance/ImageViewer/ImagePreviewView.swift
 if [ -f "$IPV" ]; then
   HC=$(grep -nE 'Color\.(white|black)\b|\.foregroundColor\(\.(white|black)\)|\.foregroundStyle\(\.(white|black)\)' "$IPV" 2>/dev/null || true)
   if [ -z "$HC" ]; then
@@ -149,8 +149,8 @@ echo "── Stage 2/3: xcodebuild build -quiet ──"
 BUILD_LOG="$LOG_DIR/build-$STAMP.log"
 
 xcodebuild build \
-  -project ISeeImageViewer.xcodeproj \
-  -scheme ISeeImageViewer \
+  -project Glance.xcodeproj \
+  -scheme Glance \
   -configuration Debug \
   CONFIGURATION_BUILD_DIR="$BUILD_DIR" \
   -quiet >"$BUILD_LOG" 2>&1
@@ -159,7 +159,7 @@ BUILD_EXIT=$?
 if [ "$BUILD_EXIT" -eq 0 ]; then
   # 增量编译只动 bundle 内部文件（Contents/MacOS/Info.plist 等），wrapper 目录 mtime 不变；
   # touch 让 Finder 显示的 .app mtime 与当前编译时刻一致，方便用户凭 Finder 判断 freshness
-  touch "$BUILD_DIR/ISeeImageViewer.app"
+  touch "$BUILD_DIR/Glance.app"
   CODE_WARNS=$(grep -cE '\.(swift|m|mm|h):[0-9]+:[0-9]+: warning: ' "$BUILD_LOG" || true)
   CODE_WARNS=${CODE_WARNS:-0}
   if [ "$CODE_WARNS" -eq 0 ]; then
@@ -185,7 +185,7 @@ die_if_red 2
 # ═══════════════════════════════════════════════════════════════════
 echo
 echo "── Stage 3/3: xcodebuild test ──"
-skip "skipped: ISeeImageViewer 暂无 XCTest target"
+skip "skipped: Glance 暂无 XCTest target"
 note "补 test bundle 后在 verify.sh 取消下方注释启用:"
 note "  xcodebuild test -project ... -scheme ... -destination 'platform=macOS' \\"
 note "    CONFIGURATION_BUILD_DIR=\"$BUILD_DIR\" -quiet >\"\$TEST_LOG\" 2>&1"
@@ -201,7 +201,7 @@ if [ "$WITH_CODEX" -eq 1 ]; then
   else
     CODEX_LOG="$LOG_DIR/codex-$STAMP.log"
     TO=""; command -v timeout >/dev/null 2>&1 && TO="timeout 600"
-    PROMPT='Audit the ISeeImageViewer working tree against CLAUDE.md + specs/UI.md hard rules. Output ONLY issues, one per line:
+    PROMPT='Audit the Glance working tree against CLAUDE.md + specs/UI.md hard rules. Output ONLY issues, one per line:
 [P1|P2] <path>:<line> — <issue>
 If no issues: output exactly: CLEAN
 

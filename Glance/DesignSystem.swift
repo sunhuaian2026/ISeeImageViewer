@@ -1,6 +1,6 @@
 //
 //  DesignSystem.swift
-//  ISeeImageViewer
+//  Glance
 //
 //  所有 UI 常量的唯一来源，遵循 specs/UI.md 规范。
 //  使用方式：DS.Spacing.md、DS.Color.appBackground、DS.Anim.normal

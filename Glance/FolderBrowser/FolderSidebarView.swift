@@ -1,6 +1,6 @@
 //
 //  FolderSidebarView.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import SwiftUI

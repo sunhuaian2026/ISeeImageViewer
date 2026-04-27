@@ -1,6 +1,6 @@
 //
 //  BookmarkManager.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import Foundation

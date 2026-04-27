@@ -1,6 +1,6 @@
 //
 //  WindowAccessor.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import SwiftUI

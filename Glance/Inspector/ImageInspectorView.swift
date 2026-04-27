@@ -1,6 +1,6 @@
 //
 //  ImageInspectorView.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import SwiftUI

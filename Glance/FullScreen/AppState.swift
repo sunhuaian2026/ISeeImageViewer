@@ -1,6 +1,6 @@
 //
 //  AppState.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import AppKit

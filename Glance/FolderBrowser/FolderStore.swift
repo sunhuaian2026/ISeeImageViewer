@@ -1,6 +1,6 @@
 //
 //  FolderStore.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import Foundation

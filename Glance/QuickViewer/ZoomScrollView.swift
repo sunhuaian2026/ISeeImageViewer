@@ -1,6 +1,6 @@
 //
 //  ZoomScrollView.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import SwiftUI

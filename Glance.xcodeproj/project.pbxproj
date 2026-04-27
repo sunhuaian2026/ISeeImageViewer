@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXFileReference section */
-		A1E8BFEA2F680D1F002670BC /* ISeeImageViewer.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ISeeImageViewer.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1E8BFEA2F680D1F002670BC /* Glance.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Glance.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		A1E8BFEC2F680D1F002670BC /* ISeeImageViewer */ = {
+		A1E8BFEC2F680D1F002670BC /* Glance */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			path = ISeeImageViewer;
+			path = Glance;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,7 +32,7 @@
 		A1E8BFE12F680D1F002670BC = {
 			isa = PBXGroup;
 			children = (
-				A1E8BFEC2F680D1F002670BC /* ISeeImageViewer */,
+				A1E8BFEC2F680D1F002670BC /* Glance */,
 				A1E8BFEB2F680D1F002670BC /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,7 +40,7 @@
 		A1E8BFEB2F680D1F002670BC /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A1E8BFEA2F680D1F002670BC /* ISeeImageViewer.app */,
+				A1E8BFEA2F680D1F002670BC /* Glance.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -48,9 +48,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		A1E8BFE92F680D1F002670BC /* ISeeImageViewer */ = {
+		A1E8BFE92F680D1F002670BC /* Glance */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = A1E8BFF52F680D21002670BC /* Build configuration list for PBXNativeTarget "ISeeImageViewer" */;
+			buildConfigurationList = A1E8BFF52F680D21002670BC /* Build configuration list for PBXNativeTarget "Glance" */;
 			buildPhases = (
 				A1E8BFE62F680D1F002670BC /* Sources */,
 				A1E8BFE72F680D1F002670BC /* Frameworks */,
@@ -61,13 +61,13 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				A1E8BFEC2F680D1F002670BC /* ISeeImageViewer */,
+				A1E8BFEC2F680D1F002670BC /* Glance */,
 			);
-			name = ISeeImageViewer;
+			name = Glance;
 			packageProductDependencies = (
 			);
-			productName = ISeeImageViewer;
-			productReference = A1E8BFEA2F680D1F002670BC /* ISeeImageViewer.app */;
+			productName = Glance;
+			productReference = A1E8BFEA2F680D1F002670BC /* Glance.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -85,7 +85,7 @@
 					};
 				};
 			};
-			buildConfigurationList = A1E8BFE52F680D1F002670BC /* Build configuration list for PBXProject "ISeeImageViewer" */;
+			buildConfigurationList = A1E8BFE52F680D1F002670BC /* Build configuration list for PBXProject "Glance" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -100,7 +100,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				A1E8BFE92F680D1F002670BC /* ISeeImageViewer */,
+				A1E8BFE92F680D1F002670BC /* Glance */,
 			);
 		};
 /* End PBXProject section */
@@ -309,7 +309,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		A1E8BFE52F680D1F002670BC /* Build configuration list for PBXProject "ISeeImageViewer" */ = {
+		A1E8BFE52F680D1F002670BC /* Build configuration list for PBXProject "Glance" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1E8BFF32F680D21002670BC /* Debug */,
@@ -318,7 +318,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		A1E8BFF52F680D21002670BC /* Build configuration list for PBXNativeTarget "ISeeImageViewer" */ = {
+		A1E8BFF52F680D21002670BC /* Build configuration list for PBXNativeTarget "Glance" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				A1E8BFF62F680D21002670BC /* Debug */,

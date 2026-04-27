@@ -1,6 +1,6 @@
 //
 //  ImagePreviewView.swift
-//  ISeeImageViewer
+//  Glance
 //
 //  单击图片后显示的内嵌预览。双击图片进入 QuickViewerOverlay 全窗口模式。
 //

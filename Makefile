@@ -3,13 +3,13 @@
 BUILD_DIR = ./build
 
 build:
-	xcodebuild -project ISeeImageViewer.xcodeproj -scheme ISeeImageViewer \
+	xcodebuild -project Glance.xcodeproj -scheme Glance \
 		-configuration Debug CONFIGURATION_BUILD_DIR=$(BUILD_DIR) build
-	@touch $(BUILD_DIR)/ISeeImageViewer.app
-	@echo "  ✓ touched $(BUILD_DIR)/ISeeImageViewer.app — Finder mtime 同步到当前编译时刻"
+	@touch $(BUILD_DIR)/Glance.app
+	@echo "  ✓ touched $(BUILD_DIR)/Glance.app — Finder mtime 同步到当前编译时刻"
 
 run: build
-	open $(BUILD_DIR)/ISeeImageViewer.app
+	open $(BUILD_DIR)/Glance.app
 
 clean:
 	rm -rf $(BUILD_DIR)

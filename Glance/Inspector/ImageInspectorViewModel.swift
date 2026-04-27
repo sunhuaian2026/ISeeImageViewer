@@ -1,6 +1,6 @@
 //
 //  ImageInspectorViewModel.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import Foundation

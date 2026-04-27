@@ -1,6 +1,6 @@
 //
 //  QuickViewerViewModel.swift
-//  ISeeImageViewer
+//  Glance
 //
 
 import Foundation

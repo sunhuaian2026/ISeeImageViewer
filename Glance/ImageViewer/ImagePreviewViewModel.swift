@@ -1,6 +1,6 @@
 //
 //  ImagePreviewViewModel.swift
-//  ISeeImageViewer
+//  Glance
 //
 //  ImagePreviewView 的状态管理 + ±1 预加载缓存。
 //  与 QuickViewerViewModel 的 prefetch 策略对齐：方向键切换命中缓存零延迟。
