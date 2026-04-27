@@ -112,17 +112,9 @@ struct ImageGridView: View {
         return ScrollViewReader { scrollProxy in
             ScrollView {
                 LazyVGrid(columns: gridColumns, spacing: DS.Thumbnail.spacing) {
-                    ForEach(Array(images.enumerated()), id: \.element) { _, url in
+                    ForEach(images, id: \.self) { url in
                         VStack(spacing: DS.Spacing.xs) {
                             ThumbnailCell(url: url, isHighlighted: highlightedURL == url, size: folderStore.thumbnailSize)
-                                .onTapGesture(count: 2) {
-                                    guard let idx = folderStore.images.firstIndex(of: url) else { return }
-                                    onDoubleClick(idx)
-                                }
-                                .onTapGesture(count: 1) {
-                                    highlightedURL = url
-                                    folderStore.selectedImageIndex = folderStore.images.firstIndex(of: url)
-                                }
                             Text(url.deletingPathExtension().lastPathComponent)
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
@@ -131,6 +123,15 @@ struct ImageGridView: View {
                                 .frame(maxWidth: folderStore.thumbnailSize)
                         }
                         .id(url)
+                        .contentShape(Rectangle())
+                        .onTapGesture(count: 2) {
+                            guard let idx = folderStore.images.firstIndex(of: url) else { return }
+                            onDoubleClick(idx)
+                        }
+                        .onTapGesture(count: 1) {
+                            highlightedURL = url
+                            folderStore.selectedImageIndex = folderStore.images.firstIndex(of: url)
+                        }
                     }
                 }
                 .animation(DS.Anim.fast, value: folderStore.thumbnailSize)
@@ -224,9 +225,12 @@ struct ThumbnailCell: View {
         .animation(DS.Anim.fast, value: isHighlighted)
         .animation(DS.Anim.fast, value: size)
         .onHover { isHovered = $0 }
-        .task {
+        .task(id: url) {
+            thumbnail = nil
             let scale = NSScreen.main?.backingScaleFactor ?? 2.0
-            thumbnail = await loadThumbnail(url: url, maxPixelSize: Int(size * scale))
+            let result = await loadThumbnail(url: url, maxPixelSize: Int(size * scale))
+            guard !Task.isCancelled else { return }
+            thumbnail = result
         }
     }
 }
