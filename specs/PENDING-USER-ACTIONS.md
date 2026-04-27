@@ -24,11 +24,11 @@
 
 （本段 CC 维护，追加新项。测完移到 Done。）
 
-- [ ] (2026-04-27 / `<pending>`) **AppIcon · Dock**：启动 app → Dock 显示新图标（眼睛 Cool Violet 方向，紫底青绿瞳孔），不再是 Xcode 默认占位
-- [ ] (2026-04-27 / `<pending>`) **AppIcon · Finder column 16px**：在 Finder 用 column 视图看 ISeeImageViewer.app → 16px 缩略图下眼睛形状仍可辨认（不糊成色块）
-- [ ] (2026-04-27 / `<pending>`) **AppIcon · Get Info**：右键 .app → 显示简介 → 左上角图标显示完整图标 + 大尺寸预览清晰
-- [ ] (2026-04-27 / `<pending>`) **AppIcon · 浅色 Dock**：系统切到浅色模式 → Dock 里图标过渡仍 OK（紫底在浅色 Dock 上不应过黑过硬）
-- [ ] (2026-04-27 / `<pending>`) **AppIcon · 关于本机**：app 菜单栏 → 关于 ISeeImageViewer → 弹窗左侧大图标显示新图标
+- [ ] (2026-04-27 / `fb6231c`) **AppIcon · Dock**：启动 app → Dock 显示新图标（眼睛 Cool Violet 方向，紫底青绿瞳孔），不再是 Xcode 默认占位
+- [ ] (2026-04-27 / `fb6231c`) **AppIcon · Finder column 16px**：在 Finder 用 column 视图看 ISeeImageViewer.app → 16px 缩略图下眼睛形状仍可辨认（不糊成色块）
+- [ ] (2026-04-27 / `fb6231c`) **AppIcon · Get Info**：右键 .app → 显示简介 → 左上角图标显示完整图标 + 大尺寸预览清晰
+- [ ] (2026-04-27 / `fb6231c`) **AppIcon · 浅色 Dock**：系统切到浅色模式 → Dock 里图标过渡仍 OK（紫底在浅色 Dock 上不应过黑过硬）
+- [ ] (2026-04-27 / `fb6231c`) **AppIcon · 关于本机**：app 菜单栏 → 关于 ISeeImageViewer → 弹窗左侧大图标显示新图标
 
 ---
 
