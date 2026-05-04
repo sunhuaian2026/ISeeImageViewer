@@ -24,10 +24,10 @@
 
 （本段 CC 维护，追加新项。测完移到 Done。）
 
-- [ ] (2026-05-04 / `<pending>`) **缩略图 · ESC 后焦点恢复（Y-1）**：单击 cell A 进 ImagePreviewView → ESC 退回 grid → 按方向键 → highlight 应在 grid 内正常移动（不再静默无响应）
-- [ ] (2026-05-04 / `<pending>`) **缩略图 · ESC 后焦点恢复（Y-2）**：同上链路 ESC 退回 grid → 按方向键 → 不再"反而又弹出下一张预览"（即 ImagePreviewView 不应在 transition 退场期残留响应按键）。多次重复（10 次以上，因为是 race，不必次次稳定但应显著降低）
-- [ ] (2026-05-04 / `<pending>`) **缩略图 · ESC 后 Space**：单击 cell A 进预览 → ESC 退回 grid → 按 Space → 应进 QuickViewer 显示当前 highlight 那张（之前是 Space 完全无响应）
-- [ ] (2026-05-04 / `<pending>`) **预览页 · ESC 退出回归**：进预览正常使用 ←→ 切图 / Space 进 QuickViewer / 双击进 QV 等流程仍正常（B 方案修改的是 ESC 路径，要确认其他按键路径没受影响）
+- [ ] (2026-05-04 / `5b29600`) **缩略图 · ESC 后焦点恢复（Y-1）**：单击 cell A 进 ImagePreviewView → ESC 退回 grid → 按方向键 → highlight 应在 grid 内正常移动（不再静默无响应）
+- [ ] (2026-05-04 / `5b29600`) **缩略图 · ESC 后焦点恢复（Y-2）**：同上链路 ESC 退回 grid → 按方向键 → 不再"反而又弹出下一张预览"（即 ImagePreviewView 不应在 transition 退场期残留响应按键）。多次重复（10 次以上，因为是 race，不必次次稳定但应显著降低）
+- [ ] (2026-05-04 / `5b29600`) **缩略图 · ESC 后 Space**：单击 cell A 进预览 → ESC 退回 grid → 按 Space → 应进 QuickViewer 显示当前 highlight 那张（之前是 Space 完全无响应）
+- [ ] (2026-05-04 / `5b29600`) **预览页 · ESC 退出回归**：进预览正常使用 ←→ 切图 / Space 进 QuickViewer / 双击进 QV 等流程仍正常（B 方案修改的是 ESC 路径，要确认其他按键路径没受影响）
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
 
 ---
