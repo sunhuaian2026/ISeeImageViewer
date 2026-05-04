@@ -28,8 +28,8 @@
 - [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 点击命中**：进 QV → 点击底部 filmstrip 任意 cell A → filmstrip 高亮跳到 A + 主图也是 A（不再"点 A 显示 B"漂移）。多次反复点不同位置（起始 / 中间 / 末尾 / 同名不同后缀），全部对应正确
 - [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · scrollTo 跟随**：方向键 ←→ 切换图 → filmstrip 自动滚动让当前 cell 居中（之前 scrollTo 用 index target，现在用 url target，行为应一致）
 - [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 缩略图加载**：快速切换图 ←→ → filmstrip 缩略图加载不应错位（`.task(id: url)` + cancel guard 应阻止旧任务覆盖新 cell 显示）
-- [ ] (2026-05-04 / `<pending>`) **关于面板版本号注入**：本机 quit Glance → 让 Syncthing 同步最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → 应显示 `版本 1.0 (<commit>[-d].<MMDD-HHMM>)`（不再是固定的 `(1)`）。多次 build 后版本号应递变（dirty build 时间戳每分钟级别区分）
-- [ ] (2026-05-04 / `<pending>`) **BuildInfo.txt sidecar 同步**：本机 `cat ~/sync/Glance.app.BuildInfo.txt` → 应看到 commit / dirty / version / commit_time / commit_msg / built_at / host 七字段；版本号字符串与关于面板里那个一致
+- [ ] (2026-05-04 / `38adfd4`) **关于面板版本号注入**：本机 quit Glance → 让 Syncthing 同步最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → 应显示 `版本 1.0 (<commit>[-d].<MMDD-HHMM>)`（不再是固定的 `(1)`）。多次 build 后版本号应递变（dirty build 时间戳每分钟级别区分）
+- [ ] (2026-05-04 / `38adfd4`) **BuildInfo.txt sidecar 同步**：本机 `cat ~/sync/Glance.app.BuildInfo.txt` → 应看到 commit / dirty / version / commit_time / commit_msg / built_at / host 七字段；版本号字符串与关于面板里那个一致
 
 ---
 
