@@ -1,12 +1,16 @@
 .PHONY: build run clean hooks-install hooks-uninstall verify verify-codex
 
 BUILD_DIR = ./build
+SYNC_DIR  = $(HOME)/sync
 
 build:
 	xcodebuild -project Glance.xcodeproj -scheme Glance \
 		-configuration Debug CONFIGURATION_BUILD_DIR=$(BUILD_DIR) build
 	@touch $(BUILD_DIR)/Glance.app
 	@echo "  ✓ touched $(BUILD_DIR)/Glance.app — Finder mtime 同步到当前编译时刻"
+	@rm -rf $(SYNC_DIR)/Glance.app
+	@cp -R $(BUILD_DIR)/Glance.app $(SYNC_DIR)/Glance.app
+	@echo "  ✓ synced to $(SYNC_DIR)/Glance.app"
 
 run: build
 	open $(BUILD_DIR)/Glance.app

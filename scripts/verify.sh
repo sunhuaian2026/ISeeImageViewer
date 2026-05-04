@@ -160,6 +160,16 @@ if [ "$BUILD_EXIT" -eq 0 ]; then
   # 增量编译只动 bundle 内部文件（Contents/MacOS/Info.plist 等），wrapper 目录 mtime 不变；
   # touch 让 Finder 显示的 .app mtime 与当前编译时刻一致，方便用户凭 Finder 判断 freshness
   touch "$BUILD_DIR/Glance.app"
+
+  # 同步到 ~/sync/（Syncthing 目录），与 Makefile build target 行为一致；用户本地测试机从此处拉
+  SYNC_DIR="$HOME/sync"
+  rm -rf "$SYNC_DIR/Glance.app"
+  if cp -R "$BUILD_DIR/Glance.app" "$SYNC_DIR/Glance.app"; then
+    pass "sync: copied to $SYNC_DIR/Glance.app"
+  else
+    fail "sync: cp -R to $SYNC_DIR/Glance.app failed"
+  fi
+
   CODE_WARNS=$(grep -cE '\.(swift|m|mm|h):[0-9]+:[0-9]+: warning: ' "$BUILD_LOG" || true)
   CODE_WARNS=${CODE_WARNS:-0}
   if [ "$CODE_WARNS" -eq 0 ]; then
