@@ -8,6 +8,7 @@ import ImageIO
 
 struct ImageGridView: View {
     @EnvironmentObject var folderStore: FolderStore
+    let gridFocusTrigger: UUID
     var onDoubleClick: (Int) -> Void = { _ in }
 
     @FocusState private var isFocused: Bool
@@ -152,6 +153,9 @@ struct ImageGridView: View {
                 .onChange(of: folderStore.selectedImageIndex) { _, newValue in
                     if newValue == nil { isFocused = true }
                 }
+                // ContentView 在 QuickViewer / preview 关闭后通过 gridFocusTrigger 拉回焦点；
+                // 上面 selectedImageIndex onChange 是冗余兜底（仅覆盖 preview dismiss 路径）
+                .onChange(of: gridFocusTrigger) { _, _ in isFocused = true }
                 // Space：进入全窗口查看器
                 .onKeyPress(.space) {
                     guard !images.isEmpty else { return .ignored }

@@ -66,7 +66,7 @@ struct ImagePreviewView: View {
             // 关闭按钮（左上角浮动）
             VStack {
                 HStack {
-                    Button(action: onDismiss) {
+                    Button(action: dismissPreview) {
                         Image(systemName: DS.Icon.close)
                             .font(.body.weight(.semibold))
                             .foregroundColor(.primary.opacity(0.8))
@@ -112,14 +112,7 @@ struct ImagePreviewView: View {
         .focused($isFocused)
         .onAppear { loadImage(); isFocused = true }
         .onChange(of: focusTrigger) { isFocused = true }
-        .onKeyPress(.escape) {
-            // 先撤焦点再 dismiss：transition 退场期 view 仍存活，若仍是 active key target
-            // 用户随后按方向键会被本 view 的 onKeyPress(.leftArrow/.rightArrow) 接到，
-            // navigate(by:) 重写 selectedImageIndex 让预览重 mount（Y-2）
-            isFocused = false
-            onDismiss()
-            return .handled
-        }
+        .onKeyPress(.escape) { dismissPreview(); return .handled }
         .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
         .onKeyPress(.rightArrow) { navigate(by: +1); return .handled }
         .onKeyPress(.space) { onQuickView(currentIndex); return .handled }
@@ -137,6 +130,15 @@ struct ImagePreviewView: View {
             currentIndex = newValue
             loadImage()
         }
+    }
+
+    // MARK: - Dismiss
+
+    // 统一 dismiss 入口（ESC + 关闭按钮）：先撤焦点再 onDismiss，避免 transition 退场期
+    // 残留 onKeyPress 把方向键接走（Y-2 race），见 commit 5b29600 + 后续 followup
+    private func dismissPreview() {
+        isFocused = false
+        onDismiss()
     }
 
     // MARK: - Navigation

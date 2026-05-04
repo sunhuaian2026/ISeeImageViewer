@@ -334,6 +334,10 @@ struct QuickViewerOverlay: View {
         if appState.isFullScreen {
             appState.toggleFullScreen()
         } else {
+            // 先撤焦点再 dismiss：.transition(.opacity) 退场期 overlay 仍存活，若仍是
+            // active key target 用户随后按方向键会被本 view onKeyPress 接走（QV B-side
+            // 加固，对称 ImagePreviewView dismissPreview()）
+            isFocused = false
             onDismiss()
         }
     }

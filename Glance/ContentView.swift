@@ -11,6 +11,10 @@ struct ContentView: View {
     @State private var showInspector = false
     @State private var quickViewerIndex: Int? = nil
     @State private var previewFocusTrigger: UUID = UUID()
+    // QuickViewer / ImagePreviewView 关闭后让 grid 重新拿焦点的 trigger。变更通过
+    // onChange(of: quickViewerIndex) 触发（覆盖 onDismiss 闭包 + onChange(of: images)
+    // 强制关闭 两条路径），避免只挂 onDismiss 漏掉切换文件夹时关闭 QV 的场景
+    @State private var gridFocusTrigger: UUID = UUID()
     // ImagePreviewView 上的 .id(idx) 会让它在每次方向键切换时整个重建；vm 提到 ContentView
     // 用 @StateObject 持有，跨重建保留 prefetchCache，方向键命中即时显示无 spinner
     @StateObject private var previewVM = ImagePreviewViewModel()
@@ -74,16 +78,23 @@ struct ContentView: View {
                         withAnimation(DS.Anim.normal) {
                             quickViewerIndex = nil
                         }
-                        // 若关闭后仍在预览页，重新触发 ImagePreviewView 获取焦点
-                        if folderStore.selectedImageIndex != nil {
-                            previewFocusTrigger = UUID()
-                        }
+                        // 关闭后焦点路由迁移到 onChange(of: quickViewerIndex)，统一覆盖
+                        // onDismiss + onChange(of: images) 强制关闭 两条路径
                     }
                 )
                 .transition(.opacity)
             }
         }
         .animation(DS.Anim.normal, value: quickViewerIndex)
+        // QuickViewer 关闭的真源出口：根据 selectedImageIndex 仲裁焦点回 grid 还是 preview
+        .onChange(of: quickViewerIndex) { oldValue, newValue in
+            guard oldValue != nil, newValue == nil else { return }
+            if folderStore.selectedImageIndex != nil {
+                previewFocusTrigger = UUID()
+            } else {
+                gridFocusTrigger = UUID()
+            }
+        }
         .toolbar(quickViewerIndex != nil ? .hidden : .visible, for: .windowToolbar)
         // 切换文件夹或取消图片选择时，自动关闭 Inspector
         .onChange(of: folderStore.selectedFolder) { _, _ in
@@ -114,12 +125,15 @@ struct ContentView: View {
     private var mainContent: some View {
         ZStack {
             // ImageGridView 始终保留在层级里，避免返回时缩略图全部重载
-            ImageGridView(onDoubleClick: { index in
-                // 双击时单击 handler 也会触发并设置 selectedImageIndex，
-                // 此处清除，确保 QuickViewer 关闭后回到列表页而非预览页。
-                folderStore.selectedImageIndex = nil
-                quickViewerIndex = index
-            })
+            ImageGridView(
+                gridFocusTrigger: gridFocusTrigger,
+                onDoubleClick: { index in
+                    // 双击时单击 handler 也会触发并设置 selectedImageIndex，
+                    // 此处清除，确保 QuickViewer 关闭后回到列表页而非预览页。
+                    folderStore.selectedImageIndex = nil
+                    quickViewerIndex = index
+                }
+            )
 
             if let idx = folderStore.selectedImageIndex {
                 ImagePreviewView(

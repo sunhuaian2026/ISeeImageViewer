@@ -24,10 +24,11 @@
 
 （本段 CC 维护，追加新项。测完移到 Done。）
 
-- [ ] (2026-05-04 / `5b29600`) **缩略图 · ESC 后焦点恢复（Y-1）**：单击 cell A 进 ImagePreviewView → ESC 退回 grid → 按方向键 → highlight 应在 grid 内正常移动（不再静默无响应）
-- [ ] (2026-05-04 / `5b29600`) **缩略图 · ESC 后焦点恢复（Y-2）**：同上链路 ESC 退回 grid → 按方向键 → 不再"反而又弹出下一张预览"（即 ImagePreviewView 不应在 transition 退场期残留响应按键）。多次重复（10 次以上，因为是 race，不必次次稳定但应显著降低）
-- [ ] (2026-05-04 / `5b29600`) **缩略图 · ESC 后 Space**：单击 cell A 进预览 → ESC 退回 grid → 按 Space → 应进 QuickViewer 显示当前 highlight 那张（之前是 Space 完全无响应）
-- [ ] (2026-05-04 / `5b29600`) **预览页 · ESC 退出回归**：进预览正常使用 ←→ 切图 / Space 进 QuickViewer / 双击进 QV 等流程仍正常（B 方案修改的是 ESC 路径，要确认其他按键路径没受影响）
+- [ ] (2026-05-04 / `<pending>`) **缩略图 · QV dismiss 后 grid 焦点（核心 case）**：单击 cell A → preview → ESC → Space → QuickViewer → ESC → 此时按 Space / 方向键 → grid 应正常响应（之前 Y bug round 2 全静默）
+- [ ] (2026-05-04 / `<pending>`) **缩略图 · grid 直接双击进 QV 后 ESC**：刚启动选文件夹后**不进 preview**，**直接双击** cell B → QV → ESC → 按方向键 → highlight 在 grid 内正常移动 / Space 再进 QV 正常
+- [ ] (2026-05-04 / `<pending>`) **预览 → QV → preview 路径**：单击 cell A → preview → 双击图片 → QV → ESC → 应回到 preview（不是 grid）；按方向键应在 preview 内切图（不漏 navigate；previewFocusTrigger 路径仍工作）
+- [ ] (2026-05-04 / `<pending>`) **切换文件夹强制关 QV**：正在 QV 中 → 侧边栏点另一个文件夹 → QV 自动关 → focus 落到合理位置不崩；不该静默或残留 QV
+- [ ] (2026-05-04 / `<pending>`) **ImagePreviewView 关闭按钮回归**：单击 cell 进 preview → 点左上 X 按钮（不用 ESC）→ 退回 grid → 按方向键 / Space → 正常工作（dismissPreview helper 走的同一路径）
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
 
 ---
@@ -73,3 +74,7 @@
 - [x] (2026-05-04 / `44ba6ee`) **缩略图 · 双击 highlight 跟随**：先单击 cell A（highlight 在 A）→ 双击 cell B 进 QuickViewer → ESC 退 QuickViewer → highlight 应**已在 B** ✓ 2026-05-04
 - [x] (2026-05-04 / `44ba6ee`) **缩略图 · 上下方向键步长**：刚启动选中文件夹后不碰任何 cell，按 ↓ 高亮第二行同列 cell；按 ↑ 反之；Inspector 开关后步长仍正确 ✓ 2026-05-04
 - [x] (2026-05-04 / `44ba6ee`) **缩略图 · 上下方向键边界**：↑ 到第一行后再 ↑ 停在最左 cell；↓ 到最后一行后再 ↓ 停在最末 cell ✓ 2026-05-04
+- [x] (2026-05-04 / `5b29600`) **缩略图 · ESC 后焦点恢复（Y-1）**：单击 cell A 进 preview → ESC → 按方向键 highlight 在 grid 内正常移动 ✓ 2026-05-04
+- [x] (2026-05-04 / `5b29600`) **缩略图 · ESC 后焦点恢复（Y-2）**：同上链路反复测试不再"反而弹出下一张预览" ✓ 2026-05-04
+- [x] (2026-05-04 / `5b29600`) **缩略图 · ESC 后 Space**：单击 cell A 进 preview → ESC → Space → 进 QuickViewer 显示 highlight 那张 ✓ 2026-05-04
+- [x] (2026-05-04 / `5b29600`) **预览页 · ESC 退出回归**：preview 内 ←→ / Space / 双击 / 关闭按钮 全部正常 ✓ 2026-05-04
