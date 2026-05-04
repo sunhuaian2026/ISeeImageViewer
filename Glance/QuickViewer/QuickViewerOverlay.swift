@@ -267,13 +267,22 @@ struct QuickViewerOverlay: View {
     // MARK: - Filmstrip
 
     private var filmstrip: some View {
-        ScrollViewReader { proxy in
+        let selectedURL = viewModel.images.indices.contains(viewModel.currentIndex)
+            ? viewModel.images[viewModel.currentIndex]
+            : nil
+
+        return ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
                 LazyHStack(spacing: DS.Spacing.xs + 2) {
-                    ForEach(Array(viewModel.images.enumerated()), id: \.element) { index, url in
-                        FilmstripCell(url: url, isSelected: index == viewModel.currentIndex)
-                            .id(index)
-                            .onTapGesture { viewModel.goTo(index: index) }
+                    ForEach(viewModel.images, id: \.self) { url in
+                        FilmstripCell(url: url, isSelected: url == selectedURL)
+                            .id(url)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                if let idx = viewModel.images.firstIndex(of: url) {
+                                    viewModel.goTo(index: idx)
+                                }
+                            }
                     }
                 }
                 .padding(.horizontal, DS.Spacing.md)
@@ -288,12 +297,16 @@ struct QuickViewerOverlay: View {
                 )
             )
             .onChange(of: viewModel.currentIndex) { _, newIndex in
-                withAnimation(DS.Anim.fast) {
-                    proxy.scrollTo(newIndex, anchor: .center)
+                if viewModel.images.indices.contains(newIndex) {
+                    withAnimation(DS.Anim.fast) {
+                        proxy.scrollTo(viewModel.images[newIndex], anchor: .center)
+                    }
                 }
             }
             .onAppear {
-                proxy.scrollTo(viewModel.currentIndex, anchor: .center)
+                if viewModel.images.indices.contains(viewModel.currentIndex) {
+                    proxy.scrollTo(viewModel.images[viewModel.currentIndex], anchor: .center)
+                }
             }
         }
     }
@@ -397,6 +410,11 @@ struct FilmstripCell: View {
         )
         .scaleEffect(isSelected ? 1.08 : 1.0)
         .animation(DS.Anim.fast, value: isSelected)
-        .task { thumbnail = await loadThumbnail(url: url, maxPixelSize: 80) }
+        .task(id: url) {
+            thumbnail = nil
+            let result = await loadThumbnail(url: url, maxPixelSize: 80)
+            guard !Task.isCancelled else { return }
+            thumbnail = result
+        }
     }
 }
