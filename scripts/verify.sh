@@ -148,11 +148,22 @@ echo
 echo "── Stage 2/3: xcodebuild build -quiet ──"
 BUILD_LOG="$LOG_DIR/build-$STAMP.log"
 
+# build 版本号注入：与 Makefile build target 一致（<commit>[-d].<MMDD-HHMM>）
+COMMIT=$(git rev-parse --short HEAD 2>/dev/null || echo unknown)
+if git diff --quiet HEAD -- Glance/ Makefile scripts/ 2>/dev/null; then
+  DIRTY=""
+else
+  DIRTY="-d"
+fi
+BUILD_STAMP=$(date +%m%d-%H%M)
+BUILD_VERSION="${COMMIT}${DIRTY}.${BUILD_STAMP}"
+
 xcodebuild build \
   -project Glance.xcodeproj \
   -scheme Glance \
   -configuration Debug \
   CONFIGURATION_BUILD_DIR="$BUILD_DIR" \
+  CURRENT_PROJECT_VERSION="$BUILD_VERSION" \
   -quiet >"$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
 
@@ -161,13 +172,25 @@ if [ "$BUILD_EXIT" -eq 0 ]; then
   # touch 让 Finder 显示的 .app mtime 与当前编译时刻一致，方便用户凭 Finder 判断 freshness
   touch "$BUILD_DIR/Glance.app"
 
+  # 写 BuildInfo.txt sidecar（不动 .app 内部，不影响 codesign）
+  {
+    printf 'commit:       %s\n' "$COMMIT"
+    printf 'dirty:        %s\n' "$([ -z "$DIRTY" ] && echo no || echo yes)"
+    printf 'version:      %s\n' "$BUILD_VERSION"
+    printf 'commit_time:  %s\n' "$(git log -1 --format=%cI 2>/dev/null || echo unknown)"
+    printf 'commit_msg:   %s\n' "$(git log -1 --format=%s 2>/dev/null || echo unknown)"
+    printf 'built_at:     %s\n' "$(date +%FT%T%z)"
+    printf 'host:         %s\n' "$(hostname)"
+  } > "$BUILD_DIR/Glance.app.BuildInfo.txt"
+
   # 同步到 ~/sync/（Syncthing 目录），与 Makefile build target 行为一致；用户本地测试机从此处拉
   SYNC_DIR="$HOME/sync"
-  rm -rf "$SYNC_DIR/Glance.app"
-  if cp -R "$BUILD_DIR/Glance.app" "$SYNC_DIR/Glance.app"; then
-    pass "sync: copied to $SYNC_DIR/Glance.app"
+  rm -rf "$SYNC_DIR/Glance.app" "$SYNC_DIR/Glance.app.BuildInfo.txt"
+  if cp -R "$BUILD_DIR/Glance.app" "$SYNC_DIR/Glance.app" \
+     && cp "$BUILD_DIR/Glance.app.BuildInfo.txt" "$SYNC_DIR/Glance.app.BuildInfo.txt"; then
+    pass "sync: copied to $SYNC_DIR/Glance.app + .BuildInfo.txt (version: $BUILD_VERSION)"
   else
-    fail "sync: cp -R to $SYNC_DIR/Glance.app failed"
+    fail "sync: cp -R to $SYNC_DIR failed"
   fi
 
   CODE_WARNS=$(grep -cE '\.(swift|m|mm|h):[0-9]+:[0-9]+: warning: ' "$BUILD_LOG" || true)
