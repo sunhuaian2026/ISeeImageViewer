@@ -102,7 +102,7 @@
 | 阶段 | 模块 | Spec | 优先级 | 前置依赖 | 说明 |
 |------|------|------|--------|----------|------|
 | Refactor | Focus 架构父持有重构 | （待写）| 中 | 5b29600 / 59a9d86 ESC race fix | 三个分散 `@FocusState`（grid / preview / QuickViewer）在 dismiss 路径的 race 已修两次。codex high effort 强烈建议改父持有：`ContentView` 加 `@FocusState focusTarget: FocusTarget?` enum，子 view 通过 `.focused($parentFocus, equals: .grid/.preview/.quickViewer)` 绑定，由 ContentView 集中仲裁焦点。本次仍走 incremental trigger UUID 修补，但下次同类 bug 出现前必须做 |
-| Followup | codex:rescue subagent gpt-5.5 支持 | — | 低 | — | 2026-05-04 用户把 `~/.codex/config.toml` 改 `model = "gpt-5.5" / effort = "high"` 后，`codex exec` 直接调用 gpt-5.5 工作正常；但 `codex:rescue` subagent 报"CLI 不支持 gpt-5.5"自动降级到 5.4-high。subagent 内部可能有 hardcoded model whitelist 或读 stale metadata。需排查 subagent 文件确认降级逻辑，让它能用上新配置 |
+| Followup ✓ 已闭环 | codex:rescue shared broker 不跟随 codex CLI 升级 | — | — | 2026-05-04 排查 | 现象：`codex:rescue` subagent 跑 5.4 而非配置的 gpt-5.5；ephemeral `codex exec` 又用 5.5。**根因**：Claude session 用 shared codex app-server 模式（broker socket），broker 进程启动时锁定当时 binary 路径 + 当时读取的 config，**不会**因后续 npm 升级 codex CLI 或 edit ~/.codex/config.toml 而自动重启。subagent 通过 broker 转发 → 吃老 binary/config。**修复**：`pkill -f "codex.*app-server"` 或 `kill <broker PID>`，下次 codex 调用自动启动新 broker（读新 binary + 新 config）。**确认机制**：companion script `codex-companion.mjs` + lib/codex.mjs 没有 model whitelist，问题不在它们；`codex app-server --help` 显示它接受 `-c key=value` config override，启动时确实读 `~/.codex/config.toml`。codex CLI banner（`codex exec` 启动时）是权威 model + effort 来源；codex 本身在对话中自报 "GPT-5 medium" 等是 LLM self-identify 训练偏差，**不可信**。**已沉淀至全局 ~/.claude/CLAUDE.md 跨项目教训段** |
 
 ---
 
