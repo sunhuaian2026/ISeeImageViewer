@@ -24,11 +24,11 @@
 
 （本段 CC 维护，追加新项。测完移到 Done。）
 
-- [ ] (2026-04-27 / `c112059`) **缩略图**：含同名不同后缀文件夹（如 4.jpg + 4.png）→ 点击各 cell（含相邻同基名两张）→ 视觉点的就是预览出的，多次切换不漂移
-- [ ] (2026-04-27 / `c112059`) **缩略图**：单击 highlight 高亮跟随点击；双击进 QuickViewer；Space 进 QuickViewer；ESC 关 QuickViewer 回到原 cell highlight 不丢
-- [ ] (2026-04-27 / `c112059`) **缩略图**：方向键导航在 grid 上还能用（左右/上下，wrap 在边界正确，scrollTo center）
-- [ ] (2026-04-27 / `c112059`) **排序**：切换排序后再点缩略图 → 视觉与预览一致（之前 ScrollView `.id(sortKey-direction)` 强制重建已删，要确认 LazyVGrid 自身能正确响应数组重排）
+- [ ] (2026-04-27 / `c112059` + 待修 focus race) **缩略图 · ESC 后焦点恢复**：单击 cell A 进预览 → ESC 退回 grid → 此时按方向键 / Space 应在 grid 内移 highlight / 进 QuickViewer（现状 Y-1：完全无响应；Y-2：方向键反而再弹出预览。**未修，等下个 commit 处理**）
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
+- [ ] (2026-05-04 / `<pending>`) **缩略图 · 双击 highlight 跟随**：先单击 cell A（highlight 在 A）→ 双击 cell B 进 QuickViewer → ESC 退 QuickViewer → highlight 应**已在 B**（而不是停留在 A）。修复 = `.onTapGesture(count: 2)` 闭包补 `highlightedURL = url`
+- [ ] (2026-05-04 / `<pending>`) **缩略图 · 上下方向键步长**：刚启动选中文件夹后**不碰任何 cell**，按 ↓ 应高亮第二行同列 cell（不是跨行乱跳到很后面）；按 ↑ 反之；侧栏宽度变化或 Inspector 开关后重测，步长仍正确（GeometryReader 应自动重算列数）
+- [ ] (2026-05-04 / `<pending>`) **缩略图 · 上下方向键边界**：按 ↑ 到第一行后再按 ↑ 应停在最左 cell（不溢出 / 不崩）；按 ↓ 到最后一行后再按 ↓ 应停在最末 cell；列数为 1 时 ↑↓ 等同于 ←→
 
 ---
 
@@ -68,3 +68,5 @@
 - [x] (2026-04-27 / `8e6de41`) **重命名 · 活动监视器**：打开 Glance.app → 活动监视器进程列表显示 "Glance"（不再是 ISeeImageViewer）✓ 2026-04-27
 - [x] (2026-04-27 / `8e6de41`) **重命名 · 顶部菜单栏**：app 运行时屏幕顶部菜单栏第一项显示「一眼」/ "Glance" ✓ 2026-04-27
 - [x] (2026-04-27 / `8e6de41`) **重命名 · Bookmark 重新授权**：旧 ISeeImageViewer 的 bookmark 已失效（Bundle ID 改了），重新拖文件夹进侧边栏可正常授权浏览 ✓ 2026-04-27
+- [x] (2026-04-27 / `c112059`) **缩略图**：含同名不同后缀文件夹（如 4.jpg + 4.png）→ 点击各 cell（含相邻同基名两张）→ 视觉点的就是预览出的，多次切换不漂移 ✓ 2026-05-04
+- [x] (2026-04-27 / `c112059`) **排序**：切换排序后再点缩略图 → 视觉与预览一致（之前 ScrollView `.id(sortKey-direction)` 强制重建已删，要确认 LazyVGrid 自身能正确响应数组重排）✓ 2026-05-04

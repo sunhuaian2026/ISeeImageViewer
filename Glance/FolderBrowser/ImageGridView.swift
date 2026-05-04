@@ -107,52 +107,58 @@ struct ImageGridView: View {
 
     private var gridContent: some View {
         let images = folderStore.images
-        let colCount = columnCount()
 
-        return ScrollViewReader { scrollProxy in
-            ScrollView {
-                LazyVGrid(columns: gridColumns, spacing: DS.Thumbnail.spacing) {
-                    ForEach(images, id: \.self) { url in
-                        VStack(spacing: DS.Spacing.xs) {
-                            ThumbnailCell(url: url, isHighlighted: highlightedURL == url, size: folderStore.thumbnailSize)
-                            Text(url.lastPathComponent)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                                .truncationMode(.middle)
-                                .frame(maxWidth: folderStore.thumbnailSize)
-                        }
-                        .id(url)
-                        .contentShape(Rectangle())
-                        .onTapGesture(count: 2) {
-                            guard let idx = folderStore.images.firstIndex(of: url) else { return }
-                            onDoubleClick(idx)
-                        }
-                        .onTapGesture(count: 1) {
-                            highlightedURL = url
-                            folderStore.selectedImageIndex = folderStore.images.firstIndex(of: url)
+        return GeometryReader { geo in
+            // colCount 用 grid 实际可用宽度算（geo.size.width 反映 mainContent 区，
+            // 不含 sidebar / inspector），上下方向键步长才与 LazyVGrid 实际列数一致
+            let colCount = computeColumnCount(width: geo.size.width)
+
+            ScrollViewReader { scrollProxy in
+                ScrollView {
+                    LazyVGrid(columns: gridColumns, spacing: DS.Thumbnail.spacing) {
+                        ForEach(images, id: \.self) { url in
+                            VStack(spacing: DS.Spacing.xs) {
+                                ThumbnailCell(url: url, isHighlighted: highlightedURL == url, size: folderStore.thumbnailSize)
+                                Text(url.lastPathComponent)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                                    .truncationMode(.middle)
+                                    .frame(maxWidth: folderStore.thumbnailSize)
+                            }
+                            .id(url)
+                            .contentShape(Rectangle())
+                            .onTapGesture(count: 2) {
+                                guard let idx = folderStore.images.firstIndex(of: url) else { return }
+                                highlightedURL = url
+                                onDoubleClick(idx)
+                            }
+                            .onTapGesture(count: 1) {
+                                highlightedURL = url
+                                folderStore.selectedImageIndex = folderStore.images.firstIndex(of: url)
+                            }
                         }
                     }
+                    .animation(DS.Anim.fast, value: folderStore.thumbnailSize)
+                    .padding(DS.Spacing.sm)
                 }
-                .animation(DS.Anim.fast, value: folderStore.thumbnailSize)
-                .padding(DS.Spacing.sm)
+                .background(DS.Color.gridBackground)
+                .focusable()
+                .focused($isFocused)
+                .onAppear { isFocused = true }
+                // Space：进入全窗口查看器
+                .onKeyPress(.space) {
+                    guard !images.isEmpty else { return .ignored }
+                    let target = highlightedURL.flatMap({ folderStore.images.firstIndex(of: $0) }) ?? 0
+                    onDoubleClick(target)
+                    return .handled
+                }
+                // 方向键导航
+                .onKeyPress(.leftArrow)  { moveHighlight(by: -1,        colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
+                .onKeyPress(.rightArrow) { moveHighlight(by: +1,        colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
+                .onKeyPress(.upArrow)    { moveHighlight(by: -colCount, colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
+                .onKeyPress(.downArrow)  { moveHighlight(by: +colCount, colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
             }
-            .background(DS.Color.gridBackground)
-            .focusable()
-            .focused($isFocused)
-            .onAppear { isFocused = true }
-            // Space：进入全窗口查看器
-            .onKeyPress(.space) {
-                guard !images.isEmpty else { return .ignored }
-                let target = highlightedURL.flatMap({ folderStore.images.firstIndex(of: $0) }) ?? 0
-                onDoubleClick(target)
-                return .handled
-            }
-            // 方向键导航
-            .onKeyPress(.leftArrow)  { moveHighlight(by: -1,        colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
-            .onKeyPress(.rightArrow) { moveHighlight(by: +1,        colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
-            .onKeyPress(.upArrow)    { moveHighlight(by: -colCount, colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
-            .onKeyPress(.downArrow)  { moveHighlight(by: +colCount, colCount: colCount, total: images.count, proxy: scrollProxy); return .handled }
         }
     }
 
@@ -169,11 +175,13 @@ struct ImageGridView: View {
         }
     }
 
-    private func columnCount() -> Int {
-        // 估算列数，用于上下方向键步进
-        let cellWidth = folderStore.thumbnailSize + DS.Thumbnail.spacing
-        let windowWidth = NSApp.keyWindow?.contentView?.bounds.width ?? 800
-        return max(1, Int(windowWidth / cellWidth))
+    private func computeColumnCount(width: CGFloat) -> Int {
+        // grid 真实宽度 = 容器宽度 - LazyVGrid 上的左右 padding(DS.Spacing.sm)
+        // SwiftUI .adaptive(minimum:) 列数算法：floor((W + spacing) / (cellWidth + spacing))
+        let gridWidth = width - 2 * DS.Spacing.sm
+        let cellWidth = folderStore.thumbnailSize
+        let spacing = DS.Thumbnail.spacing
+        return max(1, Int((gridWidth + spacing) / (cellWidth + spacing)))
     }
 
 }
