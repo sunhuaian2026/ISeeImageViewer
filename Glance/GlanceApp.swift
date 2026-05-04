@@ -36,6 +36,26 @@ struct GlanceApp: App {
                 }
         }
         .defaultSize(width: 1280, height: 800)
+        .commands {
+            // 替换标准"关于"菜单：弹自定义 AboutView 支持点击复制
+            CommandGroup(replacing: .appInfo) {
+                AboutMenuButton()
+            }
+        }
+
+        Window("关于一眼", id: "about") {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
+    }
+}
+
+private struct AboutMenuButton: View {
+    @Environment(\.openWindow) private var openWindow
+    var body: some View {
+        Button("关于一眼") {
+            openWindow(id: "about")
+        }
     }
 }
 
