@@ -30,7 +30,7 @@
 - [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 缩略图加载**：快速切换图 ←→ → filmstrip 缩略图加载不应错位（`.task(id: url)` + cancel guard 应阻止旧任务覆盖新 cell 显示）
 - [ ] (2026-05-04 / `38adfd4`) **关于面板版本号注入**：本机 quit Glance → 让 Syncthing 同步最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → 应显示 `版本 1.0 (<commit>[-d].<MMDD-HHMM>)`（不再是固定的 `(1)`）。多次 build 后版本号应递变（dirty build 时间戳每分钟级别区分）
 - [ ] (2026-05-04 / `38adfd4`) **BuildInfo.txt sidecar 同步**：本机 `cat ~/sync/Glance.app.BuildInfo.txt` → 应看到 commit / dirty / version / commit_time / commit_msg / built_at / host 七字段；版本号字符串与关于面板里那个一致
-- [ ] (2026-05-05 / `<pending>`) **关于面板 Copyright 字段**：本机 quit Glance → 等 Syncthing 拉到最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → Copyright 字段（在版本号下方小灰色字）应显示 `© 2026 孙红军 · 16414766@qq.com · 小红书 382336617`（macOS 系统面板单行 truncate，太长可能末尾省略号 — 如太挤需调整内容则升级到自定义 about panel）
+- [ ] (2026-05-05 / `bd25fd0`) **关于面板 Copyright 字段**：本机 quit Glance → 等 Syncthing 拉到最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → Copyright 字段（在版本号下方小灰色字）应显示 `© 2026 孙红军 · 16414766@qq.com · 小红书 382336617`（macOS 系统面板单行 truncate，太长可能末尾省略号 — 如太挤需调整内容则升级到自定义 about panel）
 
 ---
 
