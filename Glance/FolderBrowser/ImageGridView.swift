@@ -146,6 +146,12 @@ struct ImageGridView: View {
                 .focusable()
                 .focused($isFocused)
                 .onAppear { isFocused = true }
+                // ImagePreviewView 关闭时（selectedImageIndex 变 nil）grid 一直在 ZStack 底层
+                // 没有重新出现，onAppear 不会再触发；主动拉回焦点防止方向键 / Space 静默或被
+                // 退场中的 ImagePreviewView 残留响应（Y-1 / Y-2 race）
+                .onChange(of: folderStore.selectedImageIndex) { _, newValue in
+                    if newValue == nil { isFocused = true }
+                }
                 // Space：进入全窗口查看器
                 .onKeyPress(.space) {
                     guard !images.isEmpty else { return .ignored }

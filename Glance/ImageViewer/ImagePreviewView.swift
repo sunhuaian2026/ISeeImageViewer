@@ -112,7 +112,14 @@ struct ImagePreviewView: View {
         .focused($isFocused)
         .onAppear { loadImage(); isFocused = true }
         .onChange(of: focusTrigger) { isFocused = true }
-        .onKeyPress(.escape)     { onDismiss(); return .handled }
+        .onKeyPress(.escape) {
+            // 先撤焦点再 dismiss：transition 退场期 view 仍存活，若仍是 active key target
+            // 用户随后按方向键会被本 view 的 onKeyPress(.leftArrow/.rightArrow) 接到，
+            // navigate(by:) 重写 selectedImageIndex 让预览重 mount（Y-2）
+            isFocused = false
+            onDismiss()
+            return .handled
+        }
         .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
         .onKeyPress(.rightArrow) { navigate(by: +1); return .handled }
         .onKeyPress(.space) { onQuickView(currentIndex); return .handled }

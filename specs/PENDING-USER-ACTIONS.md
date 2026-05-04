@@ -24,11 +24,11 @@
 
 （本段 CC 维护，追加新项。测完移到 Done。）
 
-- [ ] (2026-04-27 / `c112059` + 待修 focus race) **缩略图 · ESC 后焦点恢复**：单击 cell A 进预览 → ESC 退回 grid → 此时按方向键 / Space 应在 grid 内移 highlight / 进 QuickViewer（现状 Y-1：完全无响应；Y-2：方向键反而再弹出预览。**未修，等下个 commit 处理**）
+- [ ] (2026-05-04 / `<pending>`) **缩略图 · ESC 后焦点恢复（Y-1）**：单击 cell A 进 ImagePreviewView → ESC 退回 grid → 按方向键 → highlight 应在 grid 内正常移动（不再静默无响应）
+- [ ] (2026-05-04 / `<pending>`) **缩略图 · ESC 后焦点恢复（Y-2）**：同上链路 ESC 退回 grid → 按方向键 → 不再"反而又弹出下一张预览"（即 ImagePreviewView 不应在 transition 退场期残留响应按键）。多次重复（10 次以上，因为是 race，不必次次稳定但应显著降低）
+- [ ] (2026-05-04 / `<pending>`) **缩略图 · ESC 后 Space**：单击 cell A 进预览 → ESC 退回 grid → 按 Space → 应进 QuickViewer 显示当前 highlight 那张（之前是 Space 完全无响应）
+- [ ] (2026-05-04 / `<pending>`) **预览页 · ESC 退出回归**：进预览正常使用 ←→ 切图 / Space 进 QuickViewer / 双击进 QV 等流程仍正常（B 方案修改的是 ESC 路径，要确认其他按键路径没受影响）
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
-- [ ] (2026-05-04 / `44ba6ee`) **缩略图 · 双击 highlight 跟随**：先单击 cell A（highlight 在 A）→ 双击 cell B 进 QuickViewer → ESC 退 QuickViewer → highlight 应**已在 B**（而不是停留在 A）。修复 = `.onTapGesture(count: 2)` 闭包补 `highlightedURL = url`
-- [ ] (2026-05-04 / `44ba6ee`) **缩略图 · 上下方向键步长**：刚启动选中文件夹后**不碰任何 cell**，按 ↓ 应高亮第二行同列 cell（不是跨行乱跳到很后面）；按 ↑ 反之；侧栏宽度变化或 Inspector 开关后重测，步长仍正确（GeometryReader 应自动重算列数）
-- [ ] (2026-05-04 / `44ba6ee`) **缩略图 · 上下方向键边界**：按 ↑ 到第一行后再按 ↑ 应停在最左 cell（不溢出 / 不崩）；按 ↓ 到最后一行后再按 ↓ 应停在最末 cell；列数为 1 时 ↑↓ 等同于 ←→
 
 ---
 
@@ -70,3 +70,6 @@
 - [x] (2026-04-27 / `8e6de41`) **重命名 · Bookmark 重新授权**：旧 ISeeImageViewer 的 bookmark 已失效（Bundle ID 改了），重新拖文件夹进侧边栏可正常授权浏览 ✓ 2026-04-27
 - [x] (2026-04-27 / `c112059`) **缩略图**：含同名不同后缀文件夹（如 4.jpg + 4.png）→ 点击各 cell（含相邻同基名两张）→ 视觉点的就是预览出的，多次切换不漂移 ✓ 2026-05-04
 - [x] (2026-04-27 / `c112059`) **排序**：切换排序后再点缩略图 → 视觉与预览一致（之前 ScrollView `.id(sortKey-direction)` 强制重建已删，要确认 LazyVGrid 自身能正确响应数组重排）✓ 2026-05-04
+- [x] (2026-05-04 / `44ba6ee`) **缩略图 · 双击 highlight 跟随**：先单击 cell A（highlight 在 A）→ 双击 cell B 进 QuickViewer → ESC 退 QuickViewer → highlight 应**已在 B** ✓ 2026-05-04
+- [x] (2026-05-04 / `44ba6ee`) **缩略图 · 上下方向键步长**：刚启动选中文件夹后不碰任何 cell，按 ↓ 高亮第二行同列 cell；按 ↑ 反之；Inspector 开关后步长仍正确 ✓ 2026-05-04
+- [x] (2026-05-04 / `44ba6ee`) **缩略图 · 上下方向键边界**：↑ 到第一行后再 ↑ 停在最左 cell；↓ 到最后一行后再 ↓ 停在最末 cell ✓ 2026-05-04
