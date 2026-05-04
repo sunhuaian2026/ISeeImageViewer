@@ -24,11 +24,11 @@
 
 （本段 CC 维护，追加新项。测完移到 Done。）
 
-- [ ] (2026-05-04 / `<pending>`) **缩略图 · QV dismiss 后 grid 焦点（核心 case）**：单击 cell A → preview → ESC → Space → QuickViewer → ESC → 此时按 Space / 方向键 → grid 应正常响应（之前 Y bug round 2 全静默）
-- [ ] (2026-05-04 / `<pending>`) **缩略图 · grid 直接双击进 QV 后 ESC**：刚启动选文件夹后**不进 preview**，**直接双击** cell B → QV → ESC → 按方向键 → highlight 在 grid 内正常移动 / Space 再进 QV 正常
-- [ ] (2026-05-04 / `<pending>`) **预览 → QV → preview 路径**：单击 cell A → preview → 双击图片 → QV → ESC → 应回到 preview（不是 grid）；按方向键应在 preview 内切图（不漏 navigate；previewFocusTrigger 路径仍工作）
-- [ ] (2026-05-04 / `<pending>`) **切换文件夹强制关 QV**：正在 QV 中 → 侧边栏点另一个文件夹 → QV 自动关 → focus 落到合理位置不崩；不该静默或残留 QV
-- [ ] (2026-05-04 / `<pending>`) **ImagePreviewView 关闭按钮回归**：单击 cell 进 preview → 点左上 X 按钮（不用 ESC）→ 退回 grid → 按方向键 / Space → 正常工作（dismissPreview helper 走的同一路径）
+- [ ] (2026-05-04 / `59a9d86`) **缩略图 · QV dismiss 后 grid 焦点（核心 case）**：单击 cell A → preview → ESC → Space → QuickViewer → ESC → 此时按 Space / 方向键 → grid 应正常响应（之前 Y bug round 2 全静默）
+- [ ] (2026-05-04 / `59a9d86`) **缩略图 · grid 直接双击进 QV 后 ESC**：刚启动选文件夹后**不进 preview**，**直接双击** cell B → QV → ESC → 按方向键 → highlight 在 grid 内正常移动 / Space 再进 QV 正常
+- [ ] (2026-05-04 / `59a9d86`) **预览 → QV → preview 路径**：单击 cell A → preview → 双击图片 → QV → ESC → 应回到 preview（不是 grid）；按方向键应在 preview 内切图（不漏 navigate；previewFocusTrigger 路径仍工作）
+- [ ] (2026-05-04 / `59a9d86`) **切换文件夹强制关 QV**：正在 QV 中 → 侧边栏点另一个文件夹 → QV 自动关 → focus 落到合理位置不崩；不该静默或残留 QV
+- [ ] (2026-05-04 / `59a9d86`) **ImagePreviewView 关闭按钮回归**：单击 cell 进 preview → 点左上 X 按钮（不用 ESC）→ 退回 grid → 按方向键 / Space → 正常工作（dismissPreview helper 走的同一路径）
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
 
 ---
