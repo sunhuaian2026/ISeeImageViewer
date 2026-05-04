@@ -30,7 +30,10 @@
 - [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 缩略图加载**：快速切换图 ←→ → filmstrip 缩略图加载不应错位（`.task(id: url)` + cancel guard 应阻止旧任务覆盖新 cell 显示）
 - [ ] (2026-05-04 / `38adfd4`) **关于面板版本号注入**：本机 quit Glance → 让 Syncthing 同步最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → 应显示 `版本 1.0 (<commit>[-d].<MMDD-HHMM>)`（不再是固定的 `(1)`）。多次 build 后版本号应递变（dirty build 时间戳每分钟级别区分）
 - [ ] (2026-05-04 / `38adfd4`) **BuildInfo.txt sidecar 同步**：本机 `cat ~/sync/Glance.app.BuildInfo.txt` → 应看到 commit / dirty / version / commit_time / commit_msg / built_at / host 七字段；版本号字符串与关于面板里那个一致
-- [ ] (2026-05-05 / `bd25fd0`) **关于面板 Copyright 字段**：本机 quit Glance → 等 Syncthing 拉到最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → Copyright 字段（在版本号下方小灰色字）应显示 `© 2026 孙红军 · 16414766@qq.com · 小红书 382336617`（macOS 系统面板单行 truncate，太长可能末尾省略号 — 如太挤需调整内容则升级到自定义 about panel）
+- [x] (2026-05-05 / `bd25fd0`) **关于面板 Copyright 字段**（已用 8f927d1 自定义 about panel 取代）：标准面板 wrap 点不雅观（"小红书"和"382336617"被自动拆两行），故升级到自定义 panel — 见下方测试项 ✓ 2026-05-05
+- [ ] (2026-05-05 / `8f927d1`) **自定义关于面板 · 弹窗触发**：本机 quit Glance → Syncthing 拉到最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → 应弹出**自定义窗口**（不是标准 macOS 关于面板）：含 AppIcon 96px / 名称"一眼" / 版本号 / 两行 contact
+- [ ] (2026-05-05 / `8f927d1`) **自定义关于面板 · 点击复制 + toast**：(a) 鼠标 hover 到任一 contact 行 → 鼠标变手指 cursor；(b) 点击 `© 2026 孙红军 · 16414766@qq.com` 行 → 整行复制到剪贴板 + 底部弹"已复制：© 2026 孙红军 · 16414766@qq.com" toast，~1.5s 自动消失；(c) 点击 `小红书 382336617` 行 → 整行复制 + toast "已复制：小红书 382336617"；(d) 切到任意输入框（备忘录 / Safari 地址栏） → ⌘V 粘贴 → 内容应正确
+- [ ] (2026-05-05 / `8f927d1`) **自定义关于面板 · 版本号动态读取**：build 完毕新版后看关于窗口版本号字符串应跟 `cat ~/sync/Glance.app.BuildInfo.txt` 的 `version:` 字段一致（动态从 Bundle.main.infoDictionary 读，不会写死）
 
 ---
 
