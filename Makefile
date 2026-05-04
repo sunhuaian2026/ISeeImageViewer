@@ -11,10 +11,16 @@ DIRTY   := $(shell git diff --quiet HEAD -- Glance/ Makefile scripts/ 2>/dev/nul
 STAMP   := $(shell date +%m%d-%H%M)
 VERSION := $(COMMIT)$(DIRTY).$(STAMP)
 
+# 关于面板 Copyright 字段（系统 NSAboutPanel 单行 truncate-by-tail，
+# 多行 \n 不渲染折行，所以信息压一行）。Year 跟随 commit_time 调，
+# 暂硬编 2026
+COPYRIGHT := © 2026 孙红军 · 16414766@qq.com · 小红书 382336617
+
 build:
 	xcodebuild -project Glance.xcodeproj -scheme Glance \
 		-configuration Debug CONFIGURATION_BUILD_DIR=$(BUILD_DIR) \
 		CURRENT_PROJECT_VERSION="$(VERSION)" \
+		INFOPLIST_KEY_NSHumanReadableCopyright="$(COPYRIGHT)" \
 		build
 	@touch $(BUILD_DIR)/Glance.app
 	@echo "  ✓ touched $(BUILD_DIR)/Glance.app — Finder mtime 同步到当前编译时刻"

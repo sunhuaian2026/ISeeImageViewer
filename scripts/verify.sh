@@ -158,12 +158,16 @@ fi
 BUILD_STAMP=$(date +%m%d-%H%M)
 BUILD_VERSION="${COMMIT}${DIRTY}.${BUILD_STAMP}"
 
+# 关于面板 Copyright 字段（与 Makefile 同步）
+COPYRIGHT="© 2026 孙红军 · 16414766@qq.com · 小红书 382336617"
+
 xcodebuild build \
   -project Glance.xcodeproj \
   -scheme Glance \
   -configuration Debug \
   CONFIGURATION_BUILD_DIR="$BUILD_DIR" \
   CURRENT_PROJECT_VERSION="$BUILD_VERSION" \
+  INFOPLIST_KEY_NSHumanReadableCopyright="$COPYRIGHT" \
   -quiet >"$BUILD_LOG" 2>&1
 BUILD_EXIT=$?
 
