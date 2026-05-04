@@ -34,6 +34,7 @@
 - [ ] (2026-05-05 / `8f927d1`) **自定义关于面板 · 弹窗触发**：本机 quit Glance → Syncthing 拉到最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → 应弹出**自定义窗口**（不是标准 macOS 关于面板）：含 AppIcon 96px / 名称"一眼" / 版本号 / 两行 contact
 - [ ] (2026-05-05 / `8f927d1`) **自定义关于面板 · 点击复制 + toast**：(a) 鼠标 hover 到任一 contact 行 → 鼠标变手指 cursor；(b) 点击 `© 2026 孙红军 · 16414766@qq.com` 行 → 整行复制到剪贴板 + 底部弹"已复制：© 2026 孙红军 · 16414766@qq.com" toast，~1.5s 自动消失；(c) 点击 `小红书 382336617` 行 → 整行复制 + toast "已复制：小红书 382336617"；(d) 切到任意输入框（备忘录 / Safari 地址栏） → ⌘V 粘贴 → 内容应正确
 - [ ] (2026-05-05 / `8f927d1`) **自定义关于面板 · 版本号动态读取**：build 完毕新版后看关于窗口版本号字符串应跟 `cat ~/sync/Glance.app.BuildInfo.txt` 的 `version:` 字段一致（动态从 Bundle.main.infoDictionary 读，不会写死）
+- [ ] (2026-05-05 / `09c418c`) **自定义关于面板 · 无 focus ring 残留**：点击任一 contact 行 → 复制 + toast → 该行周围**不应有** accent color 细描边 / 任何 focus ring 类视觉残留；hover 切换到另一行再点击同样无 ring；窗口失焦再回来同样无残留
 
 ---
 
