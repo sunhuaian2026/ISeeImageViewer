@@ -25,16 +25,7 @@
 （本段 CC 维护，追加新项。测完移到 Done。）
 
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
-- [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 点击命中**：进 QV → 点击底部 filmstrip 任意 cell A → filmstrip 高亮跳到 A + 主图也是 A（不再"点 A 显示 B"漂移）。多次反复点不同位置（起始 / 中间 / 末尾 / 同名不同后缀），全部对应正确
-- [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · scrollTo 跟随**：方向键 ←→ 切换图 → filmstrip 自动滚动让当前 cell 居中（之前 scrollTo 用 index target，现在用 url target，行为应一致）
-- [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 缩略图加载**：快速切换图 ←→ → filmstrip 缩略图加载不应错位（`.task(id: url)` + cancel guard 应阻止旧任务覆盖新 cell 显示）
-- [ ] (2026-05-04 / `38adfd4`) **关于面板版本号注入**：本机 quit Glance → 让 Syncthing 同步最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → 应显示 `版本 1.0 (<commit>[-d].<MMDD-HHMM>)`（不再是固定的 `(1)`）。多次 build 后版本号应递变（dirty build 时间戳每分钟级别区分）
-- [ ] (2026-05-04 / `38adfd4`) **BuildInfo.txt sidecar 同步**：本机 `cat ~/sync/Glance.app.BuildInfo.txt` → 应看到 commit / dirty / version / commit_time / commit_msg / built_at / host 七字段；版本号字符串与关于面板里那个一致
 - [x] (2026-05-05 / `bd25fd0`) **关于面板 Copyright 字段**（已用 8f927d1 自定义 about panel 取代）：标准面板 wrap 点不雅观（"小红书"和"382336617"被自动拆两行），故升级到自定义 panel — 见下方测试项 ✓ 2026-05-05
-- [ ] (2026-05-05 / `8f927d1`) **自定义关于面板 · 弹窗触发**：本机 quit Glance → Syncthing 拉到最新 .app → 启动 Glance → 顶部菜单"一眼"→"关于一眼" → 应弹出**自定义窗口**（不是标准 macOS 关于面板）：含 AppIcon 96px / 名称"一眼" / 版本号 / 两行 contact
-- [ ] (2026-05-05 / `8f927d1`) **自定义关于面板 · 点击复制 + toast**：(a) 鼠标 hover 到任一 contact 行 → 鼠标变手指 cursor；(b) 点击 `© 2026 孙红军 · 16414766@qq.com` 行 → 整行复制到剪贴板 + 底部弹"已复制：© 2026 孙红军 · 16414766@qq.com" toast，~1.5s 自动消失；(c) 点击 `小红书 382336617` 行 → 整行复制 + toast "已复制：小红书 382336617"；(d) 切到任意输入框（备忘录 / Safari 地址栏） → ⌘V 粘贴 → 内容应正确
-- [ ] (2026-05-05 / `8f927d1`) **自定义关于面板 · 版本号动态读取**：build 完毕新版后看关于窗口版本号字符串应跟 `cat ~/sync/Glance.app.BuildInfo.txt` 的 `version:` 字段一致（动态从 Bundle.main.infoDictionary 读，不会写死）
-- [ ] (2026-05-05 / `09c418c`) **自定义关于面板 · 无 focus ring 残留**：点击任一 contact 行 → 复制 + toast → 该行周围**不应有** accent color 细描边 / 任何 focus ring 类视觉残留；hover 切换到另一行再点击同样无 ring；窗口失焦再回来同样无残留
 
 ---
 
@@ -88,3 +79,12 @@
 - [x] (2026-05-04 / `59a9d86`) **预览 → QV → preview 路径**：单击 → preview → 双击图片 → QV → ESC → 回 preview，方向键切预览图正常 ✓ 2026-05-04
 - [x] (2026-05-04 / `59a9d86`) **切换文件夹强制关 QV**：QV 中点侧边栏另一文件夹 → QV 自动关，焦点不崩 ✓ 2026-05-04
 - [x] (2026-05-04 / `59a9d86`) **ImagePreviewView 关闭按钮回归**：单击进 preview → 点左上 X → 退回 grid → 方向键 / Space 正常 ✓ 2026-05-04
+- [x] (2026-05-05 / `09c418c`) **自定义关于面板 · 无 focus ring 残留**：点击 contact 行 → 复制 + toast → 该行无 accent color 细描边 / focus ring 残留 ✓ 2026-05-05
+- [x] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 点击命中**：点 cell A → 高亮 + 主图都跳到 A，不漂移；多位置反复测过 ✓ 2026-05-05
+- [x] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · scrollTo 跟随**：方向键切图 filmstrip 自动滚到当前 cell 居中 ✓ 2026-05-05
+- [x] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 缩略图加载**：快切 ←→ 缩略图不错位（.task(id:) + cancel guard 工作）✓ 2026-05-05
+- [x] (2026-05-04 / `38adfd4`) **关于面板版本号注入**：版本号显示 commit hash 格式，多次 build 递变 ✓ 2026-05-05
+- [x] (2026-05-04 / `38adfd4`) **BuildInfo.txt sidecar 同步**：`cat ~/sync/Glance.app.BuildInfo.txt` 7 字段齐全 ✓ 2026-05-05
+- [x] (2026-05-05 / `8f927d1`) **自定义关于面板 · 弹窗触发**：菜单触发自定义窗口（非系统 NSAboutPanel），AppIcon / 名称 / 版本号 / 两行 contact 完整 ✓ 2026-05-05
+- [x] (2026-05-05 / `8f927d1`) **自定义关于面板 · 点击复制 + toast**：hover 手指 cursor / 点击复制 / toast / ⌘V 粘贴验证 ✓ 2026-05-05
+- [x] (2026-05-05 / `8f927d1`) **自定义关于面板 · 版本号动态读取**：关于窗口版本号字符串与 BuildInfo.txt version 字段一致 ✓ 2026-05-05
