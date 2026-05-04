@@ -70,17 +70,20 @@ struct AboutView: View {
 
     @ViewBuilder
     private func copyableLine(_ text: String) -> some View {
-        Button {
-            copyToPasteboard(text)
-        } label: {
-            Text(text)
-                .font(.caption)
-                .foregroundStyle(DS.Color.secondaryText)
-                .multilineTextAlignment(.center)
-        }
-        .buttonStyle(.plain)
-        .pointingHandCursorOnHover()
-        .help("点击复制")
+        // 用 onTapGesture 替代 Button：Button 在 macOS 上是 focusable 元素，
+        // 点击后 system 会在它周围画 accent-color focus ring；.buttonStyle(.plain)
+        // 不影响 focus ring 渲染。Text + onTapGesture 不进入 focus chain，无 ring。
+        Text(text)
+            .font(.caption)
+            .foregroundStyle(DS.Color.secondaryText)
+            .multilineTextAlignment(.center)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                copyToPasteboard(text)
+            }
+            .pointingHandCursorOnHover()
+            .accessibilityAddTraits(.isButton)
+            .help("点击复制")
     }
 
     private func copyToPasteboard(_ text: String) {
