@@ -13,7 +13,6 @@ import AppKit
 struct AboutView: View {
     private static let line1 = "© 2026 孙红军 · 16414766@qq.com"
     private static let line2 = "小红书 382336617"
-    private static let toastDuration: TimeInterval = 1.5
 
     @State private var toastMessage: String? = nil
     @State private var toastTask: Task<Void, Never>? = nil
@@ -31,7 +30,7 @@ struct AboutView: View {
                 Image(nsImage: icon)
                     .resizable()
                     .interpolation(.high)
-                    .frame(width: 96, height: 96)
+                    .frame(width: DS.About.appIconSize, height: DS.About.appIconSize)
             }
 
             Text("一眼")
@@ -39,7 +38,7 @@ struct AboutView: View {
 
             Text(versionLabel)
                 .font(.callout)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DS.Color.secondaryText)
                 .textSelection(.enabled)
 
             Divider()
@@ -51,7 +50,7 @@ struct AboutView: View {
             }
         }
         .padding(DS.Spacing.lg + DS.Spacing.xs)
-        .frame(width: 320)
+        .frame(width: DS.About.windowWidth)
         .overlay(alignment: .bottom) {
             if let msg = toastMessage {
                 Text(msg)
@@ -62,7 +61,7 @@ struct AboutView: View {
                     .padding(.vertical, DS.Spacing.xs)
                     .background(.ultraThinMaterial, in: Capsule())
                     .padding(.bottom, DS.Spacing.sm)
-                    .frame(maxWidth: 280)
+                    .frame(maxWidth: DS.About.toastMaxWidth)
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
@@ -76,7 +75,7 @@ struct AboutView: View {
         } label: {
             Text(text)
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(DS.Color.secondaryText)
                 .multilineTextAlignment(.center)
         }
         .buttonStyle(.plain)
@@ -95,7 +94,7 @@ struct AboutView: View {
         toastTask?.cancel()
         toastMessage = msg
         toastTask = Task { @MainActor in
-            try? await Task.sleep(nanoseconds: UInt64(Self.toastDuration * 1_000_000_000))
+            try? await Task.sleep(for: .seconds(DS.About.toastDurationSeconds))
             guard !Task.isCancelled else { return }
             withAnimation(DS.Anim.fast) { toastMessage = nil }
         }

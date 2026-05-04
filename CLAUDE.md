@@ -70,9 +70,11 @@ ISeeImageViewer/                    ← 磁盘路径未改，repo 内部一切�
     ├── Inspector/
     │   ├── ImageInspectorViewModel.swift  ← ImageInfo struct + EXIF 读取
     │   └── ImageInspectorView.swift       ← Form + Section 布局
-    └── FullScreen/
-        ├── AppState.swift           ← isFullScreen + appearanceMode 状态 + toggleFullScreen()
-        └── WindowAccessor.swift     ← NSViewRepresentable，获取 NSWindow + NSWindowDelegate
+    ├── FullScreen/
+    │   ├── AppState.swift           ← isFullScreen + appearanceMode 状态 + toggleFullScreen()
+    │   └── WindowAccessor.swift     ← NSViewRepresentable，获取 NSWindow + NSWindowDelegate
+    └── About/
+        └── AboutView.swift          ← 自定义"关于一眼"窗口（替换标准 NSAboutPanel），点击 contact 复制 + toast 提示
 ```
 
 ---

@@ -66,6 +66,15 @@ enum DS {
         static let fitPadding: CGFloat = 0.9
     }
 
+    // MARK: - About
+
+    enum About {
+        static let windowWidth: CGFloat = 320
+        static let appIconSize: CGFloat = 96
+        static let toastMaxWidth: CGFloat = 280
+        static let toastDurationSeconds: TimeInterval = 1.5
+    }
+
     // MARK: - Inspector
 
     enum Inspector {
@@ -115,6 +124,10 @@ enum DS {
         // 环境光（Liquid Glass 光晕，两种模式均适用，保持 SwiftUI.Color）
         static let glowPrimary    = SwiftUI.Color(red: 0.49, green: 0.42, blue: 1.0)  // 紫
         static let glowSecondary  = SwiftUI.Color(red: 0.2,  green: 0.6,  blue: 0.5)  // 青绿
+
+        // 次级文本（标题之外的描述/版本号/copyright 等），alias 到 SwiftUI 标准
+        // 语义色 .secondary，自动响应 colorScheme
+        static let secondaryText: SwiftUI.Color = .secondary
     }
 
     // MARK: - Icons（SF Symbols）
