@@ -96,6 +96,7 @@
 
 | 状态 | 模块 | 问题描述 | 已知信息 |
 |------|------|----------|----------|
+| 间歇 / 待复现 | TrafficLightHide | 双击缩略图进入 QuickViewer 后，左上角 Traffic Lights 按钮异常显示（不应可见 / 或位置错位）；同时侧边栏右上的"收缩侧边栏"toolbar item 消失（这一条按 ContentView.swift:87 的 `.toolbar(quickViewerIndex != nil ? .hidden : .visible, for: .windowToolbar)` 是有意为之，但与 traffic lights 异常一起出现疑似关联）。证据：用户截图 `~/sync/ScreenShot_2026-05-04_223944_900.png`（grid 模式正常）+ `~/sync/ScreenShot_2026-05-04_224129_612.png`（进 QV 后 traffic lights 残留）。**复现状态**：用户同 session 内再尝试已无法稳定复现，疑似间歇性 race。**历史 fix**：commit `f00a584`（进 QV 隐藏 / 退出恢复）→ `a064033`（全屏中退 QV 后 traffic light 不恢复 fix）→ `45a61f1`（hideTrafficLights() 挂载位置修正）— 此 bug 已修过 3 次，可能仍有未覆盖的 race / 时序边界。**下次复现思路**：(1) 加 print 日志到 hideTrafficLights / showTrafficLights / NSWindowDelegate 回调；(2) 复现时记录精确链路（grid 单击/双击 / 是否经 preview / 是否全屏中 / NSWindow 状态）；(3) 对 NSWindow.standardWindowButton(.closeButton)?.isHidden 做断言式 dump |
 
 ## 待开发
 
