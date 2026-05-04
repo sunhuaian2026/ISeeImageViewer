@@ -412,7 +412,7 @@ struct FilmstripCell: View {
         .animation(DS.Anim.fast, value: isSelected)
         .task(id: url) {
             thumbnail = nil
-            let result = await loadThumbnail(url: url, maxPixelSize: 80)
+            let result = await loadThumbnail(url: url, maxPixelSize: DS.Viewer.filmstripThumbLoadSize)
             guard !Task.isCancelled else { return }
             thumbnail = result
         }

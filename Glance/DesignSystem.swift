@@ -51,6 +51,10 @@ enum DS {
     enum Viewer {
         static let filmstripHeight: CGFloat = 72
         static let filmstripThumbSize: CGFloat = 56
+        // ImageIO 加载请求的最大像素尺寸（独立于 SwiftUI 渲染 frame，
+        // 略大于 thumbSize 允许 retina 时不糊）。Int 类型对齐 loadThumbnail
+        // 的 maxPixelSize 参数
+        static let filmstripThumbLoadSize: Int = 80
         static let cardCornerRadius: CGFloat = 16
         static let cardPadding: CGFloat = 12
         // 缩放范围（QuickViewerViewModel 依赖）
