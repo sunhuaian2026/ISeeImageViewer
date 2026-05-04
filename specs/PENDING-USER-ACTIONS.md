@@ -25,9 +25,9 @@
 （本段 CC 维护，追加新项。测完移到 Done。）
 
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
-- [ ] (2026-05-04 / `<pending>`) **QuickViewer filmstrip · 点击命中**：进 QV → 点击底部 filmstrip 任意 cell A → filmstrip 高亮跳到 A + 主图也是 A（不再"点 A 显示 B"漂移）。多次反复点不同位置（起始 / 中间 / 末尾 / 同名不同后缀），全部对应正确
-- [ ] (2026-05-04 / `<pending>`) **QuickViewer filmstrip · scrollTo 跟随**：方向键 ←→ 切换图 → filmstrip 自动滚动让当前 cell 居中（之前 scrollTo 用 index target，现在用 url target，行为应一致）
-- [ ] (2026-05-04 / `<pending>`) **QuickViewer filmstrip · 缩略图加载**：快速切换图 ←→ → filmstrip 缩略图加载不应错位（`.task(id: url)` + cancel guard 应阻止旧任务覆盖新 cell 显示）
+- [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 点击命中**：进 QV → 点击底部 filmstrip 任意 cell A → filmstrip 高亮跳到 A + 主图也是 A（不再"点 A 显示 B"漂移）。多次反复点不同位置（起始 / 中间 / 末尾 / 同名不同后缀），全部对应正确
+- [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · scrollTo 跟随**：方向键 ←→ 切换图 → filmstrip 自动滚动让当前 cell 居中（之前 scrollTo 用 index target，现在用 url target，行为应一致）
+- [ ] (2026-05-04 / `fb7f900`) **QuickViewer filmstrip · 缩略图加载**：快速切换图 ←→ → filmstrip 缩略图加载不应错位（`.task(id: url)` + cancel guard 应阻止旧任务覆盖新 cell 显示）
 
 ---
 
