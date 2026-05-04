@@ -6,9 +6,14 @@
 
 ---
 
-## 当前进度（2026-03-25）
+## 当前进度（2026-05-05）
 
-**所有模块已完成，Bug 修复中**
+**所有模块已完成 + 工程化收尾阶段**
+
+- 看图主功能（grid / preview / QuickViewer / Inspector / Sort / KeyboardShortcuts / Prefetch / AppIcon / Rename）全部稳定
+- 工程化基建：`/go` 五步 / `verify.sh` 三段 oracle / `build/Glance.app` 自动 sync `~/sync/` / pre-push codex hook / build 版本号注入 + BuildInfo sidecar / 自定义关于面板含点击复制
+- 仍在修补：长尾 bug fix + 偶发回归（见下方 Bug Fix 记录段 / 待修复段）
+- 下一步主线：Focus 架构父持有重构（详见待开发段，等下次 focus race bug 出现前要做）
 
 ---
 
@@ -35,6 +40,8 @@
 | Prefetch | Prefetch.md | 849b4ae | QuickViewer ±1 图片预加载缓存，切换零延迟，CGImage 缓存 ±2 窗口 |
 | AppIcon | — | fb6231c | Claude Design (Anthropic Labs) 出的 The Eye Mark · Cool Violet 方向：紫主底 + 青绿瞳孔光晕 + 白细描边，呼应 "I See" / 「一眼」双关 + 项目 DS.Color 紫青配色。master `assets/icon-1024.png` 透明背景方形画布；10 个 macOS 标准尺寸（16/32/128/256/512 各 1x+2x）由 sips 派生到 `Assets.xcassets/AppIcon.appiconset/`，Contents.json 配齐 filename 引用，xcodebuild 自动打包成 AppIcon.icns 进 .app/Contents/Resources |
 | Rename | — | 8e6de41 | 应用全面重命名 ISeeImageViewer → **Glance · 一眼**（2026-04-27），三阶段 commit：6a7f870 phase 1 / 8e6de41 phase 2（主） / f46f8cd phase 3。phase 1 (6a7f870)：Bundle ID `uupt.ISeeImageViewer` → `com.sunhongjun.glance`，双语 Display Name 走 Apple i18n（zh-Hans 显示「一眼」/ en 显示「Glance」，via lproj/InfoPlist.strings）。phase 2 (8e6de41)：target / 源目录 / xcodeproj / App struct（`ISeeImageViewerApp` → `GlanceApp`）/ entitlements / Makefile / verify.sh / pre-push hook / 13 个干净 .swift header 全部统一。phase 3 (f46f8cd)：文档 + auto-memory + 全局 sunerpang CLAUDE.md 同步 [docs-only]。**未改**：项目根目录磁盘路径（保 auto-memory 路径连续）、GitHub 仓库名（择日单独操作）、git 历史 commit message（真实历史保留）、`docs/archive/*.md`（历史快照）、`Glance/ContentView.swift` & `Glance/FolderBrowser/ImageGridView.swift` 的旧 header（用户未提交 debug 代码占位中）。Bookmark / UserDefaults 因 Bundle ID 变更失效（已与用户确认重测可接受）|
+| BuildVersionInfo | — | 38adfd4 | build 版本号注入 + BuildInfo.txt sidecar，取代不可靠 mtime 当跨机判断真值。Makefile + verify.sh 两条 build 路径同步通过 `xcodebuild ... CURRENT_PROJECT_VERSION="<commit>[-d].<MMDD-HHMM>"` 写入 Info.plist `CFBundleVersion`；同时输出 `Glance.app.BuildInfo.txt` sidecar（commit / dirty / version / commit_time / commit_msg / built_at / host 七字段）。-d 后缀标记 working tree 有未 commit 改动避免误读 |
+| AboutPanel | — | 8f927d1 + 6f56072 | 自定义"关于一眼"窗口（替换标准 NSAboutPanel）。原因：标准面板 NSHumanReadableCopyright 字段不可点击，无法挂复制 handler。新建 `Glance/About/AboutView.swift`：AppIcon 96px / 名称 / 动态版本号 / 两行可点击 contact（`© 2026 孙红军 · 16414766@qq.com` / `小红书 382336617`），点击复制全文到剪贴板 + 1.5s toast。GlanceApp 加 `CommandGroup(replacing: .appInfo)` + `Window("about")` scene。Text + onTapGesture 替代 Button 避免 macOS focus ring 残留（09c418c 修），补 `.accessibilityAddTraits(.isButton)` 保 a11y。DS.About 段（windowWidth/appIconSize/toastMaxWidth/toastDurationSeconds）+ DS.Color.secondaryText alias 到 SwiftUI .secondary |
 
 ---
 
@@ -106,7 +113,6 @@
 | 阶段 | 模块 | Spec | 优先级 | 前置依赖 | 说明 |
 |------|------|------|--------|----------|------|
 | Refactor | Focus 架构父持有重构 | （待写）| 中 | 5b29600 / 59a9d86 ESC race fix | 三个分散 `@FocusState`（grid / preview / QuickViewer）在 dismiss 路径的 race 已修两次。codex high effort 强烈建议改父持有：`ContentView` 加 `@FocusState focusTarget: FocusTarget?` enum，子 view 通过 `.focused($parentFocus, equals: .grid/.preview/.quickViewer)` 绑定，由 ContentView 集中仲裁焦点。本次仍走 incremental trigger UUID 修补，但下次同类 bug 出现前必须做 |
-| Followup ✓ 已闭环 | codex:rescue shared broker 不跟随 codex CLI 升级 | — | — | 2026-05-04 排查 | 现象：`codex:rescue` subagent 跑 5.4 而非配置的 gpt-5.5；ephemeral `codex exec` 又用 5.5。**根因**：Claude session 用 shared codex app-server 模式（broker socket），broker 进程启动时锁定当时 binary 路径 + 当时读取的 config，**不会**因后续 npm 升级 codex CLI 或 edit ~/.codex/config.toml 而自动重启。subagent 通过 broker 转发 → 吃老 binary/config。**修复**：`pkill -f "codex.*app-server"` 或 `kill <broker PID>`，下次 codex 调用自动启动新 broker（读新 binary + 新 config）。**确认机制**：companion script `codex-companion.mjs` + lib/codex.mjs 没有 model whitelist，问题不在它们；`codex app-server --help` 显示它接受 `-c key=value` config override，启动时确实读 `~/.codex/config.toml`。codex CLI banner（`codex exec` 启动时）是权威 model + effort 来源；codex 本身在对话中自报 "GPT-5 medium" 等是 LLM self-identify 训练偏差，**不可信**。**已沉淀至全局 ~/.claude/CLAUDE.md 跨项目教训段** |
 
 ---
 
