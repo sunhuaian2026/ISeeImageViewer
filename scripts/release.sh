@@ -67,7 +67,7 @@ echo "  ✓ codesigning identity OK"
 
 # (2) notarytool credentials
 if [[ "${SKIP_NOTARIZE:-0}" != "1" ]]; then
-    if ! xcrun notarytool history --keychain-profile "${NOTARY_PROFILE}" --max-results 1 &>/dev/null; then
+    if ! xcrun notarytool history --keychain-profile "${NOTARY_PROFILE}" &>/dev/null; then
         echo "❌ notarytool keychain profile '${NOTARY_PROFILE}' 没配置或无效"
         echo ""
         echo "   先跑（一次性配置，App-specific password 在 https://appleid.apple.com 生成）："
