@@ -1,4 +1,4 @@
-.PHONY: build run clean hooks-install hooks-uninstall verify verify-codex
+.PHONY: build run clean hooks-install hooks-uninstall verify verify-codex release release-dry
 
 BUILD_DIR = ./build
 SYNC_DIR  = $(HOME)/sync
@@ -64,3 +64,15 @@ verify:
 verify-codex:
 	@chmod +x scripts/verify.sh 2>/dev/null || true
 	@./scripts/verify.sh --with-codex
+
+# 公开分发打包：xcodebuild archive (Release + Hardened Runtime + Developer ID signed)
+#   → exportArchive → create-dmg → notarytool submit --wait → stapler staple
+#   → dist/Glance-<MARKETING_VERSION>.dmg
+release:
+	@chmod +x scripts/release.sh 2>/dev/null || true
+	@./scripts/release.sh
+
+# 跳过公证的 dry-run（本地验证签名 + DMG 流程，不耗 Apple notarization quota）
+release-dry:
+	@chmod +x scripts/release.sh 2>/dev/null || true
+	@SKIP_NOTARIZE=1 ./scripts/release.sh

@@ -135,6 +135,81 @@
 
 ---
 
+## Distribution（公开分发打包，2026-05-05 落地）
+
+V1 走 **Developer ID 签名 + Notarization + DMG**（不上 Mac App Store），公开分发到 GitHub Releases。
+
+**身份与配置**
+
+| 项 | 值 | 备注 |
+|---|---|---|
+| Apple Developer Program | Hongjun Sun（个人）| 续订到 2027/05/05，年费 ¥688 |
+| Team ID | `8KW8Z92GRA` | pbxproj `DEVELOPMENT_TEAM` 字段 |
+| 签名 identity | `Developer ID Application: Hongjun Sun (8KW8Z92GRA)` | 装在 Mac mini 登录 keychain；私钥 .p12 备份在家里 MacStudio + 冷备份 |
+| Bundle ID | `com.sunhongjun.glance` | 不变 |
+| 部署目标 | macOS 14.0（Sonoma）| 26.2 → 14.0 降级，覆盖 ~85% 用户 |
+| Marketing 版本 | `1.0.0` | 用户可见（关于面板 / DMG 文件名 / GitHub release tag） |
+| Build 版本 | `<commit short>[-d].<MMDD-HHMM>` | 给开发者看，CFBundleVersion 字段，发布版仍带 -d 标记表示有未 commit 改动 |
+| Hardened Runtime | `ENABLE_HARDENED_RUNTIME=YES` | 仅 release 脚本注入，不写到 pbxproj（Debug build 不受影响） |
+| Entitlements | sandbox + user-selected read-only + bookmarks app-scope | 不需要 hardened runtime 额外 entitlements |
+
+**入口**
+
+```bash
+make release        # 完整流程（含公证，5-15 分钟）
+make release-dry    # 跳过公证（SKIP_NOTARIZE=1，本地干跑验证签名 + DMG，不耗 Apple quota）
+```
+
+**链路**（`scripts/release.sh`）
+
+```
+xcodebuild archive (Release + Hardened Runtime + manual signing + Developer ID Application)
+  → exportArchive (scripts/ExportOptions.plist, method=developer-id, manual signing)
+  → codesign --verify --deep --strict 验证
+  → create-dmg (volname="Glance 1.0.0", drag-to-Applications layout)
+  → xcrun notarytool submit --wait --keychain-profile glance-notary
+  → xcrun stapler staple
+  → spctl --assess Gatekeeper 验证
+  → dist/Glance-1.0.0.dmg + SHA256
+```
+
+**首次跑前一次性配置 notarytool**（用户做）：
+
+```bash
+# App-specific password 在 https://appleid.apple.com/account/manage 「登录与安全 → App 专用密码」生成
+xcrun notarytool store-credentials "glance-notary" \
+  --apple-id 16414766@qq.com \
+  --team-id 8KW8Z92GRA \
+  --password <App-specific password>
+```
+
+凭据存入 login keychain，后续 `make release` 自动读，无需再输密码。
+
+**分发渠道**：GitHub Releases（**仓库改 public 后**，DMG 上传 release，README 加下载按钮 + SHA256）
+
+**已完成**
+
+- `38adfd4` BuildVersionInfo（commit hash + sidecar）
+- `bd25fd0` 关于面板 Copyright 注入（孙红军 / 16414766@qq.com / 小红书 382336617）
+- `8f927d1 + 6f56072 + 09c418c` 自定义关于面板（点击复制 + toast）
+- pbxproj 部署目标 26.2 → 14.0 / MARKETING_VERSION 1.0 → 1.0.0 / 加 DEVELOPMENT_TEAM
+- `Makefile` 加 `release` / `release-dry` target
+- `scripts/release.sh` + `scripts/ExportOptions.plist`
+- `.gitignore` 加 `dist/`
+- create-dmg via `brew install create-dmg`
+
+**待办（Pending 用户操作）**
+
+- [ ] 用户跑 `xcrun notarytool store-credentials "glance-notary" ...` 一次性配置公证凭据
+- [ ] 用户在自己 macOS 上手测 `~/sync/Glance.app`（Debug build 7 路径回归 + 自定义关于面板，确认部署目标降级未破坏功能）
+- [ ] 跑 `make release` 完整链路验证（archive + Developer ID 签名 + DMG + 公证 + staple）
+- [ ] 安装公证过的 DMG 到一台干净 Mac 双击直开（验证 Gatekeeper 不拦）
+- [ ] GitHub 仓库 visibility 改 public（开源决策已拍板）
+- [ ] 创建 v1.0.0 GitHub Release，上传 DMG + 写 release notes
+- [ ] 小红书引流到 Release 下载链接
+
+---
+
 ## 关键架构决策（新 session 必读）
 
 1. **DesignSystem.swift**：所有 UI 常量的唯一来源，引用 `DS.*`，禁止硬编码。动画常量为 `DS.Anim.fast / normal / slow`（注意：旧名 `DS.Animation` 已废弃）。
