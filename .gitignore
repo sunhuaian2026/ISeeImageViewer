@@ -2,3 +2,5 @@ build/
 dist/
 .DS_Store
 .verify-logs/
+.context/
+
