@@ -228,3 +228,29 @@ xcrun notarytool store-credentials "glance-notary" \
 10. **构建**：项目根目录有 Makefile，用 `make build` / `make run`。
 12. **侧边栏选中高亮**：使用 `List(selection:)` 绑定，完全依赖 macOS 系统渲染。聚焦时显示 Accent Color，失焦时显示灰色——这是 macOS 原生行为（Finder / Notes / 邮件均如此），用于传达键盘焦点所在，不做自定义覆盖。`listRowBackground` 选中行设为 `Color.clear`，让系统选中高亮独立渲染。
 13. **AppearanceMode**：外观模式（system/light/dark）存在 `AppState.appearanceMode`，通过 `GlanceApp` 的 `preferredColorScheme` 驱动全局外观。`DS.Color.*` 背景/交互色（`appBackground` / `gridBackground` / `hoverOverlay` / `separatorColor`）为 `AdaptiveColor` 类型，实现 `ShapeStyle.resolve(in:)` 从 `EnvironmentValues` 读取 `colorScheme`——可正确响应 SwiftUI per-view `preferredColorScheme` 覆盖。`glowPrimary` / `glowSecondary` 保持 `SwiftUI.Color`（不需要自适应）。`QuickViewerOverlay` 保留 `.preferredColorScheme(.dark)`，其内部所有 `DS.Color.*` 始终解析为 dark 值。`FolderSidebarView` 移除了旧的 `.environment(\.colorScheme, .dark)`，背景改为 `DS.Color.appBackground` 自适应。`ImagePreviewView` 前景色使用 `Color.primary`（深色模式为白，浅色模式为黑）。
+
+---
+
+### V2 决策（2026-05-06 grill-with-docs 收尾沉淀）
+
+V2 引入跨文件夹聚合（智能文件夹）+ 找回（搜索 + 类似图）。下面 10 条是 V2 设计阶段经过 brainstorming + grill 走完后筛过 "hard-to-reverse + surprising-without-context + real-trade-off" 三标准的决策。术语见 `CONTEXT.md`「跨文件夹聚合」段。
+
+14. **D1 智能文件夹 = rule-based ONLY**：smart folder 永远是 query 结果，不存储 manual membership（不允许"用户拖图进收藏夹"）。Why: "不抢库"哲学红线——一旦引入"V2 自有的图组织数据"，用户卸载 V2 这些信息会丢，跟 Eagle / Photos lock-in 同质。How to apply: M4 用户自定义 smart folder 仍是规则形态，不开"添加图到 collection"接口；未来如有"打标记"诉求，引导用 macOS Finder Tags（OS 级 xattr）而非 V2 内部 DB。
+
+15. **D2 受管文件夹默认全递归 + per-folder hide 剪枝**：V1 已加 root folder 自动纳入智能文件夹扫描范围（半显式）；扫描默认全递归所有子目录；任意 root 或子目录右键可 toggle "在智能文件夹中隐藏"，hide 状态可继承（hide root 默认 hide 整棵树，子目录可单独 unhide 取消继承）。Why: "仅 root 层"在 `类别/年份/` `项目/版本/` 这类常见嵌套素材组织下基本不可用；"glob 黑名单"对普通用户认知门槛过高。How to apply: IndexStore schema 含 `hide_in_smart_view: Bool` 字段（per FolderNode）；扫描时递归过滤；新加 root folder 默认 `hide=false`。
+
+16. **D3 内容去重 = SHA256 + cheap-first 粗筛**：智能文件夹 grid 同字节图只显示一次。先按 `(file_size, format)` 粗筛 → 仅对 size 碰撞的子集算 SHA256（绝大多数图 size 唯一不算哈希）。代表项 = birth time 较早的副本，其他副本在 Inspector 副本段列出。Why: A 不去重首屏被重复图占位（普通用户首屏第一印象差），B/C 误判风险高（同名 size 截图碰撞 / inode 不区分 cp 副本），D 哈希在 cheap-first 优化下成本可控（1 万张图首次索引仅几秒~十几秒额外开销）。How to apply: **只影响 smart folder 呈现**，不影响磁盘真相；用户从 V1 进具体 folder 看仍能看到所有副本。Q4 找回时可加 `duplicates:true` 过滤器（M3 power feature）。
+
+17. **D4 时间分段 5 段自然语言 + 严格午夜对齐**：智能文件夹 grid 时间分段固定 5 段（今天 / 昨天 / 本周 / 本月 / 更早），用 `Calendar.startOfDay` 严格对齐午夜；时区用 device local，不做 UTC 归一化。Why: 段数稳定 5 段不随时间增长（vs 月份分段无限增长，sidebar 滚动疲劳）；"本周/本月" 自动包含更新两段后剩余的图，无 overlap；可预测 > 智能（滚动 24h / 5h 缓冲会引入"为啥这张图不在'今天'了"的隐藏逻辑）。How to apply: V2 spec 定义 `TimeBucket` 枚举 + 边界算法；M3 加"按拍摄时间"smart folder 时单独走 EXIF DateTimeOriginal，不与本规则冲突。
+
+18. **D5 跨 folder 来源标识 = hover tooltip（image viewer convention）**：智能文件夹 grid cell 跟 V1 cell **完全等同**，无来源角标 / 永久标签。鼠标 hover 显示 tooltip = 完整 relative path；点进 Quick Viewer 后 Inspector 永久显示绝对 path + "Show in Finder"按钮。Why: image 是视觉本体（缩略图本身就是身份），不像 note 依赖 folder context；Photos / Eagle / Lightroom 行业 convention 一致 hide-from-cell（Apple Notes 路线机械搬过来不适用）；保持 V1 视觉密度。How to apply: V2 不做"smart folder cell 加 folder name 行" / "缩略图角标 emoji" 类视觉装饰；以信息密度优先 + 行业 convention 优先。
+
+19. **D6 规则引擎 = Spotlight-like AND/OR 平铺**：smart folder 规则支持 `字段 OP 值` 条件 + AND/OR 二层平铺组合（无嵌套，无 NOT）。Why: 内置 smart folder（"截图" / "大图"）需要 OR（如 `filename CONTAINS "Screenshot" OR path STARTS_WITH ~/Desktop`），仅 AND 表达不了；嵌套 GUI 编辑器（NSPredicate-shape）对普通用户认知门槛陡，普通用户已熟悉 Spotlight / Finder 智能文件夹的"任一/全部"切换 UI。NOT 在 GUI 上反直觉（"看不是 PNG 的图"普通用户更习惯说"看 JPEG / HEIC / RAW"）。How to apply: 规则 JSON 格式 day-1 设计成兼容嵌套（`{op: AND, children: [...]}` 树形结构），未来扩展 GUI 可吃嵌套时数据无需迁移。
+
+20. **D7 IndexStore = forward-looking schema + 增量 ALTER TABLE 迁移**：M1 一次性 ship M1-M3 已知字段（M1 用 birth_time / file_size / format / filename / relative_path / folder_id / dimensions / content_sha256 / dedup_canonical；M2 加 feature_print / revision / supports_feature_print；M3 加 exif_capture_date 等）。存 `~/Library/Application Support/Glance/index.sqlite`。Schema 版本变化走 ALTER TABLE ADD COLUMN（老数据 NULL，后台 lazy 补）；迁移失败 fallback full re-index。Vision feature print revision 单独追踪：macOS 升级 revision 不匹配仅 re-index 该列。Why: 反复 ALTER TABLE 比一次 forward-looking 风险低；feature print 的 revision 解耦让 macOS 升级不污染其他字段。How to apply: M1 schema 设计阶段考虑 M2-M3 字段；migration 测试覆盖三个场景（v1→v2 增字段 / Vision revision 变 / migration 失败 fallback）。
+
+21. **D8 搜索 / 类似图结果 = ephemeral 视图**：⌘F 搜索结果 + Quick Viewer "找类似" 结果**不**作为持久 entry 进 sidebar，仅切换主 grid 显示；ESC / 切换 sidebar entry / 关闭 Quick Viewer 即取消。提供"保存为智能文件夹"按钮（M3+，把当前搜索条件转成自定义 smart folder 持久化）。Why: sidebar 累积搜索历史会成为噪音（用户每次 ⌘F 都长一条 entry）；ephemeral 模式跟用户对"搜索是临时操作"的直觉一致。How to apply: 搜索/相似图 UI 用同一 `EphemeralResultView` 组件（统一返回路径与状态管理）；"保存为" 按钮 M1/M2 不上 M3 才上。
+
+22. **D9 V2 timeline = 13-15 周 + 每 milestone 跟一个 minor 版本**：M1 4-5 周 / M2 3 周 / M3 3-4 周 / M4 2-2.5 周（M4 optional）。每 milestone 完成跟一个 minor 版本发布（M1 → V2.0-beta1，M2 → V2.1，M3 → V2.2，M4 → V2.3），不等全部 M1-M4 完成才发 V2 大版本。每个 milestone 是端到端 vertical slice（端到端可跑 + 用户可感知 + 独立可 ship）。Why: 横切式拆分把集成 bug 全推到末尾爆雷；vertical slice 让风险前置 + 用户每片都有可感知收益 + 反馈密度比 3 个月一次大版本高得多。How to apply: 写 implementation plan 时每个 milestone 验证三标准（可跑 / 可感知 / 可 ship）；不达标的切片要重组。
+
+23. **D10 V2 scope freeze（18 项 explicit "不做"清单）**：culling 工作流 / tag 标签系统 / color palette / 自然语言搜索（CLIP）/ "已读未读" seen-state / 跨设备同步 / 导入到自有库 / 编辑调色旋转写回 / NSPredicate 嵌套规则 / NOT operator / glob 黑名单 / 视频动图 LivePhoto 索引 / iCloud Drive placeholder + 网络盘 + 外接设备 / OCR 文本搜索 / Photos Memories 智能相册推荐 / Favorites 收藏 Star ratings / 多 library 切换 / EXIF metadata 写回——共 18 项 V2 范围外。Why: 每项都有 brainstorming + grill 阶段的明确 trade-off 推演（详见 V2 spec 不做段）；scope freeze 是单人项目按时 ship 的核心保障。How to apply: 收到"V2 能不能加 X"诉求时先查这 18 条；命中即拒（refer 到此条），不命中再走"加新 feature 决策流程"。
