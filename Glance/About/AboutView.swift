@@ -66,6 +66,25 @@ struct AboutView: View {
             }
         }
         .animation(DS.Anim.fast, value: toastMessage)
+        .onAppear { centerOverMainWindow() }
+    }
+
+    // 自定义 SwiftUI Window 默认按屏幕中心 / 上次位置定位，挪动主窗口后打开会偏离主窗口。
+    // 系统标准 NSAboutPanel 自动相对主窗口居中，自定义 Window 失去该免费行为，手动补回。
+    private func centerOverMainWindow() {
+        DispatchQueue.main.async {
+            // SwiftUI Window("关于一眼", id: "about") 创建的 NSWindow，title 在 zh/en 都是 "关于一眼"
+            // (LocalizedStringKey 未翻译时回退 key 字面值)
+            guard let aboutWindow = NSApp.windows.first(where: { $0.title == "关于一眼" }) else { return }
+            guard let mainWindow = NSApp.windows.first(where: {
+                $0 !== aboutWindow && $0.isVisible && $0.canBecomeMain
+            }) else { return }
+            let mainFrame = mainWindow.frame
+            let aboutSize = aboutWindow.frame.size
+            let x = mainFrame.origin.x + (mainFrame.width - aboutSize.width) / 2
+            let y = mainFrame.origin.y + (mainFrame.height - aboutSize.height) / 2
+            aboutWindow.setFrameOrigin(NSPoint(x: x, y: y))
+        }
     }
 
     @ViewBuilder
