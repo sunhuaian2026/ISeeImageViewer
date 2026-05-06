@@ -13,7 +13,7 @@ enum IndexDatabaseError: Error {
 /// (caller must serialize access via dispatch queue or actor).
 final class IndexDatabase {
 
-    private var db: OpaquePointer?
+    private(set) var handle: OpaquePointer?
 
     init(at fileURL: URL) throws {
         var ptr: OpaquePointer?
@@ -24,21 +24,21 @@ final class IndexDatabase {
             sqlite3_close(ptr)
             throw IndexDatabaseError.openFailed(message: msg)
         }
-        self.db = ptr
+        self.handle = ptr
         try execute("PRAGMA foreign_keys = ON;")
         try execute("PRAGMA journal_mode = WAL;")
     }
 
     deinit {
-        if let db {
-            sqlite3_close_v2(db)
+        if let handle {
+            sqlite3_close_v2(handle)
         }
     }
 
     /// Run a single SQL statement (no result rows).
     func execute(_ sql: String) throws {
         var error: UnsafeMutablePointer<Int8>?
-        let result = sqlite3_exec(db, sql, nil, nil, &error)
+        let result = sqlite3_exec(handle, sql, nil, nil, &error)
         if result != SQLITE_OK {
             let msg = error.map { String(cString: $0) } ?? "unknown"
             sqlite3_free(error)
@@ -49,16 +49,16 @@ final class IndexDatabase {
     /// Prepare a statement; caller binds + steps + finalizes.
     func prepare(_ sql: String) throws -> OpaquePointer {
         var stmt: OpaquePointer?
-        let result = sqlite3_prepare_v2(db, sql, -1, &stmt, nil)
+        let result = sqlite3_prepare_v2(handle, sql, -1, &stmt, nil)
         guard result == SQLITE_OK, let stmt else {
-            let msg = String(cString: sqlite3_errmsg(db))
+            let msg = String(cString: sqlite3_errmsg(handle))
             throw IndexDatabaseError.prepareFailed(sql: sql, message: msg)
         }
         return stmt
     }
 
     func lastErrorMessage() -> String {
-        guard let db else { return "(no db)" }
-        return String(cString: sqlite3_errmsg(db))
+        guard let handle else { return "(no handle)" }
+        return String(cString: sqlite3_errmsg(handle))
     }
 }
