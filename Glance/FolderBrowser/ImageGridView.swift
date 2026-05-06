@@ -24,7 +24,9 @@ struct ImageGridView: View {
     var body: some View {
         Group {
             if folderStore.selectedFolder == nil {
-                DS.Color.gridBackground
+                // empty state 用 Color.clear 让 NavigationSplitView 默认内容区背景
+                // （NSColor.controlBackgroundColor / windowBackgroundColor）透出
+                Color.clear
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .overlay {
                         ContentUnavailableView(
@@ -143,7 +145,9 @@ struct ImageGridView: View {
                     .animation(DS.Anim.fast, value: folderStore.thumbnailSize)
                     .padding(DS.Spacing.sm)
                 }
-                .background(DS.Color.gridBackground)
+                // 删除 .background(DS.Color.gridBackground)：让 NavigationSplitView 默认
+                // 内容区背景（NSColor.controlBackgroundColor / windowBackgroundColor）接管，
+                // dark 跟 Finder 一致（~#1E1E1E 中性灰，不再偏冷蓝紫）。light 模式视觉无变化
                 .focusable()
                 .focused($isFocused)
                 .onAppear { isFocused = true }
