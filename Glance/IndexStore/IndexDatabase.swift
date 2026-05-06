@@ -11,7 +11,7 @@ enum IndexDatabaseError: Error {
 
 /// Thin wrapper around sqlite3 C API. All ops on caller's queue
 /// (caller must serialize access via dispatch queue or actor).
-final class IndexDatabase {
+nonisolated final class IndexDatabase {
 
     private(set) var handle: OpaquePointer?
 

@@ -11,7 +11,7 @@ struct ImageMetadata {
     let dimensionsHeight: Int?
 }
 
-enum ImageMetadataReader {
+nonisolated enum ImageMetadataReader {
 
     /// Read metadata for a single file. Returns nil if the file is not an image
     /// (UTType not conforming to .image), is unreadable, or birth time missing.

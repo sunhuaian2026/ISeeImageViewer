@@ -1,6 +1,7 @@
 import Foundation
 
-final class SmartFolderEngine {
+/// `@unchecked Sendable`：仅持只读 IndexStore 引用，IndexStore 自身串行，跨 actor 共享安全。
+nonisolated final class SmartFolderEngine: @unchecked Sendable {
 
     let store: IndexStore
 

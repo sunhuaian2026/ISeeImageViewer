@@ -26,7 +26,7 @@ struct ImageInsertRecord {
     let dimensionsHeight: Int?
 }
 
-extension IndexStore {
+nonisolated extension IndexStore {
 
     /// 幂等 insert：UNIQUE(folder_id, relative_path) + INSERT OR IGNORE。
     /// 重复 (folder_id, relative_path) 静默跳过，返回已存在 row id。

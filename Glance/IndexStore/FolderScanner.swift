@@ -6,7 +6,7 @@ struct ScanProgress {
     let lastIndexed: URL?
 }
 
-final class FolderScanner {
+nonisolated final class FolderScanner {
 
     let store: IndexStore
 

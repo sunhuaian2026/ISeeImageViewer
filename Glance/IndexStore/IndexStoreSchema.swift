@@ -4,7 +4,7 @@ import SQLite3
 /// Schema version applied incrementally. M1 ships v1 with all M1+M2+M3 columns
 /// (M2/M3 columns NULLable until populated). Future versions add columns via
 /// ALTER TABLE in a new migration block.
-enum IndexStoreSchema {
+nonisolated enum IndexStoreSchema {
 
     static let currentVersion: Int = 1
 

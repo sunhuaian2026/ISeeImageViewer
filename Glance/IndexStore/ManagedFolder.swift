@@ -11,7 +11,7 @@ struct ManagedFolder: Identifiable, Equatable {
     var isRoot: Bool { relativePath.isEmpty && rootBookmark != nil }
 }
 
-extension IndexStore {
+nonisolated extension IndexStore {
 
     /// Register a root managed folder; **幂等**：同一 path 重复调用返回已有 id，不新建行。
     /// `path` = rootURL.standardizedFileURL.path，作为 unique 键。

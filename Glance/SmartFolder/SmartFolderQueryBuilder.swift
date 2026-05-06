@@ -8,7 +8,7 @@ enum SmartFolderQueryError: Error {
 // `CompiledSmartFolderQuery` lives in `Glance/IndexStore/CompiledSmartFolderQuery.swift`
 // (it's the contract between this builder's output and IndexStore.fetch's input).
 
-enum SmartFolderQueryBuilder {
+nonisolated enum SmartFolderQueryBuilder {
 
     static func compile(_ folder: SmartFolder, now: Date = Date()) throws -> CompiledSmartFolderQuery {
         var params: [Any] = []

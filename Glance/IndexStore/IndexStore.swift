@@ -2,7 +2,8 @@ import Foundation
 
 /// High-level IndexStore. Owns IndexDatabase + serializes access via internal queue.
 /// Subsequent tasks add typed CRUD methods (Image / ManagedFolder).
-final class IndexStore {
+/// `@unchecked Sendable`：所有 DB 访问内部走 DispatchQueue.sync 串行，跨 actor 共享安全。
+nonisolated final class IndexStore: @unchecked Sendable {
 
     private let db: IndexDatabase
     private let queue: DispatchQueue
