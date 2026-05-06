@@ -12,6 +12,7 @@
 ```
 ISeeImageViewer/                    ← 磁盘路径未改，repo 内部一切都已是 Glance
 ├── CLAUDE.md                        ← 本文件（开发规范 + 上下文）
+├── CONTEXT.md                       ← 领域术语表 + 架构总览（决策不在此，走 specs/Roadmap.md）
 ├── Makefile                         ← make build / run / clean / hooks-install / verify / verify-codex / release / release-dry
 ├── Glance.xcodeproj/
 ├── .githooks/
@@ -174,3 +175,8 @@ git commit 前的强制 checklist，逐条检查，全部通过才能提交：
 **规则覆盖**（见 `.githooks/pre-push` 的 PROMPT）：通用代码规则 + UI 硬编码/DS.* / `.spring` 禁用 / QuickViewerOverlay 深色 / 文档同步硬规则。
 
 **缓存**：通过的 `local_sha` 写入 `.git/codex-reviewed-<sha>`，retry 不重复审。
+
+## Skill 行为约束
+
+- **grill-with-docs / improve-codebase-architecture 等 skill 默认写 `docs/adr/`，本项目不建该目录**：ADR 等价物落在 `specs/Roadmap.md`「关键架构决策」段（单文件好扫好搜，避免决策碎片）；`CONTEXT.md` 仅放领域术语 + 架构总览，**不放决策**。skill 触发时按此目标写，CLAUDE.md 优先级高于 skill 默认行为，无需每次手动提醒。
+- **新术语必须先登记 `CONTEXT.md` 术语表，再用于代码 / specs / commit message**：避免同一概念在不同模块用不同名字漂移。命名冲突时以 `CONTEXT.md` 为准。
