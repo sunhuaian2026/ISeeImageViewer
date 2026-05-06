@@ -25,10 +25,7 @@
 （本段 CC 维护，追加新项。测完移到 Done。）
 
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
-- [ ] (2026-05-06 / `<pending>` / bugfix) **跟随系统外观模式生效**：菜单依次切「跟随系统」/「强制深色」/「强制浅色」/「跟随系统」 → 每次都立即生效；切「跟随系统」后系统切深浅 → app 跟着切；重启 app 保留上次模式选择；进 QuickViewer 仍强制深色（局部覆盖不受影响）
-- [ ] (2026-05-06 / `<pending>` / bugfix) **light 模式 chrome / 内容区对比**：切到 light 模式 → 内容区为纯白 (#FFFFFF) / 侧边栏为浅灰 (#F2F2F7)，对比方向跟 dark 模式一致（内容区是焦点更亮）；dark 模式视觉不变
-- [ ] (2026-05-06 / `<pending>` / bugfix) **关于窗口跟随主窗口居中**：挪动主窗口到屏幕任意角落 → 菜单栏 → 关于一眼 → 关于窗口应出现在主窗口中心，不再偏离到屏幕中央或上次位置；多次开关后位置仍跟随
-- [ ] (2026-05-06 / `<pending>` / bugfix) **dark 模式贴 macOS 系统配色 + 失焦响应**：app 切到 dark → 侧边栏跟 Finder/Mail/Notes 一致（vibrancy 半透明 + 漏出桌面壁纸色，无紫深色硬覆盖）+ 内容区中性灰（不再偏冷蓝紫深）；切焦点：app 失焦时侧边栏自动褪色（跟 Finder 一致），切回 active 恢复；侧边栏选中行 / 未选中行视觉一致（无条纹感）；light 模式下侧边栏浅灰 + 内容区接近纯白；QuickViewer 仍强制深色不变；ImagePreviewView 内嵌预览底色仍是 appBackground（紫深色，未受本次改动影响）
+- [ ] (2026-05-06 / `ab1fe89` / bugfix) **dark 模式贴 macOS 系统配色 + 失焦响应**（partial — 待 v1.0.1 重新审）：原 commit ab1fe89 删 4 处 hardcoded background 想让系统 sidebar material 接管，实测 sidebar 上半 row 区域有 vibrancy + 漏壁纸色，但 row 之下空白区是深黑色 windowBackground（条纹感）。codex:rescue 给的 NSVisualEffectView 桥方案落地后引发**关于窗口居中回归**（具体因果链未定），同时颜色仍不一致，已 revert 回 ab1fe89 状态。**期望视觉**：app 切到 dark → 侧边栏整片跟 Finder/Mail/Notes 一致（vibrancy + 漏出桌面壁纸色 + 失焦自动褪色） + 内容区中性灰；侧边栏选中 / 未选中行视觉一致（无条纹）。**当前 ab1fe89 状态可接受作 v1.0**（条纹但不影响核心功能），下次审计走 SwiftUI ZStack vs NavigationSplitView column 行为 + 验证 codex 方案为何引发居中回归
 - [ ] (2026-05-05 / `<pending>` / dist) **部署目标降级回归**：装 `~/sync/Glance.app` 跑 7 路径（启动 / 拖文件夹 / 单击进 preview + 方向键 / 双击进 QuickViewer 缩放拖拽 / 全屏 F 键 / 排序菜单 / 关于面板点击复制 + toast），确认 macOS 部署目标 26.2 → 14.0 未破坏现有功能
 - [ ] (2026-05-05 / `<pending>` / dist) **notarytool keychain profile 配置**（一次性）：① 进 https://appleid.apple.com/account/manage 「登录与安全 → App 专用密码」生成 App-specific password（命名如 `glance-notary`）；② 终端跑：`xcrun notarytool store-credentials "glance-notary" --apple-id 16414766@qq.com --team-id 8KW8Z92GRA --password <粘贴 App-specific password>`；③ 验证：`xcrun notarytool history --keychain-profile "glance-notary" --max-results 1` 无报错
 - [ ] (2026-05-05 / `<pending>` / dist) **完整 release 流程跑通**：跑 `make release`（5-15 分钟，含公证），观察输出无错；产物 `dist/Glance-1.0.0.dmg` 生成，SHA256 + size 正常
@@ -45,6 +42,9 @@
 
 （本段追加完成条目，附完成日期。）
 
+- [x] (2026-05-06 / `2b858cf`) **跟随系统外观模式生效**：菜单依次切「跟随系统」/「强制深色」/「强制浅色」/「跟随系统」 → 每次都立即生效；切「跟随系统」后系统切深浅 → app 跟着切；重启 app 保留上次模式选择；进 QuickViewer 仍强制深色（局部覆盖不受影响）✓ 2026-05-06
+- [x] (2026-05-06 / `dcabffc`) **light 模式 chrome / 内容区对比**：切到 light 模式 → 内容区为纯白 (#FFFFFF) / 侧边栏为浅灰 (#F2F2F7)，对比方向跟 dark 模式一致（内容区是焦点更亮）；dark 模式视觉不变 ✓ 2026-05-06
+- [x] (2026-05-06 / `20fa509`) **关于窗口跟随主窗口居中**（方案 2 真解 NSWindow，方案 1 e2e0d21 SwiftUI Window onAppear 有 A→B 跳跃已弃）：挪动主窗口到屏幕任意角落 → 菜单栏 → 关于一眼 → 关于窗口出现在主窗口中心，零跳跃；多次开关后位置仍跟随 ✓ 2026-05-06
 - [x] (2026-04-23 / `68042e0`) **拖拽**：从 Finder 拖一个文件夹到侧边栏 → 出现在列表、自动选中、badge 正常、重启 app 后 bookmark 仍有效 ✓ 2026-04-23
 - [x] (2026-04-23 / `68042e0`) **拖拽**：多选 2+ 文件夹一次拖入 → 全部加入；当前选中不变（不跳到新拖入的）✓ 2026-04-23
 - [x] (2026-04-23 / `68042e0`) **拖拽**：拖一个已加过的文件夹 → 跳到选中它；`rootFolders` 不重复 ✓ 2026-04-23
