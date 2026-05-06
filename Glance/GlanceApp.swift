@@ -27,10 +27,6 @@ struct GlanceApp: App {
                 .environmentObject(bookmarkManager)
                 .environmentObject(folderStore)
                 .environmentObject(appState)
-                .preferredColorScheme(
-                    appState.appearanceMode == .system ? nil :
-                    appState.appearanceMode == .dark   ? .dark : .light
-                )
                 .onAppear {
                     folderStore.loadSavedFolders()
                 }
