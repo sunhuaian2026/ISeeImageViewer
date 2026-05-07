@@ -95,6 +95,11 @@ struct ContentView: View {
             }
         }
         .toolbar(quickViewerIndex != nil ? .hidden : .visible, for: .windowToolbar)
+        // 隐藏 window toolbar 的 background material 绘制层，让 toolbar items（文件名 / ⓘ /
+        // 外观切换）直接坐在 NSWindow title bar 上，避免 NavigationSplitView 默认 separated
+        // 浅灰底色横条跟下方 ImagePreviewView 紫黑底色 (appBackground #121217) 断层。
+        // 绘制层 ≠ NSWindow.toolbarStyle 布局层，AppKit 桥设 toolbarStyle 不生效（已验证）
+        .toolbarBackground(.hidden, for: .windowToolbar)
         // 切换文件夹或取消图片选择时，自动关闭 Inspector
         .onChange(of: folderStore.selectedFolder) { _, _ in
             withAnimation(DS.Anim.normal) { showInspector = false }
