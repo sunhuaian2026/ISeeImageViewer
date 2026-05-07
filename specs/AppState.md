@@ -59,7 +59,7 @@ struct WindowAccessor: NSViewRepresentable {
 
 ### 触发时机
 
-- 用户按 `F` 键，或点击 QuickViewer BottomToolbar 的全屏按钮
+- 用户在 grid / preview / QuickViewer 任一界面按 `F` 键（三个 view 都注入 `appState` + 挂 `onKeyPress(.init("f"))` handler 调 `appState.toggleFullScreen()`），或点击 QuickViewer BottomToolbar 的全屏按钮
 - **QuickViewer 内 ESC/X/Space**：全屏时退出全屏（留在 QuickViewer），非全屏时关闭 QuickViewer
 
 ### NSWindowDelegate 监听

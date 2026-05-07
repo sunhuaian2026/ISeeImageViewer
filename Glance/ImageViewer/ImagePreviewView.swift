@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ImagePreviewView: View {
     @EnvironmentObject var folderStore: FolderStore
+    @EnvironmentObject var appState: AppState
 
     let images: [URL]
     let startIndex: Int
@@ -117,6 +118,11 @@ struct ImagePreviewView: View {
         .onKeyPress(.leftArrow)  { navigate(by: -1); return .handled }
         .onKeyPress(.rightArrow) { navigate(by: +1); return .handled }
         .onKeyPress(.space) { onQuickView(currentIndex); return .handled }
+        // F：切换全屏（跟 QuickViewer / grid 一致，spec AppState.md 全局 F 键设计）
+        .onKeyPress(.init("f"), phases: .down) { _ in
+            appState.toggleFullScreen()
+            return .handled
+        }
         // cache clearCache 由 ContentView 统一在 selectedFolder / selectedImageIndex==nil /
         // images 变化时触发；这里只做 currentIndex 的 URL 重映射，避免与 ContentView 重复
         .onChange(of: images) { oldImages, newImages in

@@ -8,6 +8,7 @@ import ImageIO
 
 struct ImageGridView: View {
     @EnvironmentObject var folderStore: FolderStore
+    @EnvironmentObject var appState: AppState
     let gridFocusTrigger: UUID
     var onDoubleClick: (Int) -> Void = { _ in }
 
@@ -173,6 +174,11 @@ struct ImageGridView: View {
                     guard !images.isEmpty else { return .ignored }
                     let target = highlightedURL.flatMap({ folderStore.images.firstIndex(of: $0) }) ?? 0
                     onDoubleClick(target)
+                    return .handled
+                }
+                // F：切换全屏（跟 QuickViewer / preview 一致，spec AppState.md 全局 F 键设计）
+                .onKeyPress(.init("f"), phases: .down) { _ in
+                    appState.toggleFullScreen()
                     return .handled
                 }
                 // 方向键导航
