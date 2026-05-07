@@ -12,6 +12,7 @@ struct GlanceApp: App {
     @StateObject private var bookmarkManager: BookmarkManager
     @StateObject private var folderStore: FolderStore
     @StateObject private var appState = AppState()
+    @StateObject private var indexStoreHolder: IndexStoreHolder
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
 
@@ -19,6 +20,7 @@ struct GlanceApp: App {
         let bm = BookmarkManager()
         _bookmarkManager = StateObject(wrappedValue: bm)
         _folderStore = StateObject(wrappedValue: FolderStore(bookmarkManager: bm))
+        _indexStoreHolder = StateObject(wrappedValue: IndexStoreHolder())
     }
 
     var body: some Scene {
@@ -27,6 +29,7 @@ struct GlanceApp: App {
                 .environmentObject(bookmarkManager)
                 .environmentObject(folderStore)
                 .environmentObject(appState)
+                .environmentObject(indexStoreHolder)
                 .onAppear {
                     folderStore.loadSavedFolders()
                 }
