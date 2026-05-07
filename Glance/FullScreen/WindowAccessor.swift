@@ -15,6 +15,9 @@ struct WindowAccessor: NSViewRepresentable {
             guard let window = view.window else { return }
             appState.window = window
             window.delegate = context.coordinator
+            // 锁定 toolbar 与 title bar 融合（fused），首次渲染就避免 SwiftUI
+            // NavigationSplitView 默认 separated/expanded 浅灰横条跟 preview 紫黑断层
+            window.toolbarStyle = .unified
         }
         return view
     }
@@ -26,6 +29,8 @@ struct WindowAccessor: NSViewRepresentable {
                 if window.delegate == nil {
                     window.delegate = context.coordinator
                 }
+                // 幂等设置：SwiftUI 重建 representable 时也保持 fused，避免回退
+                window.toolbarStyle = .unified
             }
         }
     }
