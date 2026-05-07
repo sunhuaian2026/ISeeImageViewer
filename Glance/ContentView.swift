@@ -32,7 +32,6 @@ struct ContentView: View {
             HStack(spacing: 0) {
                 mainContent
                 if showInspector {
-                    Divider()
                     ImageInspectorView(url: inspectorURL)
                         .frame(width: DS.Inspector.width)
                         .transition(.move(edge: .trailing).combined(with: .opacity))

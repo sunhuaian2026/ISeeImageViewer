@@ -34,6 +34,13 @@ struct ImageInspectorView: View {
             await viewModel.load(url: url)
         }
         .onDisappear { viewModel.cancel() }
+        // 边线绑定到 Inspector 视图本身，跟随 .move(.trailing)+.opacity transition
+        // 同步出入，避免 ContentView 里独立 Divider 与 Inspector 动画不同步
+        .overlay(alignment: .leading) {
+            Rectangle()
+                .fill(DS.Color.separatorColor)
+                .frame(width: 0.5)
+        }
     }
 
     // MARK: - Form

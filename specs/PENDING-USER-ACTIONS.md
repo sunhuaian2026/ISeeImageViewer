@@ -25,6 +25,10 @@
 （本段 CC 维护，追加新项。测完移到 Done。）
 
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · dark 模式开关边线同步**：dark 模式下按 ⌘I 开 Inspector → 左缘 0.5pt 边线随 Inspector 一起从右滑入，过程中**不出现粉色短暂闪现 / 不"提前到位"**；再按 ⌘I 关 → 边线随 Inspector 一起滑出，**不延迟、不残留**
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · light 模式开关边线同步**：同上 2 项在 light 模式复测（边线应是浅黑半透明 #000 0.08，跟 dark 是同一 AdaptiveColor 的另一端）
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · 切文件夹/取消选图自动关 Inspector**：选中图片开 Inspector → 切到另一个文件夹（侧边栏点） → Inspector 自动关 + 边线同步消失，无残留；再选图开 Inspector → 按 Esc 退选图 → 同上
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · 内容回归**：Inspector 显示文件名/尺寸/EXIF/相机参数/GPS 各字段不变；isLoading spinner 行为不变；切换图片 Form 内容跟着更新；ContentUnavailableView 提示文案不变
 - [ ] (2026-05-06 / `ab1fe89` / bugfix) **dark 模式贴 macOS 系统配色 + 失焦响应**（partial — 待 v1.0.1 重新审）：原 commit ab1fe89 删 4 处 hardcoded background 想让系统 sidebar material 接管，实测 sidebar 上半 row 区域有 vibrancy + 漏壁纸色，但 row 之下空白区是深黑色 windowBackground（条纹感）。codex:rescue 给的 NSVisualEffectView 桥方案落地后引发**关于窗口居中回归**（具体因果链未定），同时颜色仍不一致，已 revert 回 ab1fe89 状态。**期望视觉**：app 切到 dark → 侧边栏整片跟 Finder/Mail/Notes 一致（vibrancy + 漏出桌面壁纸色 + 失焦自动褪色） + 内容区中性灰；侧边栏选中 / 未选中行视觉一致（无条纹）。**当前 ab1fe89 状态可接受作 v1.0**（条纹但不影响核心功能），下次审计走 SwiftUI ZStack vs NavigationSplitView column 行为 + 验证 codex 方案为何引发居中回归
 - [ ] (2026-05-05 / `<pending>` / dist) **部署目标降级回归**：装 `~/sync/Glance.app` 跑 7 路径（启动 / 拖文件夹 / 单击进 preview + 方向键 / 双击进 QuickViewer 缩放拖拽 / 全屏 F 键 / 排序菜单 / 关于面板点击复制 + toast），确认 macOS 部署目标 26.2 → 14.0 未破坏现有功能
 - [ ] (2026-05-05 / `<pending>` / dist) **notarytool keychain profile 配置**（一次性）：① 进 https://appleid.apple.com/account/manage 「登录与安全 → App 专用密码」生成 App-specific password（命名如 `glance-notary`）；② 终端跑：`xcrun notarytool store-credentials "glance-notary" --apple-id 16414766@qq.com --team-id 8KW8Z92GRA --password <粘贴 App-specific password>`；③ 验证：`xcrun notarytool history --keychain-profile "glance-notary" --max-results 1` 无报错
