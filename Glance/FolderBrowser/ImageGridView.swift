@@ -156,7 +156,14 @@ struct ImageGridView: View {
                 // 没有重新出现，onAppear 不会再触发；主动拉回焦点防止方向键 / Space 静默或被
                 // 退场中的 ImagePreviewView 残留响应（Y-1 / Y-2 race）
                 .onChange(of: folderStore.selectedImageIndex) { _, newValue in
-                    if newValue == nil { isFocused = true }
+                    if newValue == nil {
+                        isFocused = true
+                    } else if let idx = newValue, folderStore.images.indices.contains(idx) {
+                        // preview 方向键 navigate 已写回 selectedImageIndex（ImagePreviewView.swift:147-152），
+                        // grid 这边监听同步 highlightedURL → ESC 退回 grid 时 highlight 跟到 preview 浏览到的图，
+                        // 对齐 Finder Cover Flow / Photos.app 行为。Bug 4 真解
+                        highlightedURL = folderStore.images[idx]
+                    }
                 }
                 // ContentView 在 QuickViewer / preview 关闭后通过 gridFocusTrigger 拉回焦点；
                 // 上面 selectedImageIndex onChange 是冗余兜底（仅覆盖 preview dismiss 路径）
