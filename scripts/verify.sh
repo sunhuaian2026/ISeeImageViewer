@@ -72,7 +72,7 @@ else
   fail "TODO format violations"; printf '%s\n' "$BT" | sed 's/^/      /'
 fi
 
-APPLE='^(SwiftUI|Foundation|AppKit|Combine|ImageIO|UniformTypeIdentifiers|CoreGraphics|CoreImage|CoreText|CoreFoundation|CoreServices|OSLog|Security|IOKit|QuartzCore|Metal|AVFoundation|AVKit|MapKit|PhotosUI|Photos|PDFKit|WebKit|StoreKit|LocalAuthentication|AuthenticationServices|Network|NetworkExtension|SystemConfiguration|UserNotifications|EventKit|Contacts|Intents|CoreLocation|CoreBluetooth|CoreMotion|CoreML|Vision|NaturalLanguage|Speech|Accelerate|simd|os|Darwin|Dispatch|XCTest)$'
+APPLE='^(SwiftUI|Foundation|AppKit|Combine|ImageIO|UniformTypeIdentifiers|CoreGraphics|CoreImage|CoreText|CoreFoundation|CoreServices|OSLog|Security|IOKit|QuartzCore|Metal|AVFoundation|AVKit|MapKit|PhotosUI|Photos|PDFKit|WebKit|StoreKit|LocalAuthentication|AuthenticationServices|Network|NetworkExtension|SystemConfiguration|UserNotifications|EventKit|Contacts|Intents|CoreLocation|CoreBluetooth|CoreMotion|CoreML|Vision|NaturalLanguage|Speech|Accelerate|simd|os|Darwin|Dispatch|XCTest|SQLite3)$'
 IMPS=$(grep -hE '^import ' $SRC 2>/dev/null | awk '{print $2}' | sort -u)
 BAD_IMPS=$(printf '%s\n' "$IMPS" | grep -vE "$APPLE" | grep -v '^$' || true)
 if [ -z "$BAD_IMPS" ]; then
