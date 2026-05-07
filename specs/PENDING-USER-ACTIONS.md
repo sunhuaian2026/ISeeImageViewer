@@ -38,8 +38,6 @@
 - [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · sidebar 列**：左上 `+` 按钮 + sidebar toggle 视觉位置 / 间距不变
 - [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · Traffic light 回归**：进 QV 隐藏 / 退 QV 恢复行为不变（commit a064033 / 45a61f1 / 6da903c 已修过 3 次的回归区域）
 - [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · 外观切换**：浅色 / 深色 / 跟随系统切换 → toolbar 视觉跟着切，无残留
-- [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · Path A 核心**：浅色模式 → grid → **直接双击 cell** → QV (深色) → ESC 退 → **sidebar 应保持浅色，不再变深灰**（修前 g1.png 现象）
-- [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · Path B 核心**：浅色模式 → grid → **单击 cell 进 preview** → 双击 → QV (深色) → ESC 退 → **整个 app 保持浅色**（preview / sidebar / 文件名 toolbar 全浅色，修前 g2.png 现象）
 - [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · QV 视觉回归**：QV 内顶栏 / nav 按钮 / filmstrip / 关闭按钮 / 缩放比例显示 / 进度 n/m 仍是深色，QV 视觉跟修改前完全一致
 - [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · AppearanceMode 切换回归**：浅色 / 深色 / 跟随系统切换 → 立即生效，QV 进出后切换仍即时；进 QV 前后切换外观也无干扰
 - [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · 深色模式回归**：深色模式 → 进出 QV → 主 app 保持深色（不应该误触发任何浅化）
@@ -60,6 +58,8 @@
 
 （本段追加完成条目，附完成日期。）
 
+- [x] (2026-05-07 / `3cdb991`) **QV colorScheme env · Path A 核心**：浅色模式 → grid → 直接双击 cell → QV (深色) → ESC 退 → sidebar 保持浅色，不再变深灰（修前 g1.png 现象）✓ 2026-05-07
+- [x] (2026-05-07 / `3cdb991`) **QV colorScheme env · Path B 核心**：浅色模式 → grid → 单击 cell 进 preview → 双击 → QV (深色) → ESC 退 → 整个 app 保持浅色（preview / sidebar / 文件名 toolbar 全浅色，修前 g2.png 现象）✓ 2026-05-07
 - [x] (2026-05-06 / `2b858cf`) **跟随系统外观模式生效**：菜单依次切「跟随系统」/「强制深色」/「强制浅色」/「跟随系统」 → 每次都立即生效；切「跟随系统」后系统切深浅 → app 跟着切；重启 app 保留上次模式选择；进 QuickViewer 仍强制深色（局部覆盖不受影响）✓ 2026-05-06
 - [x] (2026-05-06 / `dcabffc`) **light 模式 chrome / 内容区对比**：切到 light 模式 → 内容区为纯白 (#FFFFFF) / 侧边栏为浅灰 (#F2F2F7)，对比方向跟 dark 模式一致（内容区是焦点更亮）；dark 模式视觉不变 ✓ 2026-05-06
 - [x] (2026-05-06 / `20fa509`) **关于窗口跟随主窗口居中**（方案 2 真解 NSWindow，方案 1 e2e0d21 SwiftUI Window onAppear 有 A→B 跳跃已弃）：挪动主窗口到屏幕任意角落 → 菜单栏 → 关于一眼 → 关于窗口出现在主窗口中心，零跳跃；多次开关后位置仍跟随 ✓ 2026-05-06
