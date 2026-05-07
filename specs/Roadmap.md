@@ -6,14 +6,15 @@
 
 ---
 
-## 当前进度（2026-05-05）
+## 当前进度（2026-05-07）
 
-**所有模块已完成 + 工程化收尾阶段**
+**v1.0 ready，待用户拍板 3 项不可逆操作发布**
 
-- 看图主功能（grid / preview / QuickViewer / Inspector / Sort / KeyboardShortcuts / Prefetch / AppIcon / Rename）全部稳定
-- 工程化基建：`/go` 五步 / `verify.sh` 三段 oracle / `build/Glance.app` 自动 sync `~/sync/` / pre-push codex hook / build 版本号注入 + BuildInfo sidecar / 自定义关于面板含点击复制
-- 仍在修补：长尾 bug fix + 偶发回归（见下方 Bug Fix 记录段 / 待修复段）
-- 下一步主线：Focus 架构父持有重构（详见待开发段，等下次 focus race bug 出现前要做）
+- 看图主功能全部稳定（grid / preview / QuickViewer / Inspector / Sort / KeyboardShortcuts / Prefetch / AppIcon / Rename / 全屏 F 键全局生效）
+- 工程化基建：`/go` 五步（含 post-commit sync 闭环）/ `verify.sh` 三段 oracle / `build/Glance.app` 自动 sync `~/sync/` / pre-push codex hook / build 版本号注入 + BuildInfo sidecar / 自定义关于面板含点击复制
+- 2026-05-07 session 收尾 6 个 .swift bug fix（焦点 ring / toolbar background / QV colorScheme env / Bug 4 grid highlight / Bug 4 扩展 QV 同步 / F 键全局 grid+preview）+ /go 流程 sync gap 沉淀 + Distribution v1.0 真公证 DMG 生成（commit `0c9f699` build `0c9f699.0507-2004` / SHA256 `47fff7c4...` / size 2.4 MB / universal binary 验证 / staple worked）
+- 下一步主线：v1.0 公开发布（待用户拍板 ① DMG 干净 Mac Gatekeeper 实测 ② GitHub 仓库 visibility public ③ gh release create — 三项均**不可逆**操作 CC 不擅自跑）
+- 远期 Refactor：Focus 架构父持有重构（详见待开发段，等下次 focus race bug 出现前必做）
 
 ---
 
@@ -209,16 +210,16 @@ xcrun notarytool store-credentials "glance-notary" \
 - `scripts/release.sh` + `scripts/ExportOptions.plist`
 - `.gitignore` 加 `dist/`
 - create-dmg via `brew install create-dmg`
+- **2026-05-07 session 收口**：notarytool keychain profile 已重存 (5/5 配过但 5/7 ACL 丢失) / 部署目标降级 7 路径 smoke test 全过 / `make release` 真跑成功 (`504c102` 回填 release notes 元数据；公证 Submission ID `cb7db74c-afbb-4e12-98a5-912ca15eefff` Accepted / staple worked / universal binary 三处验证 x86_64+arm64) / `dist/Glance-1.0.0.dmg` 含本 session 6 fix + 真公证 + staple，可发布
 
-**待办（Pending 用户操作）**
+**待办（Pending 用户操作 — 全是不可逆）**
 
-- [ ] 用户跑 `xcrun notarytool store-credentials "glance-notary" ...` 一次性配置公证凭据
-- [ ] 用户在自己 macOS 上手测 `~/sync/Glance.app`（Debug build 7 路径回归 + 自定义关于面板，确认部署目标降级未破坏功能）
-- [ ] 跑 `make release` 完整链路验证（archive + Developer ID 签名 + DMG + 公证 + staple）
-- [ ] 安装公证过的 DMG 到一台干净 Mac 双击直开（验证 Gatekeeper 不拦）
-- [ ] GitHub 仓库 visibility 改 public（开源决策已拍板）
-- [ ] 创建 v1.0.0 GitHub Release，上传 DMG + 写 release notes
-- [ ] 小红书引流到 Release 下载链接
+- [ ] **DMG 干净 Mac Gatekeeper 实测**（推荐发出去前最后兜底）：把 `dist/Glance-1.0.0.dmg` 拷到一台**不是签名机**的 Mac → 双击挂载 → 拖 .app 到 Applications → 双击启动 → 期望直接打开不弹任何 Gatekeeper 警告
+- [ ] **GitHub 仓库 visibility 改 public**（不可逆）：`gh repo edit sunhuaian2026/ISeeImageViewer --visibility public --accept-visibility-change-consequences` 或 GitHub 网页 Settings → Danger Zone
+- [ ] **创建 v1.0.0 GitHub Release**（公开可见，不可逆）：`gh release create v1.0.0 dist/Glance-1.0.0.dmg --title "Glance 1.0.0 · 一眼" --notes-file docs/release-notes/v1.0.0.md`
+- [ ] 小红书引流到 Release 下载链接（市场推广，可任何时候做）
+- [ ] (可选 v1.0.1 cleanup) GitHub 仓库改名 ISeeImageViewer → Glance（GitHub 自动留旧路径 redirect）
+- [ ] (可选 v1.0.1 cleanup) `release.sh` L191 `du -h` 取的是 disk usage 而非文件大小，输出 misleading（本次 3.4M vs 实际 2.4 MB），改用 `stat -f %z` 或类似按 byte 格式化
 
 ---
 
@@ -226,11 +227,14 @@ xcrun notarytool store-credentials "glance-notary" \
 
 1. **DesignSystem.swift**：所有 UI 常量的唯一来源，引用 `DS.*`，禁止硬编码。动画常量为 `DS.Anim.fast / normal / slow`（注意：旧名 `DS.Animation` 已废弃）。
 2. **PBXFileSystemSynchronizedRootGroup**：`Glance/` 目录下新建 .swift 文件自动加入编译，无需改 xcodeproj。
-3. **图片查看两级交互**：
-   - 单击缩略图 → `folderStore.selectedImageIndex` → `ImagePreviewView`（内嵌预览，文件名通过 `.navigationTitle` 显示在系统 toolbar）
-   - 双击缩略图 → 只设 `quickViewerIndex`，**不设** `selectedImageIndex`（避免底层渲染 ImagePreviewView）→ `QuickViewerOverlay`；关闭后回列表页
-   - 双击内嵌预览图片 → `selectedImageIndex` 已有值，设 `quickViewerIndex` → `QuickViewerOverlay`；关闭后回预览页
-   - **焦点恢复**：QuickViewerOverlay 为 overlay，关闭时 ImagePreviewView 的 `onAppear` 不再触发；通过 `ContentView.previewFocusTrigger`（UUID）信号驱动 `ImagePreviewView.onChange` 重新 `isFocused = true`
+3. **图片查看两级交互 + QV 入口仲裁**：
+   - 单击缩略图 → `folderStore.selectedImageIndex` 被设 → mainContent ZStack 渲染 `ImagePreviewView`（文件名通过 `ImageGridView.navigationTitle` 按 `selectedImageIndex` 动态决定显示在系统 toolbar，不在 `ImagePreviewView` 自身设）
+   - 双击缩略图 → onDoubleClick 显式清 `selectedImageIndex = nil` + 设 `quickViewerEntry = .grid` + `quickViewerIndex = idx` → `QuickViewerOverlay` 渲染；关闭后按 entry 路由回 grid（保 `6da903c` 行为不进 preview）
+   - 双击内嵌预览图片 → preview onQuickView 设 `quickViewerEntry = .preview` + `quickViewerIndex = idx` → `QuickViewerOverlay` 渲染；关闭后按 entry 路由回 preview，preview 通过 `.id(idx)` 重建显示 QV 浏览到的最后一张图
+   - **QV 内方向键 / nav button / filmstrip tap** → `viewModel.currentIndex` 变 → `QuickViewerOverlay` 一处 `onChange(of: viewModel.currentIndex)` 上报 ContentView → 写 `selectedImageIndex` → ImageGridView `onChange(of: selectedImageIndex)` non-nil 分支自动同步 `highlightedURL` → ESC 退 QV 后 grid highlight (`.grid` 入口) / preview (`.preview` 入口) 都跟到当前位置（对齐 Finder Quick Look + Photos.app）
+   - **入口来源 enum**：`private enum QuickViewerEntry { case grid, preview }` + `@State quickViewerEntry: QuickViewerEntry?`，dismiss 仲裁按 provenance 路由（`switch quickViewerEntry`），不依赖 `selectedImageIndex` 是否 nil 当哨兵 — 不破坏 `6da903c` 修过的"双击 cell 进 QV 后退出回 grid"
+   - **mainContent 渲染条件收紧**：`if let idx = selectedImageIndex, quickViewerIndex == nil { ImagePreviewView(...) }` — QV 期间不渲染 preview，避免 `.id(idx)` 让 preview 在 QV 内方向键改 selectedImageIndex 时整体重建/loadImage
+   - **焦点恢复**：QuickViewerOverlay 为 overlay 不会 trigger onAppear；通过 `ContentView.previewFocusTrigger` / `gridFocusTrigger`（UUID）信号驱动子 view onChange 重新 `isFocused = true`，按 `quickViewerEntry` 仲裁路由
 4. **QuickViewerOverlay 覆盖方式**：用 `.overlay` 挂在 `NavigationSplitView` 上（不用 ZStack），确保铺满整个内容区。
 5. **三栏布局**：`ContentView` = NavigationSplitView（Sidebar） + HStack（Detail + Inspector）。Inspector 用 `⌘I` 切换，宽度 `DS.Inspector.width`（260pt）。Inspector 按钮在无图片选中时禁用；切换文件夹或取消选图时自动关闭 Inspector。
 6. **颜色系统**：光晕 `DS.Color.glowPrimary`（紫）/ `glowSecondary`（青绿）。`DS.Color.appBackground` (#121217) / `gridBackground` (#141419) 自 2026-05-06 起 **仅 QuickViewer / ImagePreviewView 引用**（QuickViewer 强制 dark 是设计选择，preview 内嵌底色保留）。FolderSidebarView + ImageGridView **不再** 用这两个值 —— 改让 NavigationSplitView + `listStyle(.sidebar)` 默认行为接管：sidebar 自动 NSVisualEffectView material `.sidebar` + state `.followsWindowActiveState`（失焦自动褪色，跟 Finder/Mail/Notes 一致），内容区用 NavigationSplitView 默认 NSColor.windowBackgroundColor / controlBackgroundColor（dark/light system semantic 派发）。`DS.Color.viewerBackground` 已废弃。
