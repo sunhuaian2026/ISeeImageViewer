@@ -16,6 +16,10 @@ private enum QuickViewerEntry {
 struct ContentView: View {
     @EnvironmentObject var folderStore: FolderStore
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var indexStoreHolder: IndexStoreHolder
+    @StateObject private var smartFolderStore = SmartFolderStore.placeholder()
+    @State private var indexBridge: FolderStoreIndexBridge?
+    @State private var didWire: Bool = false
     @State private var showInspector = false
     @State private var quickViewerIndex: Int? = nil
     // QV 入口来源：onDoubleClick / onQuickView 设值，QV onDismiss 仲裁后清回 nil
@@ -37,11 +41,27 @@ struct ContentView: View {
 
     var body: some View {
         NavigationSplitView {
-            FolderSidebarView()
+            VStack(alignment: .leading, spacing: 0) {
+                SmartFolderListView()
+                    .padding(.top, DS.Spacing.sm)
+                    .padding(.horizontal, DS.Spacing.xs)
+
+                Divider()
+                    .padding(.vertical, DS.Spacing.xs)
+
+                FolderSidebarView()
+            }
+            .navigationSplitViewColumnWidth(
+                min: DS.Sidebar.minWidth,
+                ideal: DS.Sidebar.width,
+                max: DS.Sidebar.maxWidth
+            )
+            .environmentObject(smartFolderStore)
         } detail: {
             HStack(spacing: 0) {
                 mainContent
                 if showInspector {
+                    // V1 已删独立 Divider（commit 086ade2 改用 Inspector 自带 leading overlay）
                     ImageInspectorView(url: inspectorURL)
                         .frame(width: DS.Inspector.width)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -76,6 +96,7 @@ struct ContentView: View {
                     }
                 }
             }
+            .environmentObject(smartFolderStore)
         }
         // QuickViewerOverlay 用 .overlay 挂在 NavigationSplitView 上，确保铺满整个内容区
         .overlay {
@@ -147,6 +168,35 @@ struct ContentView: View {
             }
             previewVM.clearCache()
         }
+        // V2 wire-up：IndexStore async ready 后挂载 engine + bridge + 默认选中"全部最近"
+        .onAppear {
+            Task { await wireIfReady() }
+        }
+        .onChange(of: indexStoreHolder.isReady) { _, ready in
+            guard ready else { return }
+            Task { await wireIfReady() }
+        }
+        // V2 受管文件夹增删 → bridge sync + 当前 SF 重 query
+        .onChange(of: folderStore.rootFolders) { _, newRoots in
+            guard let bridge = indexBridge else { return }
+            Task {
+                await bridge.sync(with: newRoots)
+                await smartFolderStore.refreshSelected()
+            }
+        }
+        // V2 selection 互斥：smart folder 选中 → 清 V1；反之亦然
+        .onChange(of: folderStore.selectedFolder) { _, newFolder in
+            if newFolder != nil && smartFolderStore.selected != nil {
+                Task { await smartFolderStore.select(nil) }
+            }
+        }
+        .onChange(of: smartFolderStore.selected) { _, newSF in
+            if newSF != nil && folderStore.selectedFolder != nil {
+                folderStore.selectedFolder = nil
+                folderStore.images = []
+                folderStore.selectedImageIndex = nil
+            }
+        }
         .background {
             WindowAccessor(appState: appState)
         }
@@ -156,6 +206,15 @@ struct ContentView: View {
 
     @ViewBuilder
     private var mainContent: some View {
+        if smartFolderStore.selected != nil {
+            SmartFolderGridView()
+        } else {
+            v1MainContent
+        }
+    }
+
+    @ViewBuilder
+    private var v1MainContent: some View {
         ZStack {
             // ImageGridView 始终保留在层级里，避免返回时缩略图全部重载
             ImageGridView(
@@ -192,6 +251,27 @@ struct ContentView: View {
                     removal:   .scale(scale: 0.97).combined(with: .opacity)
                 ))
             }
+        }
+    }
+
+    // MARK: - V2 Wire-up
+
+    /// 幂等 wire-up：IndexStore ready 后初始化 engine + bridge + 默认选中"全部最近"。
+    /// 同时被 .onAppear 和 .onChange(of: indexStoreHolder.isReady) 调，
+    /// didWire flag 守卫防重入；任何一条到达都成功 — race 消除。
+    private func wireIfReady() async {
+        guard !didWire, let store = indexStoreHolder.store else { return }
+        didWire = true
+
+        let engine = SmartFolderEngine(store: store)
+        smartFolderStore.attach(engine: engine)
+        indexBridge = FolderStoreIndexBridge(indexStore: store)
+        await indexBridge?.sync(with: folderStore.rootFolders)
+
+        if smartFolderStore.selected == nil {
+            await smartFolderStore.select(BuiltInSmartFolders.allRecent)
+        } else {
+            await smartFolderStore.refreshSelected()
         }
     }
 }
