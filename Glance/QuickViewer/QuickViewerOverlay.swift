@@ -92,7 +92,12 @@ struct QuickViewerOverlay: View {
                 viewModel.applyViewportSize(newSize)
             }
         }
-        .preferredColorScheme(.dark)
+        // 用本地 SwiftUI environment 注入 dark colorScheme 而非 .preferredColorScheme(.dark)。
+        // .preferredColorScheme 是 presentation-scoped 偏好（写到 NSHostingView/NSWindow.contentView
+        // appearance 链），ESC 退 QV 时撤销时序滞后，会渗透 dark 到底层 sidebar/preview，浅色模式下
+        // 出现"sidebar 变灰 / 整个 app 变深"现象，需失焦自愈。.environment(\.colorScheme, .dark) 仅
+        // 影响 QV 子树 SwiftUI 环境，QV 内部全用显式颜色无 AppKit material 故视觉等价
+        .environment(\.colorScheme, .dark)
         .focusable()
         .focusEffectDisabled()
         .focused($isFocused)
