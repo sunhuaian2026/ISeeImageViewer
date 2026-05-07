@@ -94,6 +94,7 @@ struct QuickViewerOverlay: View {
         }
         .preferredColorScheme(.dark)
         .focusable()
+        .focusEffectDisabled()
         .focused($isFocused)
         .onAppear  { appState.hideTrafficLights() }
         .onDisappear {

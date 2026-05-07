@@ -149,6 +149,7 @@ struct ImageGridView: View {
                 // 内容区背景（NSColor.controlBackgroundColor / windowBackgroundColor）接管，
                 // dark 跟 Finder 一致（~#1E1E1E 中性灰，不再偏冷蓝紫）。light 模式视觉无变化
                 .focusable()
+                .focusEffectDisabled()
                 .focused($isFocused)
                 .onAppear { isFocused = true }
                 // ImagePreviewView 关闭时（selectedImageIndex 变 nil）grid 一直在 ZStack 底层

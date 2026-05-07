@@ -109,6 +109,7 @@ struct ImagePreviewView: View {
             }
         }
         .focusable()
+        .focusEffectDisabled()
         .focused($isFocused)
         .onAppear { loadImage(); isFocused = true }
         .onChange(of: focusTrigger) { isFocused = true }
