@@ -25,6 +25,29 @@
 （本段 CC 维护，追加新项。测完移到 Done。）
 
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · dark 模式开关边线同步**：dark 模式下按 ⌘I 开 Inspector → 左缘 0.5pt 边线随 Inspector 一起从右滑入，过程中**不出现粉色短暂闪现 / 不"提前到位"**；再按 ⌘I 关 → 边线随 Inspector 一起滑出，**不延迟、不残留**
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · light 模式开关边线同步**：同上 2 项在 light 模式复测（边线应是浅黑半透明 #000 0.08，跟 dark 是同一 AdaptiveColor 的另一端）
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · 切文件夹/取消选图自动关 Inspector**：选中图片开 Inspector → 切到另一个文件夹（侧边栏点） → Inspector 自动关 + 边线同步消失，无残留；再选图开 Inspector → 按 Esc 退选图 → 同上
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · 内容回归**：Inspector 显示文件名/尺寸/EXIF/相机参数/GPS 各字段不变；isLoading spinner 行为不变；切换图片 Form 内容跟着更新；ContentUnavailableView 提示文案不变
+- [ ] (2026-05-07 / `<pending>` / bugfix) **focus ring · 真根因修法核心验证**：系统强调色保持粉色（外观 → 强调色 → 粉色）→ 启动 app → 单击缩略图进 ImagePreviewView → 整个 app 不应再有粉色框；按 ⌘I 开 Inspector → preview 右缘和 Inspector 之间不应再有粉色长条；点击 app 失焦后再聚焦 → 不再出现"刚回来粉色框闪一下"的现象
+- [ ] (2026-05-07 / `<pending>` / bugfix) **focus ring · ImageGridView 同步禁用**：grid 模式（无图片选中）→ 整个 grid 区域不应有粉色 focus ring 围在缩略图网格周围；grid 高亮（紫色 highlightedURL 圆角矩形）应仍正常显示
+- [ ] (2026-05-07 / `<pending>` / bugfix) **focus ring · QuickViewerOverlay 同步禁用**：双击缩略图进 QuickViewer → 整个 overlay 不应有粉色 focus ring；强制深色 overlay 中所有自定义 UI（顶栏 / nav 按钮 / filmstrip）视觉不变
+- [ ] (2026-05-07 / `<pending>` / bugfix) **focus ring · 键盘功能回归**（不能 onKeyPress 退化）：grid 方向键移 highlight / preview 方向键切图 / preview Esc 退回 grid / preview Space 进 QuickViewer / QuickViewer 方向键切图 / QuickViewer Esc 退回 全部仍正常工作；切文件夹 / 切预览图 后 onAppear 焦点路由仍生效
+- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · 核心**：杀掉旧 Glance → 装新 build → 关于面板 commit hash 应是 v2 那版 → 单击 cell 进 ImagePreviewView → 顶部应**无浅灰横条**，文件名 + ⓘ + 外观切换按钮直接坐在 NSWindow title bar 上（注意 e39fbbf v1 实机零变化已废，v2 走 SwiftUI .toolbarBackground 绘制层）
+- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · 进出 QV 回归**：双击进 QuickViewer → ESC 退 → 再单击进 preview → 仍无浅灰横条
+- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · sidebar 列**：左上 `+` 按钮 + sidebar toggle 视觉位置 / 间距不变
+- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · Traffic light 回归**：进 QV 隐藏 / 退 QV 恢复行为不变（commit a064033 / 45a61f1 / 6da903c 已修过 3 次的回归区域）
+- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · 外观切换**：浅色 / 深色 / 跟随系统切换 → toolbar 视觉跟着切，无残留
+- [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · QV 视觉回归**：QV 内顶栏 / nav 按钮 / filmstrip / 关闭按钮 / 缩放比例显示 / 进度 n/m 仍是深色，QV 视觉跟修改前完全一致
+- [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · AppearanceMode 切换回归**：浅色 / 深色 / 跟随系统切换 → 立即生效，QV 进出后切换仍即时；进 QV 前后切换外观也无干扰
+- [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · 深色模式回归**：深色模式 → 进出 QV → 主 app 保持深色（不应该误触发任何浅化）
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 核心**：grid 单击 cell 1.png → 进 preview → 方向键 → 到 5.png → ESC 退回 grid → **grid 紫色高亮应跟到 5.png**（修前停在 1.png）
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 双击 → QV 路径回归**（44ba6ee 区域）：grid 单击 cell A → highlight=A → 双击 cell B → 进 QuickViewer → ESC 退 QV → highlight 应在 B（不变，跟修前一致）
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 排序回归**：grid 模式 → 切换排序方式 → highlight 自动清空（因 onChange(of: images)）→ 再单击/方向键正常工作；进 preview 后切排序 → preview 仍显示同图 (175e82a 行为不变)
+- [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 焦点 race 回归**（5b29600 / 59a9d86 区域）：单击 cell → preview → ESC → grid 方向键正常工作；单击 → preview → 双击 → QV → ESC → grid 方向键正常工作
+- [ ] (2026-05-07 / `<pending>` / bugfix · Bug 4 扩展) **6da903c 回归**（最关键 — 不能破坏）：grid 双击 cell A 进 QV → **不动方向键** → ESC 退 QV → **回 grid，不进 preview**（保持 6da903c 行为）
+- [ ] (2026-05-07 / `<pending>` / bugfix · Bug 4 扩展) **QV 导航多渠道全覆盖**：QV 内用方向键 / nav button (左右气泡按钮) / filmstrip tap **三种方式**切到 Z → ESC 退 QV → **三种方式都让 highlight/preview 同步 Z**（codex 标盲点 1，验证 onChange viewModel.currentIndex 一处覆盖三渠道）
+- [ ] (2026-05-06 / `ab1fe89` / bugfix) **dark 模式贴 macOS 系统配色 + 失焦响应**（partial — 待 v1.0.1 重新审）：原 commit ab1fe89 删 4 处 hardcoded background 想让系统 sidebar material 接管，实测 sidebar 上半 row 区域有 vibrancy + 漏壁纸色，但 row 之下空白区是深黑色 windowBackground（条纹感）。codex:rescue 给的 NSVisualEffectView 桥方案落地后引发**关于窗口居中回归**（具体因果链未定），同时颜色仍不一致，已 revert 回 ab1fe89 状态。**期望视觉**：app 切到 dark → 侧边栏整片跟 Finder/Mail/Notes 一致（vibrancy + 漏出桌面壁纸色 + 失焦自动褪色） + 内容区中性灰；侧边栏选中 / 未选中行视觉一致（无条纹）。**当前 ab1fe89 状态可接受作 v1.0**（条纹但不影响核心功能），下次审计走 SwiftUI ZStack vs NavigationSplitView column 行为 + 验证 codex 方案为何引发居中回归
 - [ ] (2026-05-05 / `<pending>` / dist) **部署目标降级回归**：装 `~/sync/Glance.app` 跑 7 路径（启动 / 拖文件夹 / 单击进 preview + 方向键 / 双击进 QuickViewer 缩放拖拽 / 全屏 F 键 / 排序菜单 / 关于面板点击复制 + toast），确认 macOS 部署目标 26.2 → 14.0 未破坏现有功能
 - [ ] (2026-05-05 / `<pending>` / dist) **notarytool keychain profile 配置**（一次性）：① 进 https://appleid.apple.com/account/manage 「登录与安全 → App 专用密码」生成 App-specific password（命名如 `glance-notary`）；② 终端跑：`xcrun notarytool store-credentials "glance-notary" --apple-id 16414766@qq.com --team-id 8KW8Z92GRA --password <粘贴 App-specific password>`；③ 验证：`xcrun notarytool history --keychain-profile "glance-notary" --max-results 1` 无报错
 - [ ] (2026-05-05 / `<pending>` / dist) **完整 release 流程跑通**：跑 `make release`（5-15 分钟，含公证），观察输出无错；产物 `dist/Glance-1.0.0.dmg` 生成，SHA256 + size 正常
@@ -41,6 +64,18 @@
 
 （本段追加完成条目，附完成日期。）
 
+- [x] (2026-05-07 / `79fcfdf`) **F 键全局 · grid**：grid 模式 → 按 F → 窗口全屏（traffic lights 隐藏）；再按 F → 退出全屏 ✓ 2026-05-07
+- [x] (2026-05-07 / `79fcfdf`) **F 键全局 · preview**：单击 cell 进 preview → 按 F → 窗口全屏；再按 F → 退出全屏 ✓ 2026-05-07
+- [x] (2026-05-07 / `79fcfdf`) **F 键全局 · QV 回归**：双击 cell 进 QV → 按 F → 全屏；再按 F → 退出全屏（行为不变，跟修前一致） ✓ 2026-05-07
+- [x] (2026-05-07 / `79fcfdf`) **F 键全局 · 不冲突其他快捷键**：grid 方向键/Space 仍正常；preview ESC/Space/方向键仍正常 ✓ 2026-05-07
+- [x] (2026-05-07 / `02a36dc`) **Bug 4 扩展 · 路径 1 核心**：grid 双击 cell A 进 QV → 方向键到 Z → ESC 退 QV → grid highlight 跟到 Z（修前停在 A）✓ 2026-05-07
+- [x] (2026-05-07 / `02a36dc`) **Bug 4 扩展 · 路径 2 preview 跟到 Z**：grid 单击 A 进 preview → 双击进 QV → QV 方向键到 Z → ESC 退 QV → preview 显示 Z（修前显示 A）✓ 2026-05-07
+- [x] (2026-05-07 / `02a36dc`) **Bug 4 扩展 · 路径 2 grid highlight 跟到 Z**：续上 → 再 ESC 退 preview → grid highlight 跟到 Z ✓ 2026-05-07
+- [x] (2026-05-07 / `3cdb991`) **QV colorScheme env · Path A 核心**：浅色模式 → grid → 直接双击 cell → QV (深色) → ESC 退 → sidebar 保持浅色，不再变深灰（修前 g1.png 现象）✓ 2026-05-07
+- [x] (2026-05-07 / `3cdb991`) **QV colorScheme env · Path B 核心**：浅色模式 → grid → 单击 cell 进 preview → 双击 → QV (深色) → ESC 退 → 整个 app 保持浅色（preview / sidebar / 文件名 toolbar 全浅色，修前 g2.png 现象）✓ 2026-05-07
+- [x] (2026-05-06 / `2b858cf`) **跟随系统外观模式生效**：菜单依次切「跟随系统」/「强制深色」/「强制浅色」/「跟随系统」 → 每次都立即生效；切「跟随系统」后系统切深浅 → app 跟着切；重启 app 保留上次模式选择；进 QuickViewer 仍强制深色（局部覆盖不受影响）✓ 2026-05-06
+- [x] (2026-05-06 / `dcabffc`) **light 模式 chrome / 内容区对比**：切到 light 模式 → 内容区为纯白 (#FFFFFF) / 侧边栏为浅灰 (#F2F2F7)，对比方向跟 dark 模式一致（内容区是焦点更亮）；dark 模式视觉不变 ✓ 2026-05-06
+- [x] (2026-05-06 / `20fa509`) **关于窗口跟随主窗口居中**（方案 2 真解 NSWindow，方案 1 e2e0d21 SwiftUI Window onAppear 有 A→B 跳跃已弃）：挪动主窗口到屏幕任意角落 → 菜单栏 → 关于一眼 → 关于窗口出现在主窗口中心，零跳跃；多次开关后位置仍跟随 ✓ 2026-05-06
 - [x] (2026-04-23 / `68042e0`) **拖拽**：从 Finder 拖一个文件夹到侧边栏 → 出现在列表、自动选中、badge 正常、重启 app 后 bookmark 仍有效 ✓ 2026-04-23
 - [x] (2026-04-23 / `68042e0`) **拖拽**：多选 2+ 文件夹一次拖入 → 全部加入；当前选中不变（不跳到新拖入的）✓ 2026-04-23
 - [x] (2026-04-23 / `68042e0`) **拖拽**：拖一个已加过的文件夹 → 跳到选中它；`rootFolders` 不重复 ✓ 2026-04-23

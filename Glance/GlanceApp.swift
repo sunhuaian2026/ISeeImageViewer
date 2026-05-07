@@ -27,10 +27,6 @@ struct GlanceApp: App {
                 .environmentObject(bookmarkManager)
                 .environmentObject(folderStore)
                 .environmentObject(appState)
-                .preferredColorScheme(
-                    appState.appearanceMode == .system ? nil :
-                    appState.appearanceMode == .dark   ? .dark : .light
-                )
                 .onAppear {
                     folderStore.loadSavedFolders()
                 }
@@ -38,23 +34,19 @@ struct GlanceApp: App {
         .defaultSize(width: 1280, height: 800)
         .commands {
             // 替换标准"关于"菜单：弹自定义 AboutView 支持点击复制
+            // 通过 AboutWindowController（纯 AppKit）显示，避免 SwiftUI Window scene
+            // 无法在显示前定位导致的 A→B 跳跃问题
             CommandGroup(replacing: .appInfo) {
                 AboutMenuButton()
             }
         }
-
-        Window("关于一眼", id: "about") {
-            AboutView()
-        }
-        .windowResizability(.contentSize)
     }
 }
 
 private struct AboutMenuButton: View {
-    @Environment(\.openWindow) private var openWindow
     var body: some View {
         Button("关于一眼") {
-            openWindow(id: "about")
+            AboutWindowController.shared.show()
         }
     }
 }

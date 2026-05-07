@@ -27,6 +27,7 @@ class AppState: ObservableObject {
     @Published var appearanceMode: AppearanceMode {
         didSet {
             UserDefaults.standard.set(appearanceMode.rawValue, forKey: "appearanceMode")
+            applyAppearance()
         }
     }
 
@@ -34,6 +35,17 @@ class AppState: ObservableObject {
     init() {
         let raw = UserDefaults.standard.string(forKey: "appearanceMode") ?? "system"
         self.appearanceMode = AppearanceMode(rawValue: raw) ?? .system
+        applyAppearance()
+    }
+
+    // SwiftUI .preferredColorScheme(nil) 在 macOS 上无法撤销之前设过的强制值，
+    // 改用 NSApp.appearance 直接控 NSAppearance。AppKit 标准 API，最稳定。
+    private func applyAppearance() {
+        switch appearanceMode {
+        case .system: NSApp.appearance = nil
+        case .light:  NSApp.appearance = NSAppearance(named: .aqua)
+        case .dark:   NSApp.appearance = NSAppearance(named: .darkAqua)
+        }
     }
 
     func toggleFullScreen() {

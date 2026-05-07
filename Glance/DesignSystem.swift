@@ -81,6 +81,8 @@ enum DS {
         static let width: CGFloat = 260
         static let previewHeight: CGFloat = 120
         static let previewCornerRadius: CGFloat = 10
+        // leading 边线宽度（macOS HiDPI 下 0.5pt = 1 物理像素，跟系统 separator 一致）
+        static let separatorWidth: CGFloat = 0.5
     }
 
     // MARK: - Toolbar
@@ -107,7 +109,7 @@ enum DS {
             dark:  SwiftUI.Color(red: 0.07, green: 0.07, blue: 0.09)   // #121217
         )
         static let gridBackground = AdaptiveColor(
-            light: SwiftUI.Color(red: 0.92, green: 0.92, blue: 0.94),  // #EBEBF0
+            light: SwiftUI.Color.white,                                // #FFFFFF（内容区焦点，跟 Finder/Notes 一致）
             dark:  SwiftUI.Color(red: 0.08, green: 0.08, blue: 0.11)   // #141419
         )
 

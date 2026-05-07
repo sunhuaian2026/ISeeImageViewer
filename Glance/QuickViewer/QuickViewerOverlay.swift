@@ -9,14 +9,18 @@ struct QuickViewerOverlay: View {
     @StateObject private var viewModel: QuickViewerViewModel
     @EnvironmentObject var appState: AppState
     let onDismiss: () -> Void
+    // QV 内方向键 / nav button (goBack/goForward) / filmstrip tap (goTo) 都触发
+    // viewModel.currentIndex 变化，统一通过此回调上报给 ContentView 同步 selectedImageIndex
+    let onIndexChange: (Int) -> Void
 
     @FocusState private var isFocused: Bool
     @State private var controlsVisible = true
     @State private var hideTask: Task<Void, Never>?
 
-    init(images: [URL], startIndex: Int, onDismiss: @escaping () -> Void) {
+    init(images: [URL], startIndex: Int, onDismiss: @escaping () -> Void, onIndexChange: @escaping (Int) -> Void) {
         _viewModel = StateObject(wrappedValue: QuickViewerViewModel(images: images, startIndex: startIndex))
         self.onDismiss = onDismiss
+        self.onIndexChange = onIndexChange
     }
 
     var body: some View {
@@ -91,9 +95,20 @@ struct QuickViewerOverlay: View {
             .onChange(of: geo.size) { _, newSize in
                 viewModel.applyViewportSize(newSize)
             }
+            // 监听 viewModel.currentIndex 一处统一上报，覆盖 nav button (goBack/goForward)
+            // / filmstrip tap (goTo) / 方向键 三种 QV 内导航路径，避免补 key handler 漏渠道
+            .onChange(of: viewModel.currentIndex) { _, newValue in
+                onIndexChange(newValue)
+            }
         }
-        .preferredColorScheme(.dark)
+        // 用本地 SwiftUI environment 注入 dark colorScheme 而非 .preferredColorScheme(.dark)。
+        // .preferredColorScheme 是 presentation-scoped 偏好（写到 NSHostingView/NSWindow.contentView
+        // appearance 链），ESC 退 QV 时撤销时序滞后，会渗透 dark 到底层 sidebar/preview，浅色模式下
+        // 出现"sidebar 变灰 / 整个 app 变深"现象，需失焦自愈。.environment(\.colorScheme, .dark) 仅
+        // 影响 QV 子树 SwiftUI 环境，QV 内部全用显式颜色无 AppKit material 故视觉等价
+        .environment(\.colorScheme, .dark)
         .focusable()
+        .focusEffectDisabled()
         .focused($isFocused)
         .onAppear  { appState.hideTrafficLights() }
         .onDisappear {

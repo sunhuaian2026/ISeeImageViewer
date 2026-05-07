@@ -5,11 +5,21 @@
 
 import SwiftUI
 
+// QV 入口来源：用 enum 而非裸 Bool/Optional 让 dismiss 路由按 provenance 走，不依赖
+// selectedImageIndex 是否 nil 当哨兵 — 这样 QV 方向键写 selectedImageIndex 同步 grid
+// highlight + preview 时不会反向破坏 6da903c 修过的"双击 cell 进 QV 后退出回 grid 不进 preview"
+private enum QuickViewerEntry {
+    case grid     // 路径 1: grid 双击 cell 直接进 QV
+    case preview  // 路径 2: grid → preview → 双击 → QV
+}
+
 struct ContentView: View {
     @EnvironmentObject var folderStore: FolderStore
     @EnvironmentObject var appState: AppState
     @State private var showInspector = false
     @State private var quickViewerIndex: Int? = nil
+    // QV 入口来源：onDoubleClick / onQuickView 设值，QV onDismiss 仲裁后清回 nil
+    @State private var quickViewerEntry: QuickViewerEntry? = nil
     @State private var previewFocusTrigger: UUID = UUID()
     // QuickViewer / ImagePreviewView 关闭后让 grid 重新拿焦点的 trigger。变更通过
     // onChange(of: quickViewerIndex) 触发（覆盖 onDismiss 闭包 + onChange(of: images)
@@ -32,7 +42,6 @@ struct ContentView: View {
             HStack(spacing: 0) {
                 mainContent
                 if showInspector {
-                    Divider()
                     ImageInspectorView(url: inspectorURL)
                         .frame(width: DS.Inspector.width)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -80,22 +89,46 @@ struct ContentView: View {
                         }
                         // 关闭后焦点路由迁移到 onChange(of: quickViewerIndex)，统一覆盖
                         // onDismiss + onChange(of: images) 强制关闭 两条路径
+                    },
+                    onIndexChange: { newIdx in
+                        // QV 内 nav button / filmstrip / 方向键 任意路径切图都触发 viewModel.currentIndex 变 →
+                        // QuickViewerOverlay 一处 onChange(of: viewModel.currentIndex) 上报这里
+                        // → 写 selectedImageIndex → ImageGridView b44a175 onChange non-nil 分支自动同步 highlightedURL
+                        // → ESC 退 QV 后 grid highlight (路径 1) / preview (路径 2) 都跟到 Z
+                        folderStore.selectedImageIndex = newIdx
                     }
                 )
                 .transition(.opacity)
             }
         }
         .animation(DS.Anim.normal, value: quickViewerIndex)
-        // QuickViewer 关闭的真源出口：根据 selectedImageIndex 仲裁焦点回 grid 还是 preview
+        // QuickViewer 关闭的真源出口：按 quickViewerEntry provenance 仲裁焦点路由，不依赖
+        // selectedImageIndex 是否 nil 当哨兵 — 因为 QV 方向键已经在写 selectedImageIndex
         .onChange(of: quickViewerIndex) { oldValue, newValue in
             guard oldValue != nil, newValue == nil else { return }
-            if folderStore.selectedImageIndex != nil {
+            switch quickViewerEntry {
+            case .grid:
+                // 路径 1：双击 grid cell 进 QV → ESC 后回 grid（保 6da903c 行为）
+                // QV 期间方向键写过的 selectedImageIndex 这里清回 nil 防止 preview 反弹
+                // mount。highlightedURL 已在 QV 期间被 ImageGridView onChange 同步到 Z 不变
+                folderStore.selectedImageIndex = nil
+                gridFocusTrigger = UUID()
+            case .preview:
+                // 路径 2：preview 进 QV → ESC 退回 preview（selectedImageIndex 仍 = Z，
+                // ImagePreviewView 通过 .id(idx) 重建显示 Z）
                 previewFocusTrigger = UUID()
-            } else {
+            case .none:
+                // 兜底：理论不应到这分支（onDoubleClick/onQuickView 总会设 entry）
                 gridFocusTrigger = UUID()
             }
+            quickViewerEntry = nil
         }
         .toolbar(quickViewerIndex != nil ? .hidden : .visible, for: .windowToolbar)
+        // 隐藏 window toolbar 的 background material 绘制层，让 toolbar items（文件名 / ⓘ /
+        // 外观切换）直接坐在 NSWindow title bar 上，避免 NavigationSplitView 默认 separated
+        // 浅灰底色横条跟下方 ImagePreviewView 紫黑底色 (appBackground #121217) 断层。
+        // 绘制层 ≠ NSWindow.toolbarStyle 布局层，AppKit 桥设 toolbarStyle 不生效（已验证）
+        .toolbarBackground(.hidden, for: .windowToolbar)
         // 切换文件夹或取消图片选择时，自动关闭 Inspector
         .onChange(of: folderStore.selectedFolder) { _, _ in
             withAnimation(DS.Anim.normal) { showInspector = false }
@@ -131,11 +164,15 @@ struct ContentView: View {
                     // 双击时单击 handler 也会触发并设置 selectedImageIndex，
                     // 此处清除，确保 QuickViewer 关闭后回到列表页而非预览页。
                     folderStore.selectedImageIndex = nil
+                    quickViewerEntry = .grid
                     quickViewerIndex = index
                 }
             )
 
-            if let idx = folderStore.selectedImageIndex {
+            // 收紧渲染条件：QV 期间 (quickViewerIndex != nil) 不渲染 ImagePreviewView，
+            // 避免 QV 内方向键写 selectedImageIndex 时 .id(idx) 触发 preview 在后台重建/loadImage。
+            // codex 标的盲点：.id(idx) 让 preview 在 selectedImageIndex 变化时整体重建（不只是 onChange）
+            if let idx = folderStore.selectedImageIndex, quickViewerIndex == nil {
                 ImagePreviewView(
                     vm: previewVM,
                     images: folderStore.images,
@@ -145,6 +182,7 @@ struct ContentView: View {
                         folderStore.selectedImageIndex = nil
                     },
                     onQuickView: { index in
+                        quickViewerEntry = .preview
                         quickViewerIndex = index
                     }
                 )

@@ -2,7 +2,7 @@
 
 > 简洁、克制、专注内容的 macOS 本地看图 app
 
-[![macOS 14+](https://img.shields.io/badge/macOS-14.0+-blue.svg)](https://www.apple.com/macos/sonoma/) [![Apple Silicon](https://img.shields.io/badge/Apple%20Silicon-arm64-green.svg)](https://www.apple.com/mac/) [![Notarized](https://img.shields.io/badge/Apple-Notarized-success.svg)](#)
+[![macOS 14+](https://img.shields.io/badge/macOS-14.0+-blue.svg)](https://www.apple.com/macos/sonoma/) [![Universal](https://img.shields.io/badge/Universal-arm64%20%2B%20x86__64-green.svg)](https://www.apple.com/mac/) [![Notarized](https://img.shields.io/badge/Apple-Notarized-success.svg)](#)
 
 **[⬇ 下载 v1.0.0](https://github.com/sunhuaian2026/ISeeImageViewer/releases/latest)** · 邮箱 `16414766@qq.com` · 小红书 `382336617`
 
@@ -23,7 +23,7 @@
 ## 系统要求
 
 - macOS **14.0 (Sonoma)** 或更新
-- Apple Silicon (arm64) — M1 / M2 / M3 / M4
+- Apple Silicon (M1 / M2 / M3 / M4) 或 Intel Mac (x86_64) — **universal binary**，同一个 DMG 自动适配
 
 ## 安装
 

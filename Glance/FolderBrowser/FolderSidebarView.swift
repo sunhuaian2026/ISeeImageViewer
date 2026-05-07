@@ -35,7 +35,9 @@ struct FolderSidebarView: View {
             }
             .listStyle(.sidebar)
             .scrollContentBackground(.hidden)
-            .background(DS.Color.appBackground)
+            // 删除 .background(DS.Color.appBackground)：让 NavigationSplitView + listStyle(.sidebar)
+            // 自带的 NSVisualEffectView material .sidebar 接管 — 跟 Finder/Mail/Notes 一致，
+            // 失焦自动响应（state = .followsWindowActiveState 默认），dark/light 自动切
             .contextMenu {
                 Button("添加文件夹…") { folderStore.addFolder() }
             }
@@ -76,7 +78,6 @@ struct FolderSidebarView: View {
     private func folderRow(_ node: FolderNode) -> some View {
         let isRoot = folderStore.rootFolders.contains(where: { $0.url == node.url })
         let count = folderStore.imageCountByFolder[node.url]
-        let isSelected = folderStore.selectedFolder == node.url
 
         HStack {
             Label(node.url.lastPathComponent, systemImage: "folder")
@@ -91,13 +92,10 @@ struct FolderSidebarView: View {
                     .background(.ultraThinMaterial, in: Capsule())
             }
         }
-        .listRowBackground(Group {
-            if isSelected {
-                Color.clear
-            } else {
-                DS.Color.appBackground
-            }
-        })
+        // 未选中行用 Color.clear 让 listStyle(.sidebar) 的 NSVisualEffectView material 透出
+        // （否则 row 被硬色覆盖会造成"紫深色条纹 + 选中行 vibrancy"的不一致视觉）。
+        // 选中行也 clear，让系统选中高亮（accent color）独立渲染在 vibrancy 上。
+        .listRowBackground(Color.clear)
         .contextMenu {
             Button("在 Finder 中显示") {
                 NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: node.url.path)
