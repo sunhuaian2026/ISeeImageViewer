@@ -45,9 +45,6 @@
 - [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 双击 → QV 路径回归**（44ba6ee 区域）：grid 单击 cell A → highlight=A → 双击 cell B → 进 QuickViewer → ESC 退 QV → highlight 应在 B（不变，跟修前一致）
 - [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 排序回归**：grid 模式 → 切换排序方式 → highlight 自动清空（因 onChange(of: images)）→ 再单击/方向键正常工作；进 preview 后切排序 → preview 仍显示同图 (175e82a 行为不变)
 - [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 焦点 race 回归**（5b29600 / 59a9d86 区域）：单击 cell → preview → ESC → grid 方向键正常工作；单击 → preview → 双击 → QV → ESC → grid 方向键正常工作
-- [ ] (2026-05-07 / `<pending>` / bugfix · Bug 4 扩展) **路径 1 核心**：grid 双击 cell A 进 QV → 方向键到 Z → ESC 退 QV → **grid highlight 跟到 Z**（修前停在 A）
-- [ ] (2026-05-07 / `<pending>` / bugfix · Bug 4 扩展) **路径 2 preview 跟到 Z**：grid 单击 A 进 preview → 双击进 QV → QV 方向键到 Z → ESC 退 QV → **preview 应显示 Z**（修前显示 A）
-- [ ] (2026-05-07 / `<pending>` / bugfix · Bug 4 扩展) **路径 2 grid highlight 跟到 Z**：续上 → 再 ESC 退 preview → **grid highlight 跟到 Z**
 - [ ] (2026-05-07 / `<pending>` / bugfix · Bug 4 扩展) **6da903c 回归**（最关键 — 不能破坏）：grid 双击 cell A 进 QV → **不动方向键** → ESC 退 QV → **回 grid，不进 preview**（保持 6da903c 行为）
 - [ ] (2026-05-07 / `<pending>` / bugfix · Bug 4 扩展) **QV 导航多渠道全覆盖**：QV 内用方向键 / nav button (左右气泡按钮) / filmstrip tap **三种方式**切到 Z → ESC 退 QV → **三种方式都让 highlight/preview 同步 Z**（codex 标盲点 1，验证 onChange viewModel.currentIndex 一处覆盖三渠道）
 - [ ] (2026-05-06 / `ab1fe89` / bugfix) **dark 模式贴 macOS 系统配色 + 失焦响应**（partial — 待 v1.0.1 重新审）：原 commit ab1fe89 删 4 处 hardcoded background 想让系统 sidebar material 接管，实测 sidebar 上半 row 区域有 vibrancy + 漏壁纸色，但 row 之下空白区是深黑色 windowBackground（条纹感）。codex:rescue 给的 NSVisualEffectView 桥方案落地后引发**关于窗口居中回归**（具体因果链未定），同时颜色仍不一致，已 revert 回 ab1fe89 状态。**期望视觉**：app 切到 dark → 侧边栏整片跟 Finder/Mail/Notes 一致（vibrancy + 漏出桌面壁纸色 + 失焦自动褪色） + 内容区中性灰；侧边栏选中 / 未选中行视觉一致（无条纹）。**当前 ab1fe89 状态可接受作 v1.0**（条纹但不影响核心功能），下次审计走 SwiftUI ZStack vs NavigationSplitView column 行为 + 验证 codex 方案为何引发居中回归
@@ -67,6 +64,9 @@
 
 （本段追加完成条目，附完成日期。）
 
+- [x] (2026-05-07 / `02a36dc`) **Bug 4 扩展 · 路径 1 核心**：grid 双击 cell A 进 QV → 方向键到 Z → ESC 退 QV → grid highlight 跟到 Z（修前停在 A）✓ 2026-05-07
+- [x] (2026-05-07 / `02a36dc`) **Bug 4 扩展 · 路径 2 preview 跟到 Z**：grid 单击 A 进 preview → 双击进 QV → QV 方向键到 Z → ESC 退 QV → preview 显示 Z（修前显示 A）✓ 2026-05-07
+- [x] (2026-05-07 / `02a36dc`) **Bug 4 扩展 · 路径 2 grid highlight 跟到 Z**：续上 → 再 ESC 退 preview → grid highlight 跟到 Z ✓ 2026-05-07
 - [x] (2026-05-07 / `3cdb991`) **QV colorScheme env · Path A 核心**：浅色模式 → grid → 直接双击 cell → QV (深色) → ESC 退 → sidebar 保持浅色，不再变深灰（修前 g1.png 现象）✓ 2026-05-07
 - [x] (2026-05-07 / `3cdb991`) **QV colorScheme env · Path B 核心**：浅色模式 → grid → 单击 cell 进 preview → 双击 → QV (深色) → ESC 退 → 整个 app 保持浅色（preview / sidebar / 文件名 toolbar 全浅色，修前 g2.png 现象）✓ 2026-05-07
 - [x] (2026-05-06 / `2b858cf`) **跟随系统外观模式生效**：菜单依次切「跟随系统」/「强制深色」/「强制浅色」/「跟随系统」 → 每次都立即生效；切「跟随系统」后系统切深浅 → app 跟着切；重启 app 保留上次模式选择；进 QuickViewer 仍强制深色（局部覆盖不受影响）✓ 2026-05-06
