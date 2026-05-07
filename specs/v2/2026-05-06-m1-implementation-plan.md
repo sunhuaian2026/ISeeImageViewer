@@ -1398,7 +1398,11 @@ git commit -m "Slice A.12: SmartFolderStore @MainActor ObservableObject [wip]"
 - Modify: `Glance/GlanceApp.swift`
 - Create: `Glance/IndexStore/IndexStoreHolder.swift`
 
-**Goal:** 在 V1 现有 `GlanceApp` 的 `init()` block 模式下扩展，加 `IndexStoreHolder` @StateObject 作为 IndexStore 异步初始化的 holder。**保留 V1 全部现有状态**：`bookmarkManager` / `folderStore(bookmarkManager:)` / `appState` / `@NSApplicationDelegateAdaptor(AppDelegate)` / `commands {}` / 关于窗口 / `.preferredColorScheme(...)` / `.onAppear { folderStore.loadSavedFolders() }`。
+**Goal:** 在 V1 现有 `GlanceApp` 的 `init()` block 模式下扩展，加 `IndexStoreHolder` @StateObject 作为 IndexStore 异步初始化的 holder。**保留 V1 全部现有状态**：`bookmarkManager` / `folderStore(bookmarkManager:)` / `appState` / `@NSApplicationDelegateAdaptor(AppDelegate)` / `commands { CommandGroup(replacing: .appInfo) { AboutMenuButton() } }` / `.onAppear { folderStore.loadSavedFolders() }`。
+
+**V1 已不在 GlanceApp 内的项**（plan 早期版本提及，V1 已重构出去，A.13 不动）：
+- 关于窗口：V1 改为 `AboutWindowController.shared.show()`（AppKit）取代原 SwiftUI `Window("关于一眼", id: "about")` scene（commit 20fa509，修关于面板首次显示位置跳跃）
+- 外观模式：V1 改为 `NSApp.appearance` via `WindowAccessor` 取代 `.preferredColorScheme(...)` modifier（commit 2b858cf，修跟随系统外观不生效）
 
 V1 真实 `init()` 形态（已 Read 验证）：
 
@@ -1471,30 +1475,26 @@ struct GlanceApp: App {
                 .environmentObject(folderStore)
                 .environmentObject(appState)
                 .environmentObject(indexStoreHolder)               // ← V2 新增
-                .preferredColorScheme(
-                    appState.appearanceMode == .system ? nil :
-                    appState.appearanceMode == .dark   ? .dark : .light
-                )
                 .onAppear {
                     folderStore.loadSavedFolders()
                 }
         }
         .defaultSize(width: 1280, height: 800)
         .commands {
+            // V1 重构：用 AppKit AboutWindowController 取代 SwiftUI Window scene（commit 20fa509）
             CommandGroup(replacing: .appInfo) {
                 AboutMenuButton()
             }
         }
-
-        Window("关于一眼", id: "about") {
-            AboutView()
-        }
-        .windowResizability(.contentSize)
     }
 }
 ```
 
-**注意**：`AboutMenuButton` / `AppDelegate` 等 V1 已有类型不动；不引入 placeholder pattern——`SmartFolderStore` 创建推迟到 ContentView（task A.16）使用 `@State`，那时 `IndexStoreHolder.store` 已 ready。
+**注意**：
+- `AboutMenuButton` / `AppDelegate` / `AboutWindowController.shared.show()` 调用链是 V1 现有，A.13 不动
+- 无 `Window("关于一眼")` scene（V1 已删，关于窗口走 AppKit 层）
+- 无 `.preferredColorScheme(...)` modifier（V1 改用 `NSApp.appearance` via `WindowAccessor`，commit 2b858cf）
+- 不引入 placeholder pattern——`SmartFolderStore` 创建推迟到 ContentView（task A.17）使用 `@StateObject` placeholder + attach 模式，那时 `IndexStoreHolder.store` 已 ready
 
 - [ ] **Step 3**: `make build` 验证。
 
@@ -1810,12 +1810,19 @@ git commit -m "Slice A.16 (was A.17): SmartFolderGridView 复用 V1 loadThumbnai
 - **`.environmentObject(smartFolderStore)` 注入**给 sidebar + detail 两棵 view tree（children 用 @EnvironmentObject）
 - IndexStore ready 后通过**幂等** `wireIfReady()` 同时被 `.onAppear` 和 `.onChange(of: indexStoreHolder.isReady)` 调（race-proof，Bool 是 Equatable）
 
-**保留 V1 全部状态和行为不动**：`showInspector` / `quickViewerIndex` / `previewFocusTrigger` / `gridFocusTrigger` / `previewVM` / `inspectorURL` / `.toolbar` / `.overlay { QuickViewerOverlay }` 全部不动。
+**保留 V1 全部状态和行为不动**：
+- State：`showInspector` / `quickViewerIndex` / `quickViewerEntry` / `previewFocusTrigger` / `gridFocusTrigger` / `previewVM` / `inspectorURL`
+- Type：`QuickViewerEntry` enum（V1 私有 enum，commit 02a36dc 修 Bug 4 引入）
+- Modifier：`.toolbar` / `.toolbarBackground(.hidden, for: .windowToolbar)`（V1 修 toolbar 横条断层加，commit c0c833a）
+- Overlay：`.overlay { QuickViewerOverlay(onDismiss + onIndexChange) }`（onIndexChange 闭包 V1 commit 02a36dc 加）
+- onChange handlers：V1 现有 `.onChange(of: quickViewerIndex / selectedFolder / selectedImageIndex / images)` 全部不动；A.17 加的 onChange（rootFolders / smartFolderStore.selected / 焦点路由）是新增 handler
 
-**关键 V1 事实**（已 Read 验证）：
+**关键 V1 事实**（已 Read 验证，merge main 后真实当前状态）：
 - 两栏 NavigationSplitView（sidebar + detail），不是三栏
 - `folderStore.selectedFolder` 是 V1 选中态；不存在 `clearSelection()` 方法
 - IndexStoreHolder（A.13）现有 `@Published var isReady: Bool`——让 `.onChange` 观察 Bool 而不是 non-Equatable IndexStore?
+- ContentView 当前 204 行（merge main 后）；`var body` 从 line 38 起；`mainContent` 从 line 158 起
+- V1 私有 `QuickViewerEntry` enum 定义在 ContentView struct **之外**（line 11-14），A.17 改造时不要把 V1 这个 enum 移进 struct 内
 
 **Steps:**
 
@@ -1895,7 +1902,9 @@ NavigationSplitView {
     HStack(spacing: 0) {
         mainContent
         if showInspector {
-            Divider()
+            // 注意：V1 已删独立 Divider（commit 086ade2 修粉色 focus ring 时改用 Inspector 自带
+            // leading overlay，靠 DS.Inspector.separatorWidth = 0.5pt overlay 渲染分割线）。
+            // A.17 不要重新加 Divider()。
             ImageInspectorView(url: inspectorURL)
                 .frame(width: DS.Inspector.width)
                 .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -2317,35 +2326,25 @@ M1 完成需所有 Slice A-I ship + 以下整体验收过：
 
 **Code reality check**（per 全局 CLAUDE.md "写 plan 引用已有代码前必须 Read 实际文件"硬规则）：所有引用 V1 已有符号已通过 Read / grep 验证 ✓
 
+> **2026-05-07 重跑**：merge `main` → `v2/dev` 后（merge commit `86b2a24`）按本表 11 项重新核对。7 项无漂移，2 项行号漂移（语义一致），1 项 V1 加 state（A.17 保留清单已扩），1 项 GlanceApp About scene 已被 V1 重构（A.13 代码示例已更新）。下表行号 / 注释已对齐 merge 后真实状态。
+
 | V1 引用 | 验证方式 | 结果 |
 |---|---|---|
-| `GlanceApp.init()` block 模式 | Read `Glance/GlanceApp.swift` | ✓ 真实 init() block，扩展 3 行接入 IndexStoreHolder |
+| `GlanceApp.init()` block 模式 | Read `Glance/GlanceApp.swift:18-22` | ✓ 真实 init() block（bm + folderStore），扩展 3 行接入 IndexStoreHolder |
 | `FolderStore(bookmarkManager:)` 必须传 bm | Read `FolderStore.swift:88` | ✓ V1 现有，无默认 init |
 | `FolderStore.rootFolders: [FolderNode]`（不是 `[URL]`） | Read `FolderStore.swift:48` | ✓ FolderNode 含 `url: URL`，bridge 用 `node.url` |
 | `FolderStore.selectedFolder: URL?` | Read `FolderStore.swift:49` | ✓ 直接 `= nil` 清选，无 `clearSelection()` 方法 |
 | `DS.Spacing.xs/sm/md/lg/xl`（不是 `.s/.m`） | Read `DesignSystem.swift:15-21` | ✓ 全 plan 统一为 `.sm/.md/.xs` |
-| `DS.Sidebar.minWidth/width/maxWidth` | Read `DesignSystem.swift:35-47` | ✓ |
+| `DS.Sidebar.minWidth/width/maxWidth` | Read `DesignSystem.swift:36-38` | ✓ |
 | `DS.Thumbnail.cornerRadius` | Read `DesignSystem.swift:30` | ✓ |
-| `loadThumbnail(url:maxPixelSize:)` 顶层函数 | grep `ImageGridView.swift:258` | ✓ internal 级别可全局调用，A.16 复用 |
-| ContentView 两栏 NavigationSplitView（不是三栏） | Read `ContentView.swift:29-70` | ✓ A.17 改造保留两栏形态 + 全部 V1 状态 |
-| ContentView V1 状态：`showInspector` `quickViewerIndex` `previewFocusTrigger` `gridFocusTrigger` `previewVM` `inspectorURL` | Read `ContentView.swift:11-26` | ✓ A.17 明确不动 |
-| `@NSApplicationDelegateAdaptor(AppDelegate)` / `commands {}` / `Window("关于一眼"...)` | Read `GlanceApp.swift:16, 39-49` | ✓ A.13 明确保留 |
-
-**Code reality check**（per 全局 CLAUDE.md "写 plan 引用已有代码前必须 Read 实际文件"硬规则）：所有引用 V1 已有符号已通过 Read / grep 验证 ✓
-
-| V1 引用 | 验证方式 | 结果 |
-|---|---|---|
-| `GlanceApp.init()` block 模式 | Read `Glance/GlanceApp.swift` | ✓ 真实 init() block，扩展 3 行接入 IndexStoreHolder |
-| `FolderStore(bookmarkManager:)` 必须传 bm | Read `FolderStore.swift:88` | ✓ V1 现有，无默认 init |
-| `FolderStore.rootFolders: [FolderNode]`（不是 `[URL]`） | Read `FolderStore.swift:48` | ✓ FolderNode 含 `url: URL`，bridge 用 `node.url` |
-| `FolderStore.selectedFolder: URL?` | Read `FolderStore.swift:49` | ✓ 直接 `= nil` 清选，无 `clearSelection()` 方法 |
-| `DS.Spacing.xs/sm/md/lg/xl`（不是 `.s/.m`） | Read `DesignSystem.swift:15-21` | ✓ 全 plan 已统一为 `.sm/.md/.xs` |
-| `DS.Sidebar.minWidth/width/maxWidth` | Read `DesignSystem.swift:35-47` | ✓ |
-| `DS.Thumbnail.cornerRadius` | Read `DesignSystem.swift:30` | ✓ |
-| `loadThumbnail(url:maxPixelSize:)` 顶层函数 | grep `ImageGridView.swift:258` | ✓ internal 级别可全局调用，A.17 复用 |
-| ContentView 两栏 NavigationSplitView（不是三栏） | Read `ContentView.swift:29-70` | ✓ A.16 改造保留两栏形态 + 全部 V1 状态 |
-| ContentView V1 状态：`showInspector` `quickViewerIndex` `previewFocusTrigger` `gridFocusTrigger` `previewVM` `inspectorURL` | Read `ContentView.swift:11-26` | ✓ A.16 明确不动 |
-| `@NSApplicationDelegateAdaptor(AppDelegate)` / `commands {}` / `Window("关于一眼"...)` | Read `GlanceApp.swift:16, 39-49` | ✓ A.13 明确保留 |
+| `loadThumbnail(url:maxPixelSize:)` 顶层函数 | grep `ImageGridView.swift:276`（merge 前 :258，行号漂移） | ✓ internal 级别可全局调用，A.16 复用，签名未变 |
+| ContentView 两栏 NavigationSplitView（不是三栏） | Read `ContentView.swift:38-79`（merge 前 :29-70，文件总长 204 行 vs 166 行） | ✓ A.17 改造保留两栏形态 + 全部 V1 状态；结构 NavigationSplitView + HStack + Inspector 不变 |
+| ContentView V1 状态：`showInspector` `quickViewerIndex` `quickViewerEntry`（V1 加，commit 02a36dc）`previewFocusTrigger` `gridFocusTrigger` `previewVM` `inspectorURL` | Read `ContentView.swift:17-36` + struct 外 line 11-14 `QuickViewerEntry` enum | ✓ A.17 明确不动 7 项 state + 1 enum |
+| ContentView V1 modifier：`.toolbarBackground(.hidden, for: .windowToolbar)`（V1 加，commit c0c833a 修 toolbar 横条断层） | Read `ContentView.swift:131` | ✓ A.17 明确不动 |
+| ContentView V1 callback：`QuickViewerOverlay(onIndexChange:)`（V1 加，commit 02a36dc 修 Bug 4 扩展） | Read `ContentView.swift:93-99` | ✓ A.17 明确不动 |
+| `@NSApplicationDelegateAdaptor(AppDelegate)` / `CommandGroup(replacing: .appInfo)` | Read `GlanceApp.swift:16, 35-42` | ✓ A.13 明确保留 |
+| ⚠️ V1 已删 `Window("关于一眼", id: "about")` SwiftUI scene | Read `GlanceApp.swift`（不存在）+ `Glance/About/AboutWindowController.swift`（V1 commit 20fa509 加） | ✓ A.13 不再"保留 SwiftUI Window scene"——V1 已重构为 AppKit `AboutWindowController.shared.show()`，A.13 不动该重构 |
+| ⚠️ V1 已删 `.preferredColorScheme(...)` modifier | Read `GlanceApp.swift`（不存在）+ `WindowAccessor.swift`（V1 commit 2b858cf 改 NSApp.appearance） | ✓ A.13 不再"保留 .preferredColorScheme"——V1 已迁移到 AppKit 层，A.13 不动该重构 |
 
 **Identified gaps / future-resolution items**（其中部分由 codex review 发现）：
 
