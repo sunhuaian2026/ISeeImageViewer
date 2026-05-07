@@ -39,7 +39,7 @@ struct ImageInspectorView: View {
         .overlay(alignment: .leading) {
             Rectangle()
                 .fill(DS.Color.separatorColor)
-                .frame(width: 0.5)
+                .frame(width: DS.Inspector.separatorWidth)
         }
     }
 

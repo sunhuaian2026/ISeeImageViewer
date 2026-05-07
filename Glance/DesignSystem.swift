@@ -81,6 +81,8 @@ enum DS {
         static let width: CGFloat = 260
         static let previewHeight: CGFloat = 120
         static let previewCornerRadius: CGFloat = 10
+        // leading 边线宽度（macOS HiDPI 下 0.5pt = 1 物理像素，跟系统 separator 一致）
+        static let separatorWidth: CGFloat = 0.5
     }
 
     // MARK: - Toolbar
