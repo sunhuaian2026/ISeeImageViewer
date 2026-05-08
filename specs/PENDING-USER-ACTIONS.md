@@ -131,6 +131,14 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice B-β) **滑动窗口语义**：「本周新增」是滑窗 -7d/now（不是自然周）。验证：今天周三的话，上周三的图应在；上周二的图不在。**与 D4 段头"本周"双轨独立**——「本周新增」grid 内的图按 D4 时间分段段头分布到"今天/昨天/本周"三段（不会出现"本月"或"更早"段，因为查询窗口只 -7d）
 - [ ] (2026-05-09 / `<pending>` / Slice B-β) **空数据兜底**：如果你机器上 7 天内无新图，「本周新增」应显示空态（"暂无图片"占位），不应报错或卡死
 
+### Slice D.1: hide toggle 端到端
+
+- [ ] (2026-05-09 / `<pending>` / Slice D.1) **root hide 整树消失**：sidebar 右键 root 文件夹 → "在智能文件夹中隐藏" → 智能文件夹（全部最近 / 本周新增）grid 该 root 下所有图全部消失；右键 root 再点 → menu label 变"在智能文件夹中显示"
+- [ ] (2026-05-09 / `<pending>` / Slice D.1) **subfolder unhide 单独显形**：root 已 hide 的状态下，展开子目录树 → 右键某子目录 → "在智能文件夹中显示"（label 因继承自 root 显示为该文案）→ grid 中该子目录下的图重现，但该子目录的同级或父级其他子目录仍 hidden
+- [ ] (2026-05-09 / `<pending>` / Slice D.1) **subfolder hide inside visible root**：root 处于 visible 状态下，右键某子目录 → "在智能文件夹中隐藏" → grid 中该子目录下的图消失，root 其他兄弟子目录的图仍可见
+- [ ] (2026-05-09 / `<pending>` / Slice D.1) **状态持久化（重启不丢）**：执行任意 hide toggle → 退出 Glance → 重启 → sidebar 右键看 menu label 与 grid 显示状态都跟退出前一致（IndexStore SQLite 持久化）
+- [ ] (2026-05-09 / `<pending>` / Slice D.1) **menu label 动态准确**：右键 root 看到 label 说"隐藏"，点击 hide 后再次右键应说"显示"；同样测 subfolder（含跨继承场景：root.hide=1 子目录 menu label 显"显示"）
+
 ### Slice B-α 延后项（polish，不阻塞 ship）
 
 - [ ] (2026-05-09 / Deferred / Slice B-α polish) **chip 深浅色模式下对比强化**：用户要求 chip 在 dark/light 各模式下跟 cell 的视觉对比再"跳"一些。当前状态：`.thickMaterial` + `Capsule().strokeBorder(.primary.opacity(DS.SectionHeader.chipBorderOpacity=0.12), lineWidth: DS.SectionHeader.chipBorderWidth=0.5)`。**待对齐**（重启时问用户）：(1) 哪个组合对比最弱？dark mode + dark cell / dark + light cell / light + light cell / light + dark cell（建议截图对比）；(2) 期望"强烈"方向：A stroke 加粗 + opacity 升（0.5pt×0.12 → 1pt×0.30）/ B `.ultraThickMaterial` + 微 shadow / C 反色 fill（dark mode chip 用 light fill / light mode chip 用 dark fill，告别 material 透感，macOS Photos.app / Files.app 模式）/ D material + accentColor tint（DS.Color.glowPrimary 弱化版）。**修法 surface 预期**：仅 `Glance/FolderBrowser/SmartFolderGridView.swift sectionHeader` + `Glance/DesignSystem.swift DS.SectionHeader` 段；不动 LazyVGrid pinnedViews、moveHighlight、locate、其他交互逻辑

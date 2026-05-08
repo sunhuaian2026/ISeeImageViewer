@@ -9,6 +9,12 @@ struct FolderSidebarView: View {
     @EnvironmentObject var folderStore: FolderStore
     @State private var isDropTargeted: Bool = false
 
+    /// Slice D — hide toggle 回调：(rootURL, nodeURL)；root 节点 nodeURL == rootURL。
+    /// 由 ContentView 实现，调 IndexStore + 触发 SmartFolderStore re-query。
+    var onToggleHide: ((URL, URL) -> Void)? = nil
+    /// Slice D — query effective hidden 给 menu label 动态文案；同 (rootURL, nodeURL) 语义。
+    var isEffectivelyHidden: ((URL, URL) -> Bool)? = nil
+
     var body: some View {
         ZStack(alignment: .topLeading) {
             // 紫色环境光光晕
@@ -72,6 +78,16 @@ struct FolderSidebarView: View {
         }
     }
 
+    /// 找 node 所属的 root URL：root 节点本身 / 或某 root 是 node.url 路径前缀。
+    /// 用于把 hide toggle 落到 IndexStore 的 (rootId, relativePath) 坐标。
+    private func rootURL(for nodeURL: URL) -> URL? {
+        let nodePath = nodeURL.standardizedFileURL.path
+        return folderStore.rootFolders.first { root in
+            let rootPath = root.url.standardizedFileURL.path
+            return rootPath == nodePath || nodePath.hasPrefix(rootPath + "/")
+        }?.url
+    }
+
     // MARK: - 行视图
 
     @ViewBuilder
@@ -99,6 +115,12 @@ struct FolderSidebarView: View {
         .contextMenu {
             Button("在 Finder 中显示") {
                 NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: node.url.path)
+            }
+            if let toggle = onToggleHide, let rootURL = rootURL(for: node.url) {
+                let hidden = isEffectivelyHidden?(rootURL, node.url) ?? false
+                Button(hidden ? "在智能文件夹中显示" : "在智能文件夹中隐藏") {
+                    toggle(rootURL, node.url)
+                }
             }
             if isRoot {
                 Divider()

@@ -36,8 +36,28 @@ nonisolated enum SmartFolderQueryBuilder {
             // Slice A: 所有 indexed images 都已属于已注册的 managed root，无需额外过滤
             return "1"
         case .hidden:
-            // Slice A: 没有 subfolder hide 状态；Slice D 时 wires real check
-            return "0 = 0"
+            // Slice D: walk path 上溯最具体 explicit hide row（稀疏 explicit 模型）。
+            // root 行 LENGTH(relative_path)=0；subfolder 行 length>0 → DESC 排序后
+            // subfolder 优先于 root 命中 → 实现"hide root + unhide 子目录"语义。
+            // 未匹配（路径上无 explicit hide row）→ COALESCE 默认 0 (visible)。
+            guard case .bool(let v) = a.value else {
+                throw SmartFolderQueryError.typeMismatch(field: a.field, value: a.value)
+            }
+            guard a.op == .eq else {
+                throw SmartFolderQueryError.unsupportedFieldOpCombo(field: a.field, op: a.op)
+            }
+            params.append(v ? 1 : 0)
+            return """
+            COALESCE((
+                SELECT f.hide_in_smart_view FROM folders f
+                WHERE (f.id = images.folder_id AND f.parent_root_id IS NULL)
+                   OR (f.parent_root_id = images.folder_id AND
+                       (images.relative_path = f.relative_path
+                        OR images.relative_path LIKE f.relative_path || '/%'))
+                ORDER BY LENGTH(f.relative_path) DESC
+                LIMIT 1
+            ), 0) = ?
+            """
         case .dedupCanonicalOrNull:
             return "(dedup_canonical IS NULL OR dedup_canonical = 1)"
         case .filename, .relativePath, .format:

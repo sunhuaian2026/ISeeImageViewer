@@ -57,7 +57,14 @@ struct ContentView: View {
                 Divider()
                     .padding(.vertical, DS.Spacing.xs)
 
-                FolderSidebarView()
+                FolderSidebarView(
+                    onToggleHide: { rootURL, nodeURL in
+                        toggleHide(rootURL: rootURL, nodeURL: nodeURL)
+                    },
+                    isEffectivelyHidden: { rootURL, nodeURL in
+                        effectivelyHidden(rootURL: rootURL, nodeURL: nodeURL)
+                    }
+                )
             }
             .navigationSplitViewColumnWidth(
                 min: DS.Sidebar.minWidth,
@@ -319,6 +326,49 @@ struct ContentView: View {
         } else {
             await smartFolderStore.refreshSelected()
         }
+    }
+
+    // MARK: - Slice D — hide toggle 路由（ContentView 拼桥：sidebar URL → IndexStore id+relativePath）
+
+    /// 把 V1 (rootURL, nodeURL) 翻译成 IndexStore 的 (rootId, relativePath)。
+    /// nodeURL == rootURL → root 节点，relativePath = ""；否则 nodeURL.path 去掉 rootURL.path 前缀。
+    private func resolveFolderCoord(rootURL: URL, nodeURL: URL) -> (rootId: Int64, relativePath: String)? {
+        guard let store = indexStoreHolder.store else { return nil }
+        let rootPath = rootURL.standardizedFileURL.path
+        let nodePath = nodeURL.standardizedFileURL.path
+        guard let rootId = try? store.folderIdForRootPath(rootPath) else { return nil }
+
+        if rootPath == nodePath {
+            return (rootId, "")
+        }
+        let prefix = rootPath + "/"
+        guard nodePath.hasPrefix(prefix) else { return nil }
+        let relativePath = String(nodePath.dropFirst(prefix.count))
+        return (rootId, relativePath)
+    }
+
+    private func toggleHide(rootURL: URL, nodeURL: URL) {
+        guard let store = indexStoreHolder.store,
+              let coord = resolveFolderCoord(rootURL: rootURL, nodeURL: nodeURL) else { return }
+        let currentlyHidden = (try? store.effectiveHidden(rootId: coord.rootId, relativePath: coord.relativePath)) ?? false
+        let target = !currentlyHidden
+        do {
+            if coord.relativePath.isEmpty {
+                try store.setRootHidden(rootId: coord.rootId, hidden: target)
+            } else {
+                try store.upsertSubfolderHide(rootId: coord.rootId, relativePath: coord.relativePath, hidden: target)
+            }
+        } catch {
+            print("[Slice D] toggleHide FAILED: \(error)")
+            return
+        }
+        Task { await smartFolderStore.refreshSelected() }
+    }
+
+    private func effectivelyHidden(rootURL: URL, nodeURL: URL) -> Bool {
+        guard let store = indexStoreHolder.store,
+              let coord = resolveFolderCoord(rootURL: rootURL, nodeURL: nodeURL) else { return false }
+        return (try? store.effectiveHidden(rootId: coord.rootId, relativePath: coord.relativePath)) ?? false
     }
 }
 
