@@ -2189,11 +2189,13 @@ git push
 **Goal**: SmartFolderGridView 顶部出现 5 段固定时间标题（今天 / 昨天 / 本周 / 本月 / 更早），随滚动 sticky。
 
 **Deliverables**:
-- `Glance/FolderBrowser/TimeBucket.swift`（5 段枚举 + boundary 算法）
-- SmartFolderGridView 改造为 LazyVGrid sectioned + sticky `pinnedViews`
-- 验收：滚动 grid 时段标题固定在顶部；跨午夜午夜段 0:01 截图正确归"昨天"段
+- `Glance/FolderBrowser/TimeBucket.swift`（5 段枚举 + boundary 算法）✅ B-α
+- SmartFolderGridView 改造为 LazyVGrid sectioned + sticky `pinnedViews` ✅ B-α
+- 验收：滚动 grid 时段标题固定在顶部；跨午夜午夜段 0:01 截图正确归"昨天"段（人工测试 → PENDING）
 
-**Ship**: V2.0-beta2
+**进度**：B-α 完成（本 commit）；B-β（thisWeekAdded SF）+ B-γ（/go 收尾）待开始。
+
+**Ship**: V2.0-beta2（B-β + B-γ 完成后）
 
 ### Slice C: 第 2 个 SF "本周新增"（0.5 天，merged into B）
 

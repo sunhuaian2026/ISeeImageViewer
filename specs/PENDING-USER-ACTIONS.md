@@ -115,6 +115,15 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-08 / Slice A · followup Slice I) **IndexedImage.urlBookmark 字段 rename**：实际存的是 root bookmark（不是 image 自己的 bookmark，sandbox 不允许给 enumerator 子文件创建 .withSecurityScope bookmark）。Slice I rename 候选：→ rootBookmark 或干脆改为 folder_id → folders.root_url_bookmark lookup
 - [ ] (2026-05-08 / Slice A · followup Slice I) **computeV2Urls() 同步 resolve 性能**：cell 单击/双击时同步 resolve ~100 张 bookmark 可能 50-200ms 主线程卡顿（codex:rescue 已标）。Slice I 性能优化阶段处理（缓存已 resolve 的 root URL / 异步预热）
 
+### Slice B-α: 时间分段 sticky header（5 段固定）
+
+- [ ] (2026-05-08 / `<pending>` / Slice B-α) **5 段标题渲染**：选中"全部最近" → grid 顶部按 birth_time 倒序依次出现段标题（今天 / 昨天 / 本周 / 本月 / 更早），空段不显示；段名文字 `.headline`、计数 `.caption · N 张` 灰色
+- [ ] (2026-05-08 / `<pending>` / Slice B-α) **sticky 行为**：滚动 grid 时当前段标题固定吸顶，下一段进入视口时无缝替换；不应出现"两段标题同时悬浮"或"标题瞬移"
+- [ ] (2026-05-08 / `<pending>` / Slice B-α) **跨午夜归属**：手动改系统时间至 0:01（系统设置 → 通用 → 日期与时间，关闭自动）→ 重启 Glance → 一张昨天 23:59 拍的图应归"昨天"段；改回今日中午时间该图归"今天"段
+- [ ] (2026-05-08 / `<pending>` / Slice B-α) **键盘导航跨段**：方向键 ↑↓←→ 在段间穿越仍能 highlight 跨过去（按 colCount 步长平铺，段标题视觉占一行不影响算法）；Space 进 QV / Esc 退仍工作
+- [ ] (2026-05-08 / `<pending>` / Slice B-α) **header 不挡底层热区**：sticky 标题悬浮时下方 cell 应被遮住而不是"看着被挡但仍可点"——若挡住的 cell 单击可触发，说明 header 背景未盖住或 hit-testing 漏了；应用 DS.Color.gridBackground 的不透明背景
+- [ ] (2026-05-08 / `<pending>` / Slice B-α) **macOS 14 LazyVGrid pinnedViews 兼容性**：在最低部署版（macOS 14.0 Sonoma）上 sticky 行为表现一致——若标题抖动 / 重叠 / scroll 抖滚，记录现象后回退方案改自定义 ScrollView offset 监听（codex 跟我事先约定的降级路径）
+
 ---
 
 ## Done

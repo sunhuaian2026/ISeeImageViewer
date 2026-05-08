@@ -9,6 +9,10 @@
 //  方向键 grid 内导航 / Space 进 QV / F 切全屏 / focus 同步管理 / hover tooltip 显示
 //  relative path（D5）。
 //
+//  Slice B-α：时间分段 sticky header（D4 5 段：今天/昨天/本周/本月/更早），
+//  LazyVGrid pinnedViews [.sectionHeaders] 实现；空段跳过；
+//  键盘导航算法保留 colCount-based flat queryResult（视觉分组不影响 ↑↓）。
+//
 
 import SwiftUI
 
@@ -44,37 +48,47 @@ struct SmartFolderGridView: View {
                     if smartFolderStore.queryResult.isEmpty {
                         emptyState
                     } else {
-                        LazyVGrid(columns: gridColumns, spacing: DS.Thumbnail.spacing) {
-                            ForEach(smartFolderStore.queryResult) { image in
-                                VStack(spacing: DS.Spacing.xs) {
-                                    SmartFolderImageCell(
-                                        image: image,
-                                        isHighlighted: highlightedID == image.id,
-                                        size: folderStore.thumbnailSize
-                                    )
-                                    Text(image.filename)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                        .truncationMode(.middle)
-                                        .frame(maxWidth: folderStore.thumbnailSize)
+                        LazyVGrid(
+                            columns: gridColumns,
+                            spacing: DS.Thumbnail.spacing,
+                            pinnedViews: [.sectionHeaders]
+                        ) {
+                            ForEach(groupedByTimeBucket(smartFolderStore.queryResult, now: Date())) { section in
+                                Section {
+                                    ForEach(section.images) { image in
+                                        VStack(spacing: DS.Spacing.xs) {
+                                            SmartFolderImageCell(
+                                                image: image,
+                                                isHighlighted: highlightedID == image.id,
+                                                size: folderStore.thumbnailSize
+                                            )
+                                            Text(image.filename)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                                .lineLimit(1)
+                                                .truncationMode(.middle)
+                                                .frame(maxWidth: folderStore.thumbnailSize)
+                                        }
+                                            .id(image.id)
+                                            .contentShape(Rectangle())
+                                            // 双击优先注册（macOS SwiftUI 双 onTapGesture pattern；count:1 在 count:2 之后注册可让
+                                            // tap recognizer 优先识别双击不触发单击）。参考 V1 ImageGridView 同模式。
+                                            .onTapGesture(count: 2) {
+                                                if let idx = smartFolderStore.queryResult.firstIndex(where: { $0.id == image.id }) {
+                                                    highlightedID = image.id
+                                                    onDoubleClick(idx)
+                                                }
+                                            }
+                                            .onTapGesture(count: 1) {
+                                                if let idx = smartFolderStore.queryResult.firstIndex(where: { $0.id == image.id }) {
+                                                    highlightedID = image.id
+                                                    onSingleClick(idx)
+                                                }
+                                            }
+                                    }
+                                } header: {
+                                    sectionHeader(section)
                                 }
-                                    .id(image.id)
-                                    .contentShape(Rectangle())
-                                    // 双击优先注册（macOS SwiftUI 双 onTapGesture pattern；count:1 在 count:2 之后注册可让
-                                    // tap recognizer 优先识别双击不触发单击）。参考 V1 ImageGridView 同模式。
-                                    .onTapGesture(count: 2) {
-                                        if let idx = smartFolderStore.queryResult.firstIndex(where: { $0.id == image.id }) {
-                                            highlightedID = image.id
-                                            onDoubleClick(idx)
-                                        }
-                                    }
-                                    .onTapGesture(count: 1) {
-                                        if let idx = smartFolderStore.queryResult.firstIndex(where: { $0.id == image.id }) {
-                                            highlightedID = image.id
-                                            onSingleClick(idx)
-                                        }
-                                    }
                             }
                         }
                         .animation(DS.Anim.fast, value: folderStore.thumbnailSize)
@@ -129,6 +143,24 @@ struct SmartFolderGridView: View {
                 .onKeyPress(.downArrow)  { moveHighlight(by: +colCount, colCount: colCount, proxy: scrollProxy); return .handled }
             }
         }
+    }
+
+    /// 时间分段 sticky header。背景用 DS.Color.gridBackground 不透明，pinned 时遮住下方滚动内容。
+    @ViewBuilder
+    private func sectionHeader(_ section: TimeBucketSection) -> some View {
+        HStack(spacing: DS.Spacing.xs) {
+            Text(section.bucket.displayName)
+                .font(.headline)
+                .foregroundStyle(.primary)
+            Text("· \(section.images.count) 张")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.vertical, DS.Spacing.xs)
+        .padding(.horizontal, DS.Spacing.xs)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(DS.Color.gridBackground)
     }
 
     @ViewBuilder
