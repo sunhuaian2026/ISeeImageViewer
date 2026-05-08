@@ -28,56 +28,60 @@ struct ImageInsertRecord {
 
 nonisolated extension IndexStore {
 
-    /// 幂等 insert：UNIQUE(folder_id, relative_path) + INSERT OR IGNORE。
-    /// 重复 (folder_id, relative_path) 静默跳过，返回已存在 row id。
+    /// 幂等 insert：SELECT-first by (folder_id, relative_path)。
+    /// 行存在 → 返回已有 id；不存在 → INSERT（**不用 OR IGNORE**，让 FK / NOT NULL /
+    /// 其他 constraint violation 真实 surface，而不是被 OR IGNORE 静默吞成"post-IGNORE
+    /// lookup 找不到行"的混淆错误）。
+    /// 错误消息含 record 关键字段 dump，下次失败直接看 root cause。
     func insertImageIfAbsent(_ record: ImageInsertRecord) throws -> Int64 {
         try sync { db in
-            let stmt = try db.prepare("""
-                INSERT OR IGNORE INTO images
+            // 1. SELECT first：行存在直接返回 id（幂等 happy path）
+            let lookupStmt = try db.prepare("SELECT id FROM images WHERE folder_id = ? AND relative_path = ? LIMIT 1;")
+            defer { sqlite3_finalize(lookupStmt) }
+            try checkBind(sqlite3_bind_int64(lookupStmt, 1, record.folderId), index: 1, db: db)
+            try checkBind(sqlite3_bind_text(lookupStmt, 2, (record.relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 2, db: db)
+            if sqlite3_step(lookupStmt) == SQLITE_ROW {
+                return sqlite3_column_int64(lookupStmt, 0)
+            }
+
+            // 2. 不存在 → INSERT（不带 OR IGNORE，让真实错误 surface）
+            let insStmt = try db.prepare("""
+                INSERT INTO images
                 (url_bookmark, birth_time, file_size, format, filename, relative_path,
                  folder_id, dimensions_width, dimensions_height, supports_feature_print)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1);
             """)
-            defer { sqlite3_finalize(stmt) }
+            defer { sqlite3_finalize(insStmt) }
 
             let bookmarkBytes = record.urlBookmark as NSData
-            try checkBind(sqlite3_bind_blob(stmt, 1, bookmarkBytes.bytes, Int32(bookmarkBytes.length), unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 1, db: db)
-            try checkBind(sqlite3_bind_double(stmt, 2, record.birthTime.timeIntervalSince1970), index: 2, db: db)
-            try checkBind(sqlite3_bind_int64(stmt, 3, record.fileSize), index: 3, db: db)
-            try checkBind(sqlite3_bind_text(stmt, 4, (record.format as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 4, db: db)
-            try checkBind(sqlite3_bind_text(stmt, 5, (record.filename as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 5, db: db)
-            try checkBind(sqlite3_bind_text(stmt, 6, (record.relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 6, db: db)
-            try checkBind(sqlite3_bind_int64(stmt, 7, record.folderId), index: 7, db: db)
+            try checkBind(sqlite3_bind_blob(insStmt, 1, bookmarkBytes.bytes, Int32(bookmarkBytes.length), unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 1, db: db)
+            try checkBind(sqlite3_bind_double(insStmt, 2, record.birthTime.timeIntervalSince1970), index: 2, db: db)
+            try checkBind(sqlite3_bind_int64(insStmt, 3, record.fileSize), index: 3, db: db)
+            try checkBind(sqlite3_bind_text(insStmt, 4, (record.format as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 4, db: db)
+            try checkBind(sqlite3_bind_text(insStmt, 5, (record.filename as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 5, db: db)
+            try checkBind(sqlite3_bind_text(insStmt, 6, (record.relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 6, db: db)
+            try checkBind(sqlite3_bind_int64(insStmt, 7, record.folderId), index: 7, db: db)
             if let w = record.dimensionsWidth {
-                try checkBind(sqlite3_bind_int(stmt, 8, Int32(w)), index: 8, db: db)
+                try checkBind(sqlite3_bind_int(insStmt, 8, Int32(w)), index: 8, db: db)
             } else {
-                try checkBind(sqlite3_bind_null(stmt, 8), index: 8, db: db)
+                try checkBind(sqlite3_bind_null(insStmt, 8), index: 8, db: db)
             }
             if let h = record.dimensionsHeight {
-                try checkBind(sqlite3_bind_int(stmt, 9, Int32(h)), index: 9, db: db)
+                try checkBind(sqlite3_bind_int(insStmt, 9, Int32(h)), index: 9, db: db)
             } else {
-                try checkBind(sqlite3_bind_null(stmt, 9), index: 9, db: db)
+                try checkBind(sqlite3_bind_null(insStmt, 9), index: 9, db: db)
             }
 
-            let stepResult = sqlite3_step(stmt)
+            let stepResult = sqlite3_step(insStmt)
             guard stepResult == SQLITE_DONE else {
-                throw IndexDatabaseError.stepFailed(message: "insertImage step \(stepResult): \(db.lastErrorMessage())")
+                throw IndexDatabaseError.stepFailed(message: """
+                    insertImage step \(stepResult): \(db.lastErrorMessage()) — \
+                    folder_id=\(record.folderId), relative_path=\(record.relativePath), \
+                    filename=\(record.filename), format=\(record.format), \
+                    file_size=\(record.fileSize), bookmark_size=\(record.urlBookmark.count)
+                    """)
             }
-
-            // INSERT OR IGNORE：插入成功 → last_insert_rowid 为新 id；冲突跳过 → 查现有 id
-            let changes = Int(sqlite3_changes(db.handle))
-            if changes > 0 {
-                return sqlite3_last_insert_rowid(db.handle)
-            }
-            // 冲突：查已有
-            let q = try db.prepare("SELECT id FROM images WHERE folder_id = ? AND relative_path = ? LIMIT 1;")
-            defer { sqlite3_finalize(q) }
-            sqlite3_bind_int64(q, 1, record.folderId)
-            sqlite3_bind_text(q, 2, (record.relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
-            guard sqlite3_step(q) == SQLITE_ROW else {
-                throw IndexDatabaseError.stepFailed(message: "insertImage post-IGNORE lookup: \(db.lastErrorMessage())")
-            }
-            return sqlite3_column_int64(q, 0)
+            return sqlite3_last_insert_rowid(db.handle)
         }
     }
 
