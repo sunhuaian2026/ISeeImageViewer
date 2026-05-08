@@ -2096,7 +2096,7 @@ git commit --allow-empty -m "Slice A.18: 整体串联实测通过 (happy path + 
 - [x] **Slice D**（hide toggle + Inspector source path，2026-05-09 ship V2.0-beta3）：稀疏 explicit 模型 + walk SQL + sidebar contextMenu + "在 Finder 中显示"
 - [x] **Slice G**（FSEvents 增量监听 + 删 root 清理，2026-05-09 ship V2.0-beta4）：FSEventsWatcher Swift wrapper + 每 root 一 stream + ItemCreated/Removed/Modified/Renamed 全 handle + FK CASCADE 删 root 清理
 - [x] **Slice H**（内容去重 SHA256 + cheap-first，2026-05-09 ship V2.0-beta5）：ContentHasher CryptoKit + DedupPass cheap-first 算法 + Inspector 副本段 + orphan promote 兜底
-- [ ] Slice I（首次索引进度 UI）
+- [x] **Slice I**（首次索引进度 UI + 错误处理 + enum-state 重构，2026-05-09 ship V2.0 GA）：IndexingProgress chip + lastError banner + Task cancel + schema migration v2 (last_processed_path) + resume from cursor + SmartFolderStore 4 态状态机
 ```
 
 更新 `CLAUDE.md` 项目文件结构段，加 IndexStore/ 和 SmartFolder/ 目录。
@@ -2275,7 +2275,7 @@ git push
 
 **Ship**: V2.0-beta5
 
-### Slice I: 首次索引进度 UI + 错误处理（1 天）
+### Slice I: 首次索引进度 UI + 错误处理 + enum-state 重构（1.5 天）✅ 2026-05-09 ship V2.0 GA
 
 **Goal**: 首次大批量扫描时显示进度 overlay（"正在索引 X / Y"），可中途取消恢复（保存当前 cursor）。
 

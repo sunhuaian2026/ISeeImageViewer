@@ -6,14 +6,16 @@ import SQLite3
 /// ALTER TABLE in a new migration block.
 nonisolated enum IndexStoreSchema {
 
-    static let currentVersion: Int = 1
+    static let currentVersion: Int = 2
 
     /// Apply migrations from `current` (db's PRAGMA user_version) up to currentVersion.
     static func migrate(_ db: IndexDatabase, currentDbVersion: Int) throws {
         if currentDbVersion < 1 {
             try applyV1(db)
         }
-        // Future: if currentDbVersion < 2 { try applyV2(db) }, etc.
+        if currentDbVersion < 2 {
+            try applyV2(db)
+        }
         try db.execute("PRAGMA user_version = \(currentVersion);")
     }
 
@@ -74,5 +76,15 @@ nonisolated enum IndexStoreSchema {
         try db.execute("CREATE INDEX idx_images_birth ON images(birth_time DESC);")
         try db.execute("CREATE INDEX idx_images_folder ON images(folder_id);")
         try db.execute("CREATE INDEX idx_images_dedup ON images(content_sha256) WHERE content_sha256 IS NOT NULL;")
+    }
+
+    // MARK: V2 (Slice I — 进度持久化)
+
+    /// folders 表加 last_processed_path 字段（V2 GA Slice I）：
+    /// 首次扫描中途用户关 Glance → 重启后从该 cursor resume，不重头扫。
+    /// FolderScanner 每 100 张写一次（粒度折中：太频繁影响 SQLite，太稀疏 resume 跨度大）。
+    /// NULL = 该 root 未启动扫描或已扫完；非 NULL = scan 中途断点。
+    private static func applyV2(_ db: IndexDatabase) throws {
+        try db.execute("ALTER TABLE folders ADD COLUMN last_processed_path TEXT;")
     }
 }

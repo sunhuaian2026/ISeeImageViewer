@@ -93,6 +93,46 @@ nonisolated extension IndexStore {
         }
     }
 
+    /// Slice I.2 — 进度持久化：每 100 张写一次扫描 cursor，让重启 resume from cursor。
+    func setLastProcessedPath(rootId: Int64, path: String) throws {
+        try sync { db in
+            let stmt = try db.prepare("UPDATE folders SET last_processed_path = ? WHERE id = ? AND parent_root_id IS NULL;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBindBool(sqlite3_bind_text(stmt, 1, (path as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 1, db: db)
+            try checkBindBool(sqlite3_bind_int64(stmt, 2, rootId), index: 2, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "setLastProcessedPath: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
+    /// Slice I.2 — 扫完一个 root 清除 cursor（NULL = 已扫完，下次启动不需 resume）。
+    func clearLastProcessedPath(rootId: Int64) throws {
+        try sync { db in
+            let stmt = try db.prepare("UPDATE folders SET last_processed_path = NULL WHERE id = ? AND parent_root_id IS NULL;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBindBool(sqlite3_bind_int64(stmt, 1, rootId), index: 1, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "clearLastProcessedPath: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
+    /// Slice I.2 — 启动 root scan 前读 cursor，决定是否 resume。
+    /// nil = 全新扫 / 上次完整扫完；非 nil = 中断断点 → FolderScanner skipWhile 跳过。
+    func fetchLastProcessedPath(rootId: Int64) throws -> String? {
+        try sync { db in
+            let stmt = try db.prepare("SELECT last_processed_path FROM folders WHERE id = ? AND parent_root_id IS NULL LIMIT 1;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBindBool(sqlite3_bind_int64(stmt, 1, rootId), index: 1, db: db)
+            if sqlite3_step(stmt) == SQLITE_ROW {
+                if sqlite3_column_type(stmt, 0) == SQLITE_NULL { return nil }
+                return String(cString: sqlite3_column_text(stmt, 0))
+            }
+            return nil
+        }
+    }
+
     /// Slice G.1 — 删除 root folder（V1 sidebar 移除 root 时触发）。
     /// FK CASCADE 自动连删：images 表 (folder_id REFERENCES folders.id) + subfolder hide rows
     /// (parent_root_id REFERENCES folders.id)。

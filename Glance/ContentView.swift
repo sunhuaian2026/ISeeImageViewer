@@ -232,10 +232,50 @@ struct ContentView: View {
     /// - V2 模式：cell 单击/双击时 populateImagesFromV2() 从 queryResult 重建 URL 灌进
     @ViewBuilder
     private var mainContent: some View {
-        ZStack {
+        ZStack(alignment: .top) {
             baseGrid
             previewOverlay
+            VStack(spacing: DS.Spacing.xs) {
+                // Slice I.1 — 扫描进度 chip overlay（仅 V2 mode 扫描进行中显示，扫完自动消失）
+                if let progress = indexStoreHolder.progress {
+                    IndexingProgressView(progress: progress, onCancel: {
+                        indexStoreHolder.cancelCurrentScan?()
+                    })
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+                // Slice I.2 — 错误 banner（扫描失败 / dedup 失败 → holder.lastError 非 nil）
+                if let err = indexStoreHolder.lastError {
+                    HStack(spacing: DS.Spacing.xs) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.red)
+                        Text(err)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                            .truncationMode(.tail)
+                        Spacer(minLength: DS.Spacing.xs)
+                        Button {
+                            indexStoreHolder.lastError = nil
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundStyle(.secondary)
+                        }
+                        .buttonStyle(.borderless)
+                    }
+                    .padding(.horizontal, DS.Spacing.sm)
+                    .padding(.vertical, DS.Spacing.xs)
+                    .background(.thickMaterial, in: Capsule())
+                    .overlay(
+                        Capsule().strokeBorder(.red.opacity(0.3), lineWidth: DS.SectionHeader.chipBorderWidth)
+                    )
+                    .padding(.horizontal, DS.Spacing.md)
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
+            }
+            .padding(.top, DS.Spacing.sm)
         }
+        .animation(DS.Anim.fast, value: indexStoreHolder.progress)
+        .animation(DS.Anim.fast, value: indexStoreHolder.lastError)
     }
 
     @ViewBuilder
@@ -329,6 +369,20 @@ struct ContentView: View {
         let storeRef = smartFolderStore  // class 引用 capture 安全
         bridge.onIndexChanged = {
             Task { await storeRef.refreshSelected() }
+        }
+        // Slice I.1 — 扫描进度推到 IndexStoreHolder 让 ContentView overlay 显示
+        let holderRef = indexStoreHolder
+        bridge.onScanProgress = { progress in
+            holderRef.progress = progress
+        }
+        // Slice I.2 — 扫描错误回调 → holder.lastError → ContentView banner
+        bridge.onScanError = { msg in
+            holderRef.lastError = msg
+        }
+        // Slice I.2 — holder.cancelCurrentScan 转发给 bridge（progress chip X 按钮点击时调）
+        let bridgeRef = bridge
+        holderRef.cancelCurrentScan = {
+            bridgeRef.cancelCurrentScan()
         }
         indexBridge = bridge
         await bridge.sync(with: folderStore.rootFolders)

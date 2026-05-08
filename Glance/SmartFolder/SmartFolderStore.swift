@@ -6,22 +6,19 @@ import Combine
 final class SmartFolderStore: ObservableObject {
 
     @Published var availableSmartFolders: [SmartFolder] = BuiltInSmartFolders.all
-    @Published var selected: SmartFolder?
-    @Published var queryResult: [IndexedImage] = []
-    @Published var isQuerying: Bool = false
-    @Published var lastError: String?
 
-    /// Optional engine：A.17 用 placeholder()/attach 模式让 ContentView 可在 IndexStore
+    /// Slice I.3 — 单一状态机替代 selected/queryResult/isQuerying/lastError 四独立字段。
+    /// 无效组合（如 isQuerying=true 同时 queryResult 非空）从结构上不可表达。
+    @Published var state: SmartFolderState = .idle
+
+    /// Optional engine：A.17 placeholder()/attach 模式让 ContentView 可在 IndexStore
     /// 异步 ready 之前先创建 store；ready 后调 attach(engine:) 完成 wire-up。
-    /// Slice I 重构候选项：改为 enum state（loading/ready/failed）。
     var engine: SmartFolderEngine?
 
     init(engine: SmartFolderEngine?) {
         self.engine = engine
     }
 
-    /// Pre-IndexStore-ready 占位实例。ContentView wireIfReady() 后调 attach(engine:)
-    /// 把真实 engine 接进来。
     static func placeholder() -> SmartFolderStore {
         SmartFolderStore(engine: nil)
     }
@@ -30,36 +27,65 @@ final class SmartFolderStore: ObservableObject {
         self.engine = engine
     }
 
-    /// Select a smart folder and refresh its query result.
+    // MARK: - 兼容旧 API 的 computed accessors（views / ContentView 直接读不变）
+
+    var selected: SmartFolder? {
+        switch state {
+        case .idle: return nil
+        case .loading(let f), .loaded(let f, _), .error(let f, _): return f
+        }
+    }
+
+    var queryResult: [IndexedImage] {
+        if case .loaded(_, let imgs) = state { return imgs }
+        return []
+    }
+
+    var isQuerying: Bool {
+        if case .loading = state { return true }
+        return false
+    }
+
+    var lastError: String? {
+        if case .error(_, let msg) = state { return msg }
+        return nil
+    }
+
+    // MARK: - State transitions
+
+    /// Select a smart folder and refresh its query result. nil → state .idle。
     func select(_ folder: SmartFolder?) async {
-        selected = folder
-        await refreshSelected()
+        guard let folder else {
+            state = .idle
+            return
+        }
+        state = .loading(folder)
+        await runQuery(for: folder)
     }
 
     /// Re-execute the currently-selected smart folder query.
     func refreshSelected() async {
-        guard let folder = selected, let eng = engine else {
-            queryResult = []
-            return
-        }
-        isQuerying = true
-        lastError = nil
-        defer { isQuerying = false }
+        guard let folder = selected else { return }
+        state = .loading(folder)
+        await runQuery(for: folder)
+    }
 
-        // Capture engine into local before detach to avoid capturing self in @Sendable closure
-        let capturedEngine = eng
+    /// 运行 query + 处理 stale-write（query 跑过程中用户已切到别的 SF / 清 selection）。
+    private func runQuery(for folder: SmartFolder) async {
+        guard let eng = engine else { return }
+        let captured = eng
         do {
             let result = try await Task.detached(priority: .userInitiated) {
-                try capturedEngine.execute(folder)
+                try captured.execute(folder)
             }.value
-            // Stale-write guard：query 跑过程中用户可能切到别的 SF 或清空 selection；
-            // 不匹配则丢弃旧结果，避免覆盖正在跑的新 query 写回来的数据
-            guard selected?.id == folder.id else { return }
-            queryResult = result
+            // Stale-write guard：仅当当前 state 仍指向同一 folder 才写回结果
+            if case .loading(let cur) = state, cur.id == folder.id {
+                state = .loaded(folder, result)
+            }
         } catch {
-            guard selected?.id == folder.id else { return }
-            lastError = "\(error)"
-            queryResult = []
+            if case .loading(let cur) = state, cur.id == folder.id {
+                state = .error(folder, "\(error)")
+            }
         }
     }
 }

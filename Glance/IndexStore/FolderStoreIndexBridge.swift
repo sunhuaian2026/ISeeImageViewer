@@ -28,6 +28,21 @@ final class FolderStoreIndexBridge: ObservableObject {
     /// 让 caller (ContentView) 触发 smartFolderStore.refreshSelected() 刷 grid。
     var onIndexChanged: (() -> Void)? = nil
 
+    /// Slice I.1 — 当首次扫描进度更新时调用，让 caller 把进度推到 UI（IndexStoreHolder
+    /// .progress）。nil = 扫描结束或未开始 → 隐藏 progress chip。
+    var onScanProgress: ((IndexingProgress?) -> Void)? = nil
+
+    /// Slice I.2 — 扫描错误回调（catch error 后调；caller 设 holder.lastError 触发 banner）。
+    var onScanError: ((String) -> Void)? = nil
+
+    /// Slice I.2 — 当前正在跑的扫描 task；用户点 progress chip 上 X → bridge.cancelCurrentScan()
+    /// 调 currentScanTask?.cancel() → FolderScanner.scan 内 Task.isCancelled 检测后 break。
+    private var currentScanTask: Task<Void, Never>?
+
+    func cancelCurrentScan() {
+        currentScanTask?.cancel()
+    }
+
     init(indexStore: IndexStore) {
         self.indexStore = indexStore
     }
@@ -98,19 +113,45 @@ final class FolderStoreIndexBridge: ObservableObject {
             // url_bookmark（macOS sandbox 不允许子文件创建 .withSecurityScope bookmark）
             let store = self.indexStore
             let rootBookmarkCopy = bookmark
-            await Task.detached(priority: .utility) {
+            // Slice I.1 — 扫描启动前 set initial progress chip
+            let rootName = rootURL.lastPathComponent
+            onScanProgress?(IndexingProgress(rootName: rootName, scanned: 0, indexed: 0))
+
+            // capture closure 安全：onScanProgress / onScanError 是 MainActor 闭包，
+            // detached 内通过 Task @MainActor 调；rootName 局部 String 复制
+            let progressCB = self.onScanProgress
+            let errorCB = self.onScanError
+            // Slice I.2 — read resume cursor（NULL → 全新扫；非 NULL → resume from cursor）
+            let resumeFrom = (try? store.fetchLastProcessedPath(rootId: folderId)) ?? nil
+
+            // Slice I.2 — 创建 cancellable task 让用户能点 progress chip X 中断
+            let scanTask = Task.detached(priority: .utility) {
                 let scanner = FolderScanner(store: store)
                 do {
-                    try scanner.scan(rootURL: rootURL, rootBookmark: rootBookmarkCopy, folderId: folderId) { progress in
-                        if progress.totalScanned % 200 == 0 {
-                            print("[IndexStore] scanned \(progress.totalScanned), indexed \(progress.totalIndexed)")
+                    try scanner.scan(
+                        rootURL: rootURL,
+                        rootBookmark: rootBookmarkCopy,
+                        folderId: folderId,
+                        resumeFrom: resumeFrom
+                    ) { p in
+                        if p.totalScanned % 50 == 0 {
+                            let snapshot = IndexingProgress(rootName: rootName, scanned: p.totalScanned, indexed: p.totalIndexed)
+                            Task { @MainActor in progressCB?(snapshot) }
                         }
                     }
-                    print("[IndexStore] scan complete for \(rootURL.path)")
+                    print("[IndexStore] scan complete for \(rootURL.path)\(resumeFrom != nil ? " (resumed from cursor)" : "")")
                 } catch {
                     print("[IndexStore] scan FAILED for \(rootURL.path): \(error)")
+                    let errMsg = "「\(rootName)」扫描失败：\(error.localizedDescription)"
+                    Task { @MainActor in errorCB?(errMsg) }
                 }
-            }.value
+            }
+            currentScanTask = scanTask
+            await scanTask.value
+            currentScanTask = nil
+
+            // Slice I.1 — 扫描完成清 progress（nil = 隐藏 chip）
+            onScanProgress?(nil)
 
             // Slice G.2 — 首次扫描完成后启动 FSEvents watcher 增量监听
             startWatcher(rootURL: rootURL, rootBookmark: bookmark, folderId: folderId)

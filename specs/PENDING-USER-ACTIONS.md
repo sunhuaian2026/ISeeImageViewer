@@ -167,6 +167,15 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice H.2) **副本段互显**：选 canonical 看到 N-1 个副本；切到任一副本看 Inspector → 应也看到 N-1 个 path（含 canonical + 其他副本）
 - [ ] (2026-05-09 / `<pending>` / Slice H.2) **无副本时段不显示**：选普通图（无 dup）打开 Inspector → 应**没有**"副本"Section（不渲染空段）
 
+### Slice I: 进度 chip + 错误 banner + 取消 + 进度持久化 + enum-state
+
+- [ ] (2026-05-09 / `<pending>` / Slice I.1) **大库扫描进度 chip 显示**：拖一个含 5k+ 张图的 root 加入 → mainContent 顶部应出现"正在索引「root_name」 · X 已扫 / Y 入库"chip → 数字每 50 张更新一次 → 扫完 chip 自动消失
+- [ ] (2026-05-09 / `<pending>` / Slice I.2) **取消扫描**：扫描进行中点 chip 上 X 按钮 → scan loop 内 Task.isCancelled 检测后 break → chip 消失；当前 cursor 已写入 folders.last_processed_path（持久化）
+- [ ] (2026-05-09 / `<pending>` / Slice I.2) **重启 resume from cursor**：扫描中途 cancel 或杀进程 → 重启 Glance → 该 root 自动 resume，从 lastProcessedPath 之后继续扫，不重头（依赖 macOS DirectoryEnumerator 字典序稳定遍历）
+- [ ] (2026-05-09 / `<pending>` / Slice I.2) **扫描完成清 cursor**：完整扫完一个 root → folders.last_processed_path = NULL → 下次启动不再 resume（直接走完整扫，但 insertImageIfAbsent 幂等不会重复插）
+- [ ] (2026-05-09 / `<pending>` / Slice I.2) **错误 banner**：模拟扫描失败（如某文件 IO error）→ mainContent 顶部出现红色 capsule banner "「root_name」扫描失败：..." → 点 X 按钮 dismiss → banner 消失，主 UI 仍可滚动
+- [ ] (2026-05-09 / `<pending>` / Slice I.3) **enum-state 重构无回归**：所有 V2 grid 行为（query 切换 / 重 query / 空态 / preview 方向键 navigate / Inspector 同步）跟 Slice H 一致，没有 race / stale-write / 重复刷新等异常
+
 ### Slice B-α 延后项（polish，不阻塞 ship）
 
 - [ ] (2026-05-09 / Deferred / Slice B-α polish) **chip 深浅色模式下对比强化**：用户要求 chip 在 dark/light 各模式下跟 cell 的视觉对比再"跳"一些。当前状态：`.thickMaterial` + `Capsule().strokeBorder(.primary.opacity(DS.SectionHeader.chipBorderOpacity=0.12), lineWidth: DS.SectionHeader.chipBorderWidth=0.5)`。**待对齐**（重启时问用户）：(1) 哪个组合对比最弱？dark mode + dark cell / dark + light cell / light + light cell / light + dark cell（建议截图对比）；(2) 期望"强烈"方向：A stroke 加粗 + opacity 升（0.5pt×0.12 → 1pt×0.30）/ B `.ultraThickMaterial` + 微 shadow / C 反色 fill（dark mode chip 用 light fill / light mode chip 用 dark fill，告别 material 透感，macOS Photos.app / Files.app 模式）/ D material + accentColor tint（DS.Color.glowPrimary 弱化版）。**修法 surface 预期**：仅 `Glance/FolderBrowser/SmartFolderGridView.swift sectionHeader` + `Glance/DesignSystem.swift DS.SectionHeader` 段；不动 LazyVGrid pinnedViews、moveHighlight、locate、其他交互逻辑
