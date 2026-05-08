@@ -20,6 +20,10 @@ struct ContentView: View {
     @StateObject private var smartFolderStore = SmartFolderStore.placeholder()
     @State private var indexBridge: FolderStoreIndexBridge?
     @State private var didWire: Bool = false
+    /// V2 mode 下 preview / QuickViewer 的图片源（cell 单击/双击时从 queryResult 重建）。
+    /// 不复用 folderStore.images，避免触发 .onChange(of: folderStore.images) 的保护性
+    /// 关 QV 逻辑（那条 onChange 是给 V1 排序场景设计的）。
+    @State private var v2Urls: [URL] = []
     @State private var showInspector = false
     @State private var quickViewerIndex: Int? = nil
     // QV 入口来源：onDoubleClick / onQuickView 设值，QV onDismiss 仲裁后清回 nil
@@ -102,7 +106,7 @@ struct ContentView: View {
         .overlay {
             if let idx = quickViewerIndex {
                 QuickViewerOverlay(
-                    images: folderStore.images,
+                    images: smartFolderStore.selected != nil ? v2Urls : folderStore.images,
                     startIndex: idx,
                     onDismiss: {
                         withAnimation(DS.Anim.normal) {
@@ -222,11 +226,11 @@ struct ContentView: View {
         if smartFolderStore.selected != nil {
             SmartFolderGridView(
                 onSingleClick: { idx in
-                    populateImagesFromV2()
+                    v2Urls = computeV2Urls()
                     folderStore.selectedImageIndex = idx
                 },
                 onDoubleClick: { idx in
-                    populateImagesFromV2()
+                    v2Urls = computeV2Urls()
                     // 双击时单击 handler 也会触发并设置 selectedImageIndex，此处清除，确保 QuickViewer
                     // 关闭后回到列表页而非预览页（同 V1 ImageGridView onDoubleClick 逻辑）
                     folderStore.selectedImageIndex = nil
@@ -254,7 +258,7 @@ struct ContentView: View {
         if let idx = folderStore.selectedImageIndex, quickViewerIndex == nil {
             ImagePreviewView(
                 vm: previewVM,
-                images: folderStore.images,
+                images: smartFolderStore.selected != nil ? v2Urls : folderStore.images,
                 startIndex: idx,
                 focusTrigger: previewFocusTrigger,
                 onDismiss: {
@@ -273,13 +277,14 @@ struct ContentView: View {
         }
     }
 
-    /// V2 cell 被点击时把 SmartFolderStore.queryResult 转成 V1 风格的 URL 数组灌进
-    /// folderStore.images，让 ImagePreviewView / QuickViewerOverlay 两条 V1 路径无缝复用。
+    /// 把当前 SmartFolderStore.queryResult 转成 V1 风格的 URL 数组（snapshot 在 cell 单击/
+    /// 双击时计算），让 ImagePreviewView / QuickViewerOverlay 两条 V1 通路复用。
     /// URL = resolve(image.urlBookmark = root bookmark) + appendingPathComponent(relative_path)。
-    /// 子 URL 通过 V1 BookmarkManager 已 startAccessing 的 root scope 隐式访问，
-    /// NSImage(contentsOf:) / CGImageSourceCreateWithURL 都能读。
-    private func populateImagesFromV2() {
-        folderStore.images = smartFolderStore.queryResult.compactMap { image in
+    /// 子 URL 通过 V1 BookmarkManager 已 startAccessing 的 root scope 隐式访问，NSImage /
+    /// CGImageSourceCreateWithURL 都能读。**返回数组而非写入 folderStore.images**，避免触发
+    /// `.onChange(of: folderStore.images)` 的保护性 close-QV 逻辑（那条是给 V1 排序场景设的）。
+    private func computeV2Urls() -> [URL] {
+        smartFolderStore.queryResult.compactMap { image in
             var stale = false
             guard let rootURL = try? URL(
                 resolvingBookmarkData: image.urlBookmark,
