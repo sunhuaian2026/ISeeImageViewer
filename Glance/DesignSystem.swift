@@ -101,6 +101,15 @@ enum DS {
         static let chipBorderOpacity: Double = 0.12
     }
 
+    // MARK: - IndexingProgress（V2 Slice I.1 进度 chip + Slice I.2 错误 banner）
+
+    enum IndexingProgress {
+        /// SwiftUI ProgressView 默认 .controlSize(.small) 后再 70% 缩放，跟 chip 字号视觉协调
+        static let spinnerScale: CGFloat = 0.7
+        /// 错误 banner Capsule strokeBorder 强度（红色 hairline 比 SectionHeader chip 强一档让 banner 跳出）
+        static let errorBorderOpacity: Double = 0.3
+    }
+
     // MARK: - Animation
 
     enum Anim {
@@ -139,6 +148,10 @@ enum DS {
         // 次级文本（标题之外的描述/版本号/copyright 等），alias 到 SwiftUI 标准
         // 语义色 .secondary，自动响应 colorScheme
         static let secondaryText: SwiftUI.Color = .secondary
+
+        // 错误状态色（V2 Slice I.2 banner / Slice H 失败 chip 等），alias 到 SwiftUI .red
+        // 语义色，dark/light 自动适配（macOS standard error red）
+        static let errorAccent: SwiftUI.Color = .red
     }
 
     // MARK: - Icons（SF Symbols）

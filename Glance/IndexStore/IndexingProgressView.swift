@@ -20,14 +20,14 @@ struct IndexingProgressView: View {
         HStack(spacing: DS.Spacing.xs) {
             ProgressView()
                 .controlSize(.small)
-                .scaleEffect(0.7)
+                .scaleEffect(DS.IndexingProgress.spinnerScale)
             Text("正在索引「\(progress.rootName)」 · \(progress.scanned) 已扫 / \(progress.indexed) 入库")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.primary)
             if let onCancel {
                 Button(action: onCancel) {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(DS.Color.secondaryText)
                 }
                 .buttonStyle(.borderless)
                 .help("取消索引")

@@ -247,7 +247,7 @@ struct ContentView: View {
                 if let err = indexStoreHolder.lastError {
                     HStack(spacing: DS.Spacing.xs) {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(DS.Color.errorAccent)
                         Text(err)
                             .font(.caption.weight(.semibold))
                             .foregroundStyle(.primary)
@@ -258,7 +258,7 @@ struct ContentView: View {
                             indexStoreHolder.lastError = nil
                         } label: {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(DS.Color.secondaryText)
                         }
                         .buttonStyle(.borderless)
                     }
@@ -266,7 +266,10 @@ struct ContentView: View {
                     .padding(.vertical, DS.Spacing.xs)
                     .background(.thickMaterial, in: Capsule())
                     .overlay(
-                        Capsule().strokeBorder(.red.opacity(0.3), lineWidth: DS.SectionHeader.chipBorderWidth)
+                        Capsule().strokeBorder(
+                            DS.Color.errorAccent.opacity(DS.IndexingProgress.errorBorderOpacity),
+                            lineWidth: DS.SectionHeader.chipBorderWidth
+                        )
                     )
                     .padding(.horizontal, DS.Spacing.md)
                     .transition(.opacity.combined(with: .move(edge: .top)))
