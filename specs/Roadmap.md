@@ -212,13 +212,13 @@ xcrun notarytool store-credentials "glance-notary" \
 - `.gitignore` 加 `dist/`
 - create-dmg via `brew install create-dmg`
 - **2026-05-07 session 收口**：notarytool keychain profile 已重存 (5/5 配过但 5/7 ACL 丢失) / 部署目标降级 7 路径 smoke test 全过 / `make release` 真跑成功 (`504c102` 回填 release notes 元数据；公证 Submission ID `cb7db74c-afbb-4e12-98a5-912ca15eefff` Accepted / staple worked / universal binary 三处验证 x86_64+arm64) / `dist/Glance-1.0.0.dmg` 含本 session 6 fix + 真公证 + staple，可发布
-- **2026-05-08 session 公开发布落地**：DMG 干净 Mac Gatekeeper 实测通过 → 仓库 visibility private → public 切换（`gh repo edit ... --visibility public`，匿名 HTTP 200 验证）→ GitHub Release `v1.0.0` 创建（tag → `0c9f699` / DMG + SHA256 sidecar 上传 / `gh release view` 显示 `isDraft: false` / 匿名 CDN 下载 HTTP 200 + content-length 2516359 验证）。Release URL: https://github.com/sunhuaian2026/ISeeImageViewer/releases/tag/v1.0.0
+- **2026-05-08 session 公开发布落地**：DMG 干净 Mac Gatekeeper 实测通过 → 仓库 visibility private → public 切换（`gh repo edit ... --visibility public`，匿名 HTTP 200 验证）→ GitHub Release `v1.0.0` 创建（tag → `0c9f699` / DMG + SHA256 sidecar 上传 / `gh release view` 显示 `isDraft: false` / 匿名 CDN 下载 HTTP 200 + content-length 2516359 验证）。Release URL: https://github.com/sunhuaian2026/Glance/releases/tag/v1.0.0
+- **2026-05-08 session 仓库改名**：`gh repo rename Glance --repo sunhuaian2026/ISeeImageViewer` 执行成功；新 URL https://github.com/sunhuaian2026/Glance；旧 URL HTTP 301 → 新 URL HTTP 200 redirect 通畅；本地 `git remote set-url origin` 同步；V2 worktree 自动跟随（共享 .git/config）；commit `f17fe97` 同步 README/CLAUDE.md 4 处硬编码 URL
 
 **待办（Pending v1.0.1 cleanup + 推广）**
 
 - [ ] 小红书引流到 Release 下载链接（市场推广，可任何时候做）
 - [ ] (可选 v1.0.1 优化) Inspector 截图换一张含完整 EXIF 的图（手机原片含相机型号 / 光圈 / 快门 / 焦距 / GPS）— 当前 04-inspector.png 用 wallpaper_05.jpg 仅 5 个基础字段，未充分展示 Inspector 能力
-- [ ] (可选 v1.0.1 cleanup) GitHub 仓库改名 ISeeImageViewer → Glance（GitHub 自动留旧路径 redirect）
 - [ ] (可选 v1.0.1 cleanup) `release.sh` L191 `du -h` 取的是 disk usage 而非文件大小，输出 misleading（本次 3.4M vs 实际 2.4 MB），改用 `stat -f %z` 或类似按 byte 格式化
 
 ---
