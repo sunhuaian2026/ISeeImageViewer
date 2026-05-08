@@ -2094,7 +2094,7 @@ git commit --allow-empty -m "Slice A.18: 整体串联实测通过 (happy path + 
 - [x] **Slice B**（时间分段 chip sticky header + "本周新增"，2026-05-09 ship V2.0-beta2 tag `cf43e04`）：5 段算法 + LazyVGrid pinnedViews + Capsule chip + 键盘 (sectionIdx, row, col) 导航
 - [x] **Slice C**（merged into B）
 - [x] **Slice D**（hide toggle + Inspector source path，2026-05-09 ship V2.0-beta3）：稀疏 explicit 模型 + walk SQL + sidebar contextMenu + "在 Finder 中显示"
-- [ ] Slice G（FSEvents 增量监听）
+- [x] **Slice G**（FSEvents 增量监听 + 删 root 清理，2026-05-09 ship V2.0-beta4）：FSEventsWatcher Swift wrapper + 每 root 一 stream + ItemCreated/Removed/Modified/Renamed 全 handle + FK CASCADE 删 root 清理
 - [ ] Slice H（内容去重 SHA256 + cheap-first）
 - [ ] Slice I（首次索引进度 UI）
 ```
@@ -2245,19 +2245,23 @@ git push
 
 **Ship**: 跟 Slice D 一起 V2.0-beta3
 
-### Slice G: FSEvents 增量监听（2 天）
+### Slice G: FSEvents 增量监听 + 删 root 清理（2 天）✅ 2026-05-09 ship
 
-**Goal**: managed folder 文件变化（add/remove/modify）→ IndexStore 增量更新（不全量重扫）。
+**Goal**: managed folder 文件变化（add/remove/modify/rename）→ IndexStore 增量更新（不全量重扫）；删 root 触发 FK CASCADE 连删 images + subfolder hide rows。
 
 **Deliverables**:
-- `Glance/IndexStore/FSEventsWatcher.swift`（CoreServices FSEventStream Swift wrapper）
-- 每个 root 启动一个 stream
-- 文件 created → 调 ImageMetadataReader + insertImage
-- 文件 deleted → DELETE FROM images WHERE relative_path = ? AND folder_id = ?
-- 文件 modified → UPDATE （仅元数据变更）
-- 验收：在 Finder 拖一张图到 managed folder → 5s 内出现在智能文件夹 grid
+- `Glance/IndexStore/FSEventsWatcher.swift`（CoreServices FSEventStreamCreate Swift wrapper）✅
+- 每 root 一个 stream（rootId → watcher dict，删 root 单独 invalidate）✅
+- ItemCreated → ImageMetadataReader + insertImageIfAbsent ✅
+- ItemRemoved → IndexStore.deleteImage(folderId, relativePath) ✅
+- ItemModified → re-read metadata + IndexStore.updateImageMetadata（仅 birth_time/file_size/format/filename/dimensions，content_sha256 等保留 NULL）✅
+- ItemRenamed → 按 file exists 拆 delete old + insert new ✅
+- IndexStore.deleteRoot（FK CASCADE 连删）+ FolderStoreIndexBridge.sync remove diff ✅
+- ContentView 桥 onIndexChanged → SmartFolderStore.refreshSelected()
+- 验收：在 Finder 拖一张图到 managed folder → 5s 内出现在智能文件夹 grid；rm 图 → 5s 内消失；删 V1 sidebar root → grid 立即清
 
-**Ship**: V2.0-beta4
+**完成 commit**：G.1+G.2+G.3+G.4 单 commit ship（本 commit）
+**Ship**: V2.0-beta4 ✓
 
 ### Slice H: 内容去重 SHA256 + cheap-first（2 天）
 

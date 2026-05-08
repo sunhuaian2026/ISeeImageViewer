@@ -146,6 +146,16 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice D.2) **V1 / V2 双模式生效**：V1 单文件夹模式选图 / V2 智能文件夹（全部最近 / 本周新增）选图，Inspector 来源段都正确显示对应图的真实 path（不是 root path）
 - [ ] (2026-05-09 / `<pending>` / Slice D.2) **path 选中复制**：长按拖选 path 文字 → 复制 → 粘贴到 Finder 地址栏 / 终端 → 能定位到文件
 
+### Slice G: FSEvents 增量监听 + 删 root 清理
+
+- [ ] (2026-05-09 / `<pending>` / Slice G.1) **删 root 整树清理**：V1 sidebar 右键 root → "移除文件夹" → 智能文件夹 grid 立即不再显示该 root 下的图（不应 stale）。退出 + 重启验证 IndexStore 也已清干净（重启后 sidebar 不出现该 root，"全部最近"也不含其图）
+- [ ] (2026-05-09 / `<pending>` / Slice G.2) **新增图实时入索引**：选「全部最近」打开 grid → Finder 拖一张图到某 managed folder（不用关 Glance）→ **5s 内**该图出现在智能文件夹 grid 顶部（按 birth_time DESC）
+- [ ] (2026-05-09 / `<pending>` / Slice G.2) **跨 managed folder 都监听**：在 root1 + root2 各 cp 一张图 → 5s 内两张都出现在「全部最近」
+- [ ] (2026-05-09 / `<pending>` / Slice G.3) **删图实时去索引**：grid 显示某图时 Finder 删该图（rm / 移到废纸篓）→ 5s 内该图从 grid 消失
+- [ ] (2026-05-09 / `<pending>` / Slice G.3) **改图内容元数据同步**：替换某 jpg（同 path 不同内容） → 5s 内 Inspector 看到 file_size / dimensions 已更新
+- [ ] (2026-05-09 / `<pending>` / Slice G.3) **改名 = delete + insert**：rename 某图（same folder，新文件名）→ 5s 内 grid 老 cell 消失，新 filename cell 出现（按新 birth 时间归段；Slice H 之前不会自动 dedup link）
+- [ ] (2026-05-09 / `<pending>` / Slice G.3) **subfolder 内变化也监听**：在 managed root 的子目录里 cp 图 / rm 图 → 5s 内 grid 同步（FSEvents WatchRoot 默认监听 subfolders）
+
 ### Slice B-α 延后项（polish，不阻塞 ship）
 
 - [ ] (2026-05-09 / Deferred / Slice B-α polish) **chip 深浅色模式下对比强化**：用户要求 chip 在 dark/light 各模式下跟 cell 的视觉对比再"跳"一些。当前状态：`.thickMaterial` + `Capsule().strokeBorder(.primary.opacity(DS.SectionHeader.chipBorderOpacity=0.12), lineWidth: DS.SectionHeader.chipBorderWidth=0.5)`。**待对齐**（重启时问用户）：(1) 哪个组合对比最弱？dark mode + dark cell / dark + light cell / light + light cell / light + dark cell（建议截图对比）；(2) 期望"强烈"方向：A stroke 加粗 + opacity 升（0.5pt×0.12 → 1pt×0.30）/ B `.ultraThickMaterial` + 微 shadow / C 反色 fill（dark mode chip 用 light fill / light mode chip 用 dark fill，告别 material 透感，macOS Photos.app / Files.app 模式）/ D material + accentColor tint（DS.Color.glowPrimary 弱化版）。**修法 surface 预期**：仅 `Glance/FolderBrowser/SmartFolderGridView.swift sectionHeader` + `Glance/DesignSystem.swift DS.SectionHeader` 段；不动 LazyVGrid pinnedViews、moveHighlight、locate、其他交互逻辑

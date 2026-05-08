@@ -87,13 +87,14 @@ ISeeImageViewer/                    ← 磁盘路径未改，repo 内部一切�
     │   ├── IndexDatabase.swift              ← sqlite3 C API 包装（open/close/exec/prepare/bind/step）+ PRAGMA foreign_keys=ON / journal_mode=WAL
     │   ├── IndexStoreSchema.swift           ← v1 forward-looking schema（M1+M2+M3 字段）+ migration（PRAGMA user_version）
     │   ├── IndexStore.swift                 ← 高层入口（DispatchQueue 串行）+ auto-migrate；DB 路径走 sandbox container Application Support
-    │   ├── IndexedImage.swift                ← images 表 record struct + 幂等 SELECT-first INSERT（不用 OR IGNORE 让 constraint violation surface）
-    │   ├── ManagedFolder.swift              ← folders 表 record struct + registerRoot 幂等（root_path UNIQUE）
+    │   ├── IndexedImage.swift                ← images 表 record struct + 幂等 SELECT-first INSERT + Slice G.3 deleteImage / updateImageMetadata
+    │   ├── ManagedFolder.swift              ← folders 表 record struct + registerRoot 幂等 + Slice D hide CRUD（setRootHidden/upsertSubfolderHide/effectiveHidden）+ Slice G.1 deleteRoot（FK CASCADE）
     │   ├── CompiledSmartFolderQuery.swift   ← Builder → Engine 之间的 SQL injection-safe contract
     │   ├── ImageMetadataReader.swift        ← URL → birth_time / file_size / format / dimensions（ImageIO，不解码像素）
     │   ├── FolderScanner.swift              ← 递归 enumerator + INSERT OR IGNORE 配合 UNIQUE 幂等；rootBookmark 复用到每条 image row
+    │   ├── FSEventsWatcher.swift            ← V2 Slice G FSEvents Swift wrapper（CoreServices FSEventStreamCreate / 每 root 一 stream / file-level events / latency 1s）
     │   ├── IndexStoreHolder.swift           ← 异步 init holder（@Published store + isReady Bool 让 .onChange 可观察）
-    │   └── FolderStoreIndexBridge.swift     ← 订阅 folderStore.rootFolders → registerRoot + Task.detached 启动 FolderScanner
+    │   └── FolderStoreIndexBridge.swift     ← rootFolders diff → registerRoot/deleteRoot + 启动 FolderScanner + Slice G.2/3 watcher lifecycle + handle Created/Removed/Modified/Renamed events
     └── SmartFolder/                 ← V2 智能文件夹规则与查询
         ├── SmartFolder.swift                ← struct（id/displayName/predicate/sortBy/builtIn）
         ├── SmartFolderRule.swift            ← Predicate enum (AND/OR/ATOM) + Atom struct + Op + Value（D6 Spotlight-like 平铺）

@@ -90,6 +90,55 @@ nonisolated extension IndexStore {
         }
     }
 
+    /// Slice G.3 — 删除单条 image row（FSEvents ItemRemoved 触发）。
+    /// 走 (folder_id, relative_path) 复合键（schema UNIQUE(folder_id, relative_path)）。
+    func deleteImage(folderId: Int64, relativePath: String) throws {
+        try sync { db in
+            let stmt = try db.prepare("DELETE FROM images WHERE folder_id = ? AND relative_path = ?;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int64(stmt, 1, folderId), index: 1, db: db)
+            try checkBind(sqlite3_bind_text(stmt, 2, (relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 2, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "deleteImage: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
+    /// Slice G.3 — 更新单条 image row 元数据（FSEvents Modified 触发）。
+    /// 仅 metadata 字段（birth_time / file_size / format / filename / dimensions）；
+    /// content_sha256 / dedup_canonical 是 Slice H 字段，本 slice 保留 NULL 不重算。
+    /// 行不存在 → 静默跳过（视作"上一帧 batch 已 DELETE 或没 INSERT 过"，FSEvents 容错）。
+    func updateImageMetadata(folderId: Int64, relativePath: String, metadata: ImageMetadata) throws {
+        try sync { db in
+            let stmt = try db.prepare("""
+                UPDATE images SET
+                    birth_time = ?, file_size = ?, format = ?, filename = ?,
+                    dimensions_width = ?, dimensions_height = ?
+                WHERE folder_id = ? AND relative_path = ?;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_double(stmt, 1, metadata.birthTime.timeIntervalSince1970), index: 1, db: db)
+            try checkBind(sqlite3_bind_int64(stmt, 2, metadata.fileSize), index: 2, db: db)
+            try checkBind(sqlite3_bind_text(stmt, 3, (metadata.format as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 3, db: db)
+            try checkBind(sqlite3_bind_text(stmt, 4, (metadata.filename as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 4, db: db)
+            if let w = metadata.dimensionsWidth {
+                try checkBind(sqlite3_bind_int(stmt, 5, Int32(w)), index: 5, db: db)
+            } else {
+                try checkBind(sqlite3_bind_null(stmt, 5), index: 5, db: db)
+            }
+            if let h = metadata.dimensionsHeight {
+                try checkBind(sqlite3_bind_int(stmt, 6, Int32(h)), index: 6, db: db)
+            } else {
+                try checkBind(sqlite3_bind_null(stmt, 6), index: 6, db: db)
+            }
+            try checkBind(sqlite3_bind_int64(stmt, 7, folderId), index: 7, db: db)
+            try checkBind(sqlite3_bind_text(stmt, 8, (relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 8, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "updateImageMetadata: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
     /// 受 SQL injection 保护的 fetch：仅接 SmartFolderQueryBuilder 编译产物。
     /// `CompiledSmartFolderQuery` 的 whereClause / orderBy 字符串由 builder 内部生成，
     /// 仅含已知 column name 和 placeholder（?），用户输入永远走 parameters 绑定。

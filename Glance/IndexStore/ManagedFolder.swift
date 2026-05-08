@@ -93,6 +93,21 @@ nonisolated extension IndexStore {
         }
     }
 
+    /// Slice G.1 — 删除 root folder（V1 sidebar 移除 root 时触发）。
+    /// FK CASCADE 自动连删：images 表 (folder_id REFERENCES folders.id) + subfolder hide rows
+    /// (parent_root_id REFERENCES folders.id)。
+    /// 仅删 root 行（parent_root_id IS NULL 守卫，防误删 subfolder hide row）。
+    func deleteRoot(rootId: Int64) throws {
+        try sync { db in
+            let stmt = try db.prepare("DELETE FROM folders WHERE id = ? AND parent_root_id IS NULL;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBindBool(sqlite3_bind_int64(stmt, 1, rootId), index: 1, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "deleteRoot: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
     /// Slice D — 计算给定 (rootId, relativePath) 路径上的 effective hidden 状态。
     /// 走"path 上溯找最具体 explicit hide row"算法（稀疏 explicit 模型）：
     /// 1. 检查 (parent_root_id=rootId AND relative_path 是 path 前缀) 的所有 row

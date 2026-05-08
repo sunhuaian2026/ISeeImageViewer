@@ -19,20 +19,59 @@ final class FolderStoreIndexBridge: ObservableObject {
     /// to avoid duplicate registration / rescan across calls.
     private var registeredPaths: Set<String> = []
 
+    /// Slice G.2 — 每 root 一个 FSEvents watcher，rootId → watcher dictionary。
+    /// 删 root 时 stop + remove；新 root 注册扫描完成后 start。
+    private var watchers: [Int64: FSEventsWatcher] = [:]
+    private let watcherQueue = DispatchQueue(label: "com.sunhongjun.glance.fsevents", qos: .utility)
+
+    /// Slice G.2 — 当 FSEvents 派发的 events 更新了 IndexStore 后调用此 closure，
+    /// 让 caller (ContentView) 触发 smartFolderStore.refreshSelected() 刷 grid。
+    var onIndexChanged: (() -> Void)? = nil
+
     init(indexStore: IndexStore) {
         self.indexStore = indexStore
     }
 
-    /// Diff incoming rootFolders vs registered set; register/scan new ones.
-    /// Removed folders are NOT cleaned up in Slice A (Slice G FSEvents will revisit).
+    /// Diff incoming rootFolders vs registered set: add new + remove gone.
     /// Caller (ContentView) invokes whenever folderStore.rootFolders changes.
+    /// Slice G.1：remove diff 调 IndexStore.deleteRoot 触发 FK CASCADE 连删 images +
+    /// subfolder hide rows，破除 Slice A 的 stale row 残留。
     func sync(with rootFolders: [FolderNode]) async {
-        let newRoots = rootFolders.filter {
-            !registeredPaths.contains($0.url.standardizedFileURL.path)
-        }
+        let incoming = Set(rootFolders.map { $0.url.standardizedFileURL.path })
+
+        // Add diff
+        let newRoots = rootFolders.filter { !registeredPaths.contains($0.url.standardizedFileURL.path) }
         for node in newRoots {
             await registerAndScan(rootURL: node.url)
             registeredPaths.insert(node.url.standardizedFileURL.path)
+        }
+
+        // Remove diff (Slice G.1)
+        let removedPaths = registeredPaths.subtracting(incoming)
+        for path in removedPaths {
+            await unregister(path: path)
+            registeredPaths.remove(path)
+        }
+    }
+
+    /// Slice G.1 — 删 root 清理：path → IndexStore root id → deleteRoot。
+    /// FK CASCADE 自动连删 images + subfolder hide rows；ContentView onChange 紧跟
+    /// `smartFolderStore.refreshSelected()` 让 grid 立即反映。
+    /// Slice G.2 — 同时 stop FSEvents watcher，释放 stream + queue 资源。
+    private func unregister(path: String) async {
+        do {
+            guard let rootId = try indexStore.folderIdForRootPath(path) else {
+                print("[IndexStore] unregister: no row for \(path) (already gone)")
+                return
+            }
+            // 先 stop watcher（防 DELETE 后还有 events 派发到失效 folder_id）
+            watchers[rootId]?.stop()
+            watchers.removeValue(forKey: rootId)
+
+            try indexStore.deleteRoot(rootId: rootId)
+            print("[IndexStore] removed root \(path) (id=\(rootId)) — FK CASCADE cleaned images + subfolder rows")
+        } catch {
+            print("[IndexStore] unregister FAILED for \(path): \(error)")
         }
     }
 
@@ -69,8 +108,120 @@ final class FolderStoreIndexBridge: ObservableObject {
                     print("[IndexStore] scan FAILED for \(rootURL.path): \(error)")
                 }
             }.value
+
+            // Slice G.2 — 首次扫描完成后启动 FSEvents watcher 增量监听
+            startWatcher(rootURL: rootURL, rootBookmark: bookmark, folderId: folderId)
         } catch {
             print("[IndexStore] registerAndScan FAILED for \(rootURL.path): \(error)")
         }
+    }
+
+    // MARK: - Slice G.2 FSEvents 增量
+
+    private func startWatcher(rootURL: URL, rootBookmark: Data, folderId: Int64) {
+        let watcher = FSEventsWatcher(queue: watcherQueue) { [weak self] events in
+            // events 在 watcherQueue 派发；切到 MainActor 处理 IndexStore mutation + UI 刷新
+            Task { @MainActor [weak self] in
+                self?.handleEvents(events, rootURL: rootURL, rootBookmark: rootBookmark, folderId: folderId)
+            }
+        }
+        watcher.start(rootPath: rootURL.standardizedFileURL.path)
+        watchers[folderId] = watcher
+    }
+
+    /// FSEvents callback 主路由（MainActor 上）。每 batch 处理完调一次 onIndexChanged 触发 UI 刷新。
+    /// Slice G.2 处理 Created；G.3 加 Removed + Modified + Renamed。
+    /// Renamed 拆解为 delete old + insert new（按文件 exists 与否区分），实现"决策 4：rename
+    /// = 不追踪 inode"。InodeMetaMod（permissions / chown 等无内容变化）跳过。
+    private func handleEvents(_ events: [FSEvent], rootURL: URL, rootBookmark: Data, folderId: Int64) {
+        var changed = false
+        for event in events {
+            guard event.isFile else { continue }
+            let exists = FileManager.default.fileExists(atPath: event.path)
+
+            if event.isRemoved || (event.isRenamed && !exists) {
+                if handleRemoved(path: event.path, rootURL: rootURL, folderId: folderId) {
+                    changed = true
+                }
+            } else if event.isCreated || (event.isRenamed && exists) {
+                if handleCreated(path: event.path, rootURL: rootURL, rootBookmark: rootBookmark, folderId: folderId) {
+                    changed = true
+                }
+            } else if event.isModified {
+                if handleModified(path: event.path, rootURL: rootURL, folderId: folderId) {
+                    changed = true
+                }
+            }
+            // isInodeMetaMod 不影响图像内容 / dimensions，跳过
+        }
+        if changed { onIndexChanged?() }
+    }
+
+    /// FSEvents 派发的 Created event 通常在文件落盘瞬间触发；小概率元数据未稳定 → 此时
+    /// ImageMetadataReader 返 nil 跳过（下一次 batch 的 Modified event 会补）。
+    /// 返回 true 表示 IndexStore 状态有更新（caller 据此触发 UI refresh）。
+    @discardableResult
+    private func handleCreated(path: String, rootURL: URL, rootBookmark: Data, folderId: Int64) -> Bool {
+        let fileURL = URL(fileURLWithPath: path)
+        guard let metadata = ImageMetadataReader.read(at: fileURL) else { return false }
+        let relPath = relativePath(of: fileURL, under: rootURL)
+        let record = ImageInsertRecord(
+            urlBookmark: rootBookmark,
+            birthTime: metadata.birthTime,
+            fileSize: metadata.fileSize,
+            format: metadata.format,
+            filename: metadata.filename,
+            relativePath: relPath,
+            folderId: folderId,
+            dimensionsWidth: metadata.dimensionsWidth,
+            dimensionsHeight: metadata.dimensionsHeight
+        )
+        do {
+            _ = try indexStore.insertImageIfAbsent(record)
+            return true
+        } catch {
+            print("[FSEvents] insertImageIfAbsent FAILED \(path): \(error)")
+            return false
+        }
+    }
+
+    /// Slice G.3 — FSEvents Removed (或 Renamed 后文件已不存在) 触发 IndexStore 删行。
+    @discardableResult
+    private func handleRemoved(path: String, rootURL: URL, folderId: Int64) -> Bool {
+        let fileURL = URL(fileURLWithPath: path)
+        let relPath = relativePath(of: fileURL, under: rootURL)
+        do {
+            try indexStore.deleteImage(folderId: folderId, relativePath: relPath)
+            return true
+        } catch {
+            print("[FSEvents] deleteImage FAILED \(path): \(error)")
+            return false
+        }
+    }
+
+    /// Slice G.3 — FSEvents Modified（文件内容/属性变更，非 inode-only-mod）。
+    /// 重新 read metadata → UPDATE existing row（行不存在则视作 created path 误派发，走 INSERT）。
+    @discardableResult
+    private func handleModified(path: String, rootURL: URL, folderId: Int64) -> Bool {
+        let fileURL = URL(fileURLWithPath: path)
+        guard let metadata = ImageMetadataReader.read(at: fileURL) else { return false }
+        let relPath = relativePath(of: fileURL, under: rootURL)
+        do {
+            try indexStore.updateImageMetadata(folderId: folderId, relativePath: relPath, metadata: metadata)
+            return true
+        } catch {
+            print("[FSEvents] updateImageMetadata FAILED \(path): \(error)")
+            return false
+        }
+    }
+
+    /// 与 FolderScanner.relativePath 同算法（root 前缀去掉 + 删 leading "/"）。
+    private func relativePath(of file: URL, under root: URL) -> String {
+        let filePath = file.standardizedFileURL.path
+        let rootPath = root.standardizedFileURL.path
+        if filePath.hasPrefix(rootPath) {
+            return String(filePath.dropFirst(rootPath.count).drop(while: { $0 == "/" }))
+        }
+        return file.lastPathComponent
     }
 }

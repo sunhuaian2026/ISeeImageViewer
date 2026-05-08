@@ -318,8 +318,14 @@ struct ContentView: View {
 
         let engine = SmartFolderEngine(store: store)
         smartFolderStore.attach(engine: engine)
-        indexBridge = FolderStoreIndexBridge(indexStore: store)
-        await indexBridge?.sync(with: folderStore.rootFolders)
+        let bridge = FolderStoreIndexBridge(indexStore: store)
+        // Slice G.2 — FSEvents 派发的索引更新（add/remove/modify）触发 grid 重 query
+        let storeRef = smartFolderStore  // class 引用 capture 安全
+        bridge.onIndexChanged = {
+            Task { await storeRef.refreshSelected() }
+        }
+        indexBridge = bridge
+        await bridge.sync(with: folderStore.rootFolders)
 
         if smartFolderStore.selected == nil {
             await smartFolderStore.select(BuiltInSmartFolders.allRecent)
