@@ -167,7 +167,13 @@ struct SmartFolderGridView: View {
                 .foregroundStyle(.primary)
                 .padding(.horizontal, DS.Spacing.sm)
                 .padding(.vertical, DS.Spacing.xs)
-                .background(.regularMaterial, in: Capsule())
+                .background(.thickMaterial, in: Capsule())
+                // strokeBorder 0.5pt 给 chip 永远可见边界（Round 3 实测 light cell 上
+                // .regularMaterial 撞色边界融，靠 material 厚度补不来 — 系统 widget/menu
+                // hairline 同模式：macOS Calendar.app / Mail.app sidebar items）
+                .overlay(
+                    Capsule().strokeBorder(.primary.opacity(0.12), lineWidth: 0.5)
+                )
             Spacer()
         }
         .padding(.vertical, DS.Spacing.xs)
