@@ -26,10 +26,7 @@
 
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
 - [ ] (2026-05-06 / `ab1fe89` / bugfix · v1.0.1) **dark 模式贴 macOS 系统配色 + 失焦响应**（partial — 待 v1.0.1 重新审）：原 commit ab1fe89 删 4 处 hardcoded background 想让系统 sidebar material 接管，实测 sidebar 上半 row 区域有 vibrancy + 漏壁纸色，但 row 之下空白区是深黑色 windowBackground（条纹感）。codex:rescue 给的 NSVisualEffectView 桥方案落地后引发**关于窗口居中回归**（具体因果链未定），同时颜色仍不一致，已 revert 回 ab1fe89 状态。**期望视觉**：app 切到 dark → 侧边栏整片跟 Finder/Mail/Notes 一致（vibrancy + 漏出桌面壁纸色 + 失焦自动褪色） + 内容区中性灰；侧边栏选中 / 未选中行视觉一致（无条纹）。**当前 ab1fe89 状态可接受作 v1.0**（条纹但不影响核心功能），下次审计走 SwiftUI ZStack vs NavigationSplitView column 行为 + 验证 codex 方案为何引发居中回归
-- [ ] (2026-05-05 / `<pending>` / dist) **DMG Gatekeeper 实测**：把 `dist/Glance-1.0.0.dmg` 拷到一台干净 Mac（**不能是签名机器**，否则 Gatekeeper 自动信任本机签）；双击挂载 → 拖到 Applications → 双击启动；预期：**直接打开**，不弹「无法验证开发者」/「损坏」/「未知开发者」对话框；活动监视器显示 Glance 正常运行
-- [ ] (2026-05-05 / `<pending>` / dist · 不可逆) **GitHub 仓库改 public**：`gh repo edit sunhuaian2026/ISeeImageViewer --visibility public --accept-visibility-change-consequences`（或 GitHub 网页 Settings → Danger Zone）；改完确认能匿名访问 `https://github.com/sunhuaian2026/ISeeImageViewer`
-- [ ] (2026-05-05 / `<pending>` / dist · 不可逆) **GitHub Release v1.0.0**：tag `v1.0.0`，上传 `dist/Glance-1.0.0.dmg` + sidecar `Glance-1.0.0.dmg.sha256`，写 release notes（CC 起草）。命令模板：`gh release create v1.0.0 dist/Glance-1.0.0.dmg --title "Glance 1.0.0 · 一眼" --notes-file <release-notes.md>`
-- [ ] (2026-05-05 / `<pending>` / dist) **README 加下载入口**（依赖 GitHub Release 创建后回填 latest 链接）：项目 README 顶部加下载按钮（指 latest release）+ macOS 14+ 系统要求说明；首页带产品截图（grid / preview / QuickViewer / Inspector 各 1 张）
+- [ ] (2026-05-05 / `<pending>` / dist) **README 加下载入口**（依赖 v1.0.0 release 已创建，可立即回填 latest 链接）：项目 README 顶部加下载按钮（指 latest release）+ macOS 14+ 系统要求说明；首页带产品截图（grid / preview / QuickViewer / Inspector 各 1 张）
 - [ ] (2026-05-05 / `<pending>` / dist · 可选 v1.0.1) **GitHub 仓库改名 ISeeImageViewer → Glance**：与 V1 发布解耦，发完 v1.0.0 后再做。改名后 GitHub 自动留旧路径 redirect，不影响已发链接
 
 ---
@@ -131,3 +128,6 @@
 - [x] (2026-05-05 / `0c9f699`) **部署目标降级回归**：装 `~/sync/Glance.app` 跑 7 路径（启动 / 拖文件夹 / 单击进 preview + 方向键 / 双击进 QV 缩放拖拽 / 全屏 F 键 / 排序菜单 / 关于面板点击复制 + toast），macOS 部署目标 26.2 → 14.0 未破坏现有功能 ✓ 2026-05-08
 - [x] (2026-05-05 / `0c9f699`) **notarytool keychain profile 配置**（一次性，5/5 配过 + 5/7 ACL 丢后重存）：App-specific password 生成 → `xcrun notarytool store-credentials "glance-notary"` → `xcrun notarytool history` 验证无报错 ✓ 2026-05-07
 - [x] (2026-05-05 / `0c9f699`) **完整 release 流程跑通**：`make release` 真跑成功（archive + Developer ID 签 + create-dmg + notarize Accepted + stapler staple）；产物 `dist/Glance-1.0.0.dmg` 2.4 MB universal binary，公证 Submission ID `cb7db74c-afbb-4e12-98a5-912ca15eefff` Accepted ✓ 2026-05-07
+- [x] (2026-05-05 / `0c9f699`) **DMG Gatekeeper 干净 Mac 实测**：DMG 拷到非签名机 Mac → 双击挂载 → 拖到 Applications → 双击启动 → 直接打开，无 Gatekeeper 警告 ✓ 2026-05-08
+- [x] (2026-05-05 / `d2263d9`) **GitHub 仓库改 public**（不可逆）：`gh repo edit sunhuaian2026/ISeeImageViewer --visibility public --accept-visibility-change-consequences` 执行成功；`gh repo view` 返回 `visibility: PUBLIC, isPrivate: false`；匿名 HTTP 200 ✓ 2026-05-08
+- [x] (2026-05-05 / `0c9f699`) **GitHub Release v1.0.0 创建**（不可逆）：`gh release create v1.0.0 dist/Glance-1.0.0.dmg dist/Glance-1.0.0.dmg.sha256 --target 0c9f6993... --title "Glance 1.0.0 · 一眼" --notes-file docs/release-notes/v1.0.0.md` 执行成功；release URL https://github.com/sunhuaian2026/ISeeImageViewer/releases/tag/v1.0.0；DMG 匿名下载 HTTP 200 + content-length 2516359 ✓ 2026-05-08

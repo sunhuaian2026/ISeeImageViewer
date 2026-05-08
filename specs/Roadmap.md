@@ -6,14 +6,15 @@
 
 ---
 
-## 当前进度（2026-05-07）
+## 当前进度（2026-05-08）
 
-**v1.0 ready，待用户拍板 3 项不可逆操作发布**
+**v1.0.0 已正式公开发布 🎉**
 
 - 看图主功能全部稳定（grid / preview / QuickViewer / Inspector / Sort / KeyboardShortcuts / Prefetch / AppIcon / Rename / 全屏 F 键全局生效）
 - 工程化基建：`/go` 五步（含 post-commit sync 闭环）/ `verify.sh` 三段 oracle / `build/Glance.app` 自动 sync `~/sync/` / pre-push codex hook / build 版本号注入 + BuildInfo sidecar / 自定义关于面板含点击复制
 - 2026-05-07 session 收尾 6 个 .swift bug fix（焦点 ring / toolbar background / QV colorScheme env / Bug 4 grid highlight / Bug 4 扩展 QV 同步 / F 键全局 grid+preview）+ /go 流程 sync gap 沉淀 + Distribution v1.0 真公证 DMG 生成（commit `0c9f699` build `0c9f699.0507-2004` / SHA256 `47fff7c4...` / size 2.4 MB / universal binary 验证 / staple worked）
-- 下一步主线：v1.0 公开发布（待用户拍板 ① DMG 干净 Mac Gatekeeper 实测 ② GitHub 仓库 visibility public ③ gh release create — 三项均**不可逆**操作 CC 不擅自跑）
+- **2026-05-08 session ship 落地**：A 类 26 项实测全过 → PENDING 文档批量同步（commit `d2263d9`）→ B-1 DMG Gatekeeper 干净 Mac 实测过 → B-2 仓库 visibility 改 public（`gh repo edit ...`）→ B-3 GitHub Release v1.0.0 创建（tag `v1.0.0` → `0c9f699` / DMG + SHA256 sidecar 上传 / 匿名 HTTP 200 验证下载链路通畅）。Release URL: https://github.com/sunhuaian2026/ISeeImageViewer/releases/tag/v1.0.0
+- 下一步主线：v1.0.1 cleanup（README 加下载入口 + 截图 / dark 模式系统配色 partial 重新审 / release.sh `du -h` → 真 byte size / 仓库改名 ISeeImageViewer → Glance / 双 onTapGesture → Button + 单 action 互斥）+ 小红书引流推广
 - 远期 Refactor：Focus 架构父持有重构（详见待开发段，等下次 focus race bug 出现前必做）
 
 ---
@@ -211,13 +212,12 @@ xcrun notarytool store-credentials "glance-notary" \
 - `.gitignore` 加 `dist/`
 - create-dmg via `brew install create-dmg`
 - **2026-05-07 session 收口**：notarytool keychain profile 已重存 (5/5 配过但 5/7 ACL 丢失) / 部署目标降级 7 路径 smoke test 全过 / `make release` 真跑成功 (`504c102` 回填 release notes 元数据；公证 Submission ID `cb7db74c-afbb-4e12-98a5-912ca15eefff` Accepted / staple worked / universal binary 三处验证 x86_64+arm64) / `dist/Glance-1.0.0.dmg` 含本 session 6 fix + 真公证 + staple，可发布
+- **2026-05-08 session 公开发布落地**：DMG 干净 Mac Gatekeeper 实测通过 → 仓库 visibility private → public 切换（`gh repo edit ... --visibility public`，匿名 HTTP 200 验证）→ GitHub Release `v1.0.0` 创建（tag → `0c9f699` / DMG + SHA256 sidecar 上传 / `gh release view` 显示 `isDraft: false` / 匿名 CDN 下载 HTTP 200 + content-length 2516359 验证）。Release URL: https://github.com/sunhuaian2026/ISeeImageViewer/releases/tag/v1.0.0
 
-**待办（Pending 用户操作 — 全是不可逆）**
+**待办（Pending v1.0.1 cleanup + 推广）**
 
-- [ ] **DMG 干净 Mac Gatekeeper 实测**（推荐发出去前最后兜底）：把 `dist/Glance-1.0.0.dmg` 拷到一台**不是签名机**的 Mac → 双击挂载 → 拖 .app 到 Applications → 双击启动 → 期望直接打开不弹任何 Gatekeeper 警告
-- [ ] **GitHub 仓库 visibility 改 public**（不可逆）：`gh repo edit sunhuaian2026/ISeeImageViewer --visibility public --accept-visibility-change-consequences` 或 GitHub 网页 Settings → Danger Zone
-- [ ] **创建 v1.0.0 GitHub Release**（公开可见，不可逆）：`gh release create v1.0.0 dist/Glance-1.0.0.dmg --title "Glance 1.0.0 · 一眼" --notes-file docs/release-notes/v1.0.0.md`
 - [ ] 小红书引流到 Release 下载链接（市场推广，可任何时候做）
+- [ ] **README 加下载入口**（v1.0.0 已发，可立即回填 latest 链接）：项目 README 顶部加下载按钮（指 latest release）+ macOS 14+ 系统要求说明；首页带产品截图（grid / preview / QuickViewer / Inspector 各 1 张）
 - [ ] (可选 v1.0.1 cleanup) GitHub 仓库改名 ISeeImageViewer → Glance（GitHub 自动留旧路径 redirect）
 - [ ] (可选 v1.0.1 cleanup) `release.sh` L191 `du -h` 取的是 disk usage 而非文件大小，输出 misleading（本次 3.4M vs 实际 2.4 MB），改用 `stat -f %z` 或类似按 byte 格式化
 
