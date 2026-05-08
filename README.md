@@ -6,7 +6,29 @@
 
 **[⬇ 下载 v1.0.0](https://github.com/sunhuaian2026/ISeeImageViewer/releases/latest)** · 邮箱 `16414766@qq.com` · 小红书 `382336617`
 
-<!-- TODO: 在这里放 4 张产品截图：grid / preview / QuickViewer / Inspector -->
+### 缩略图网格
+
+![Grid mode showing thumbnail grid with sidebar tree](assets/screenshots/01-grid.png)
+
+侧边栏树形文件夹 · 缩略图大小可调（80~280pt）· 6 种排序方式
+
+### 内嵌预览（单击进入）
+
+![Inline preview mode](assets/screenshots/02-preview.png)
+
+文件名跟随 toolbar · 方向键 ←→ 切换零延迟（±2 张预加载）· ESC 退回 grid
+
+### QuickViewer 沉浸式（双击进入）
+
+![QuickViewer immersive full-window mode](assets/screenshots/03-quickviewer.png)
+
+全窗口深色沉浸 · 自适应 fit / 1:1 切换 · 滚轮缩放 / 拖动平移 · 底部 filmstrip 导航
+
+### EXIF Inspector（⌘I 切换）
+
+![EXIF Inspector showing metadata](assets/screenshots/04-inspector.png)
+
+文件名 / 尺寸 / 修改日期 / 大小 / 数据格式；含 EXIF 的图片额外显示相机型号 / 光圈 / 快门 / 焦距 / GPS
 
 ---
 

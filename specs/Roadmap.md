@@ -217,7 +217,7 @@ xcrun notarytool store-credentials "glance-notary" \
 **待办（Pending v1.0.1 cleanup + 推广）**
 
 - [ ] 小红书引流到 Release 下载链接（市场推广，可任何时候做）
-- [ ] **README 加下载入口**（v1.0.0 已发，可立即回填 latest 链接）：项目 README 顶部加下载按钮（指 latest release）+ macOS 14+ 系统要求说明；首页带产品截图（grid / preview / QuickViewer / Inspector 各 1 张）
+- [ ] (可选 v1.0.1 优化) Inspector 截图换一张含完整 EXIF 的图（手机原片含相机型号 / 光圈 / 快门 / 焦距 / GPS）— 当前 04-inspector.png 用 wallpaper_05.jpg 仅 5 个基础字段，未充分展示 Inspector 能力
 - [ ] (可选 v1.0.1 cleanup) GitHub 仓库改名 ISeeImageViewer → Glance（GitHub 自动留旧路径 redirect）
 - [ ] (可选 v1.0.1 cleanup) `release.sh` L191 `du -h` 取的是 disk usage 而非文件大小，输出 misleading（本次 3.4M vs 实际 2.4 MB），改用 `stat -f %z` 或类似按 byte 格式化
 

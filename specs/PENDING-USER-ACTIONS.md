@@ -26,7 +26,6 @@
 
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
 - [ ] (2026-05-06 / `ab1fe89` / bugfix · v1.0.1) **dark 模式贴 macOS 系统配色 + 失焦响应**（partial — 待 v1.0.1 重新审）：原 commit ab1fe89 删 4 处 hardcoded background 想让系统 sidebar material 接管，实测 sidebar 上半 row 区域有 vibrancy + 漏壁纸色，但 row 之下空白区是深黑色 windowBackground（条纹感）。codex:rescue 给的 NSVisualEffectView 桥方案落地后引发**关于窗口居中回归**（具体因果链未定），同时颜色仍不一致，已 revert 回 ab1fe89 状态。**期望视觉**：app 切到 dark → 侧边栏整片跟 Finder/Mail/Notes 一致（vibrancy + 漏出桌面壁纸色 + 失焦自动褪色） + 内容区中性灰；侧边栏选中 / 未选中行视觉一致（无条纹）。**当前 ab1fe89 状态可接受作 v1.0**（条纹但不影响核心功能），下次审计走 SwiftUI ZStack vs NavigationSplitView column 行为 + 验证 codex 方案为何引发居中回归
-- [ ] (2026-05-05 / `<pending>` / dist) **README 加下载入口**（依赖 v1.0.0 release 已创建，可立即回填 latest 链接）：项目 README 顶部加下载按钮（指 latest release）+ macOS 14+ 系统要求说明；首页带产品截图（grid / preview / QuickViewer / Inspector 各 1 张）
 - [ ] (2026-05-05 / `<pending>` / dist · 可选 v1.0.1) **GitHub 仓库改名 ISeeImageViewer → Glance**：与 V1 发布解耦，发完 v1.0.0 后再做。改名后 GitHub 自动留旧路径 redirect，不影响已发链接
 
 ---
@@ -131,3 +130,4 @@
 - [x] (2026-05-05 / `0c9f699`) **DMG Gatekeeper 干净 Mac 实测**：DMG 拷到非签名机 Mac → 双击挂载 → 拖到 Applications → 双击启动 → 直接打开，无 Gatekeeper 警告 ✓ 2026-05-08
 - [x] (2026-05-05 / `d2263d9`) **GitHub 仓库改 public**（不可逆）：`gh repo edit sunhuaian2026/ISeeImageViewer --visibility public --accept-visibility-change-consequences` 执行成功；`gh repo view` 返回 `visibility: PUBLIC, isPrivate: false`；匿名 HTTP 200 ✓ 2026-05-08
 - [x] (2026-05-05 / `0c9f699`) **GitHub Release v1.0.0 创建**（不可逆）：`gh release create v1.0.0 dist/Glance-1.0.0.dmg dist/Glance-1.0.0.dmg.sha256 --target 0c9f6993... --title "Glance 1.0.0 · 一眼" --notes-file docs/release-notes/v1.0.0.md` 执行成功；release URL https://github.com/sunhuaian2026/ISeeImageViewer/releases/tag/v1.0.0；DMG 匿名下载 HTTP 200 + content-length 2516359 ✓ 2026-05-08
+- [x] (2026-05-08 / `<pending>`) **README 加下载入口 + 4 张产品截图**：README 顶部下载链接已指 latest release（v1.0.0 已发可用）；assets/screenshots/ 加 4 张 1800x1316 深色 PNG（01-grid / 02-preview / 03-quickviewer / 04-inspector）；README hero 段下方插入 4 节带 caption 截图展示 ✓ 2026-05-08
