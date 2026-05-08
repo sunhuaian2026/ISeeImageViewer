@@ -70,6 +70,9 @@ final class FolderStoreIndexBridge: ObservableObject {
 
             try indexStore.deleteRoot(rootId: rootId)
             print("[IndexStore] removed root \(path) (id=\(rootId)) — FK CASCADE cleaned images + subfolder rows")
+            // Slice H — 删 root 后跑全 dedup pass（含 orphan cleanup 把孤儿 duplicate 升回
+            // canonical=1，否则它们 dedup_canonical=0 永不在 grid 显示）
+            triggerDedupFullPass()
         } catch {
             print("[IndexStore] unregister FAILED for \(path): \(error)")
         }
@@ -111,8 +114,33 @@ final class FolderStoreIndexBridge: ObservableObject {
 
             // Slice G.2 — 首次扫描完成后启动 FSEvents watcher 增量监听
             startWatcher(rootURL: rootURL, rootBookmark: bookmark, folderId: folderId)
+
+            // Slice H — 扫描完成后跑 dedup pass（cheap-first：仅 candidate group 算 SHA256）
+            triggerDedupFullPass()
         } catch {
             print("[IndexStore] registerAndScan FAILED for \(rootURL.path): \(error)")
+        }
+    }
+
+    // MARK: - Slice H 内容去重 trigger（detached 后台跑，完后回 MainActor 触发 UI 刷新）
+
+    private func triggerDedupFullPass() {
+        let store = indexStore
+        Task.detached(priority: .utility) { [weak self] in
+            DedupPass.runFullPass(store: store)
+            await MainActor.run { [weak self] in
+                self?.onIndexChanged?()
+            }
+        }
+    }
+
+    private func triggerDedupGroup(fileSize: Int64, format: String) {
+        let store = indexStore
+        Task.detached(priority: .utility) { [weak self] in
+            DedupPass.reEvaluateGroup(store: store, fileSize: fileSize, format: format)
+            await MainActor.run { [weak self] in
+                self?.onIndexChanged?()
+            }
         }
     }
 
@@ -178,6 +206,8 @@ final class FolderStoreIndexBridge: ObservableObject {
         )
         do {
             _ = try indexStore.insertImageIfAbsent(record)
+            // Slice H — 新图入索引 → 重新决议该 (file_size, format) group 的 canonical
+            triggerDedupGroup(fileSize: metadata.fileSize, format: metadata.format)
             return true
         } catch {
             print("[FSEvents] insertImageIfAbsent FAILED \(path): \(error)")
@@ -186,12 +216,18 @@ final class FolderStoreIndexBridge: ObservableObject {
     }
 
     /// Slice G.3 — FSEvents Removed (或 Renamed 后文件已不存在) 触发 IndexStore 删行。
+    /// Slice H — 删行前 fetch group key (file_size, format) 用于后续 reEvaluateGroup
+    /// （让该 group 重新决议 canonical，避免遗留 dangling 副本）。
     @discardableResult
     private func handleRemoved(path: String, rootURL: URL, folderId: Int64) -> Bool {
         let fileURL = URL(fileURLWithPath: path)
         let relPath = relativePath(of: fileURL, under: rootURL)
+        let groupKey = try? indexStore.fetchImageGroupKey(folderId: folderId, relativePath: relPath)
         do {
             try indexStore.deleteImage(folderId: folderId, relativePath: relPath)
+            if let key = groupKey {
+                triggerDedupGroup(fileSize: key.fileSize, format: key.format)
+            }
             return true
         } catch {
             print("[FSEvents] deleteImage FAILED \(path): \(error)")
@@ -201,6 +237,7 @@ final class FolderStoreIndexBridge: ObservableObject {
 
     /// Slice G.3 — FSEvents Modified（文件内容/属性变更，非 inode-only-mod）。
     /// 重新 read metadata → UPDATE existing row（行不存在则视作 created path 误派发，走 INSERT）。
+    /// Slice H — 内容已变 → reset SHA256 + canonical 到 NULL → trigger reEvaluateGroup。
     @discardableResult
     private func handleModified(path: String, rootURL: URL, folderId: Int64) -> Bool {
         let fileURL = URL(fileURLWithPath: path)
@@ -208,6 +245,10 @@ final class FolderStoreIndexBridge: ObservableObject {
         let relPath = relativePath(of: fileURL, under: rootURL)
         do {
             try indexStore.updateImageMetadata(folderId: folderId, relativePath: relPath, metadata: metadata)
+            if let id = try? indexStore.fetchImageIdByPath(folderId: folderId, relativePath: relPath) {
+                try? indexStore.resetSHA256AndCanonical(imageId: id)
+            }
+            triggerDedupGroup(fileSize: metadata.fileSize, format: metadata.format)
             return true
         } catch {
             print("[FSEvents] updateImageMetadata FAILED \(path): \(error)")

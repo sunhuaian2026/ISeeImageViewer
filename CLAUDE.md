@@ -87,7 +87,9 @@ ISeeImageViewer/                    ← 磁盘路径未改，repo 内部一切�
     │   ├── IndexDatabase.swift              ← sqlite3 C API 包装（open/close/exec/prepare/bind/step）+ PRAGMA foreign_keys=ON / journal_mode=WAL
     │   ├── IndexStoreSchema.swift           ← v1 forward-looking schema（M1+M2+M3 字段）+ migration（PRAGMA user_version）
     │   ├── IndexStore.swift                 ← 高层入口（DispatchQueue 串行）+ auto-migrate；DB 路径走 sandbox container Application Support
-    │   ├── IndexedImage.swift                ← images 表 record struct + 幂等 SELECT-first INSERT + Slice G.3 deleteImage / updateImageMetadata
+    │   ├── IndexedImage.swift                ← images 表 record struct + 幂等 SELECT-first INSERT + Slice G.3 deleteImage / updateImageMetadata + Slice H SHA256/canonical CRUD（setContentSHA256/setDedupCanonical/resetSHA256AndCanonical/promoteOrphanDuplicates/fetchCandidateGroups/fetchImagesInGroup/fetchDuplicates/fetchDuplicatesByFullPath）
+    │   ├── ContentHasher.swift              ← V2 Slice H 文件 SHA256 hex 计算（CryptoKit + Data .mappedIfSafe mmap）
+    │   ├── DedupPass.swift                  ← V2 Slice H cheap-first dedup 算法（runFullPass + reEvaluateGroup + orphan cleanup）；canonical = earliest birth_time + 最小 id tie-breaker
     │   ├── ManagedFolder.swift              ← folders 表 record struct + registerRoot 幂等 + Slice D hide CRUD（setRootHidden/upsertSubfolderHide/effectiveHidden）+ Slice G.1 deleteRoot（FK CASCADE）
     │   ├── CompiledSmartFolderQuery.swift   ← Builder → Engine 之间的 SQL injection-safe contract
     │   ├── ImageMetadataReader.swift        ← URL → birth_time / file_size / format / dimensions（ImageIO，不解码像素）

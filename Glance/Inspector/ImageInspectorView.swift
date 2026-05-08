@@ -7,7 +7,13 @@ import SwiftUI
 
 struct ImageInspectorView: View {
     let url: URL?
+    /// Slice H — closure 注入：query 跟 url 内容相同（同 SHA256）的其他 image path 列表。
+    /// 由 ContentView 提供，内部走 IndexStore.fetchDuplicatesByFullPath。
+    /// nil 时副本段不渲染（V1 单 folder 模式 / IndexStore 未就绪）。
+    var duplicatesProvider: ((URL) -> [(id: Int64, fullPath: String)])? = nil
+
     @StateObject private var viewModel = ImageInspectorViewModel()
+    @State private var duplicates: [(id: Int64, fullPath: String)] = []
 
     var body: some View {
         Group {
@@ -30,8 +36,14 @@ struct ImageInspectorView: View {
             }
         }
         .task(id: url) {
-            guard let url else { viewModel.cancel(); return }
+            guard let url else {
+                viewModel.cancel()
+                duplicates = []
+                return
+            }
             await viewModel.load(url: url)
+            // Slice H — 同步刷副本列表（IndexStore 内部 sync queue 阻塞但快速 SQL）
+            duplicates = duplicatesProvider?(url) ?? []
         }
         .onDisappear { viewModel.cancel() }
         // 边线绑定到 Inspector 视图本身，跟随 .move(.trailing)+.opacity transition
@@ -97,6 +109,31 @@ struct ImageInspectorView: View {
                     NSWorkspace.shared.activateFileViewerSelecting([url])
                 } label: {
                     Label("在 Finder 中显示", systemImage: "folder")
+                }
+            }
+
+            // Slice H：副本段。条件展示——有 duplicates 才显示（同 SHA256 其他 image rows）。
+            // 列出每条 fullPath（truncation .middle）+ "在 Finder 中显示"按钮。
+            if !duplicates.isEmpty {
+                Section("副本（\(duplicates.count) 个）") {
+                    ForEach(duplicates, id: \.id) { dup in
+                        HStack {
+                            Text(dup.fullPath)
+                                .lineLimit(1)
+                                .truncationMode(.middle)
+                                .textSelection(.enabled)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            Button {
+                                let dupURL = URL(fileURLWithPath: dup.fullPath)
+                                NSWorkspace.shared.activateFileViewerSelecting([dupURL])
+                            } label: {
+                                Image(systemName: "folder")
+                            }
+                            .buttonStyle(.borderless)
+                            .help("在 Finder 中显示")
+                        }
+                    }
                 }
             }
         }

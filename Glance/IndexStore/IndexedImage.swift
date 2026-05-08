@@ -16,6 +16,20 @@ struct IndexedImage: Identifiable, Equatable {
     let folderId: Int64
     let dimensionsWidth: Int?
     let dimensionsHeight: Int?
+    /// Slice H — 内容 SHA256 hex（小写）。NULL 表示尚未计算（candidate group 之外的图永远 NULL）；
+    /// 计算后写入 + 用于 dedup_canonical 决议。
+    let contentSha256: String?
+}
+
+/// Slice H — dedup 算法用的轻量 image record（只取算法需要的列，避免每张全 row fetch）。
+struct DedupImageRow {
+    let id: Int64
+    let birthTime: Date
+    let fileSize: Int64
+    let format: String
+    let relativePath: String
+    let urlBookmark: Data
+    let contentSha256: String?
 }
 
 struct ImageInsertRecord {
@@ -144,7 +158,7 @@ nonisolated extension IndexStore {
     /// 仅含已知 column name 和 placeholder（?），用户输入永远走 parameters 绑定。
     func fetch(_ compiled: CompiledSmartFolderQuery, limit: Int? = nil) throws -> [IndexedImage] {
         try sync { db in
-            var sql = "SELECT id, url_bookmark, birth_time, file_size, format, filename, relative_path, folder_id, dimensions_width, dimensions_height FROM images"
+            var sql = "SELECT id, url_bookmark, birth_time, file_size, format, filename, relative_path, folder_id, dimensions_width, dimensions_height, content_sha256 FROM images"
             if !compiled.whereClause.isEmpty {
                 sql += " WHERE \(compiled.whereClause)"
             }
@@ -195,12 +209,205 @@ nonisolated extension IndexStore {
                 let folderId = sqlite3_column_int64(stmt, 7)
                 let w = sqlite3_column_type(stmt, 8) == SQLITE_NULL ? nil : Optional(Int(sqlite3_column_int(stmt, 8)))
                 let h = sqlite3_column_type(stmt, 9) == SQLITE_NULL ? nil : Optional(Int(sqlite3_column_int(stmt, 9)))
+                let sha: String? = sqlite3_column_type(stmt, 10) == SQLITE_NULL
+                    ? nil
+                    : String(cString: sqlite3_column_text(stmt, 10))
 
                 results.append(IndexedImage(
                     id: id, urlBookmark: bookmark, birthTime: birth, fileSize: size,
                     format: format, filename: filename, relativePath: relPath,
-                    folderId: folderId, dimensionsWidth: w, dimensionsHeight: h
+                    folderId: folderId, dimensionsWidth: w, dimensionsHeight: h,
+                    contentSha256: sha
                 ))
+            }
+            return results
+        }
+    }
+
+    // MARK: - Slice H 内容去重 (SHA256 + dedup_canonical)
+
+    /// 写入 SHA256 hex（小写）；caller 已 ContentHasher.sha256 计算完。
+    func setContentSHA256(imageId: Int64, sha256: String) throws {
+        try sync { db in
+            let stmt = try db.prepare("UPDATE images SET content_sha256 = ? WHERE id = ?;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_text(stmt, 1, (sha256 as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 1, db: db)
+            try checkBind(sqlite3_bind_int64(stmt, 2, imageId), index: 2, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "setContentSHA256: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
+    /// 写入 dedup_canonical（true=canonical=1, false=duplicate=0）。
+    func setDedupCanonical(imageId: Int64, canonical: Bool) throws {
+        try sync { db in
+            let stmt = try db.prepare("UPDATE images SET dedup_canonical = ? WHERE id = ?;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int(stmt, 1, canonical ? 1 : 0), index: 1, db: db)
+            try checkBind(sqlite3_bind_int64(stmt, 2, imageId), index: 2, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "setDedupCanonical: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
+    /// FSEvents Modified 触发：reset SHA256 + dedup_canonical 到 NULL，让 DedupPass 重算。
+    func resetSHA256AndCanonical(imageId: Int64) throws {
+        try sync { db in
+            let stmt = try db.prepare("UPDATE images SET content_sha256 = NULL, dedup_canonical = NULL WHERE id = ?;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int64(stmt, 1, imageId), index: 1, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "resetSHA256AndCanonical: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
+    /// cheap-first 第一步：找所有 (file_size, format) 相撞的候选 group。
+    /// 跨所有 root（多 managed root 之间互相去重，spec 要求）。
+    func fetchCandidateGroups() throws -> [(fileSize: Int64, format: String)] {
+        try sync { db in
+            let stmt = try db.prepare("""
+                SELECT file_size, format FROM images
+                GROUP BY file_size, format
+                HAVING COUNT(*) > 1;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            var results: [(Int64, String)] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                results.append((sqlite3_column_int64(stmt, 0), String(cString: sqlite3_column_text(stmt, 1))))
+            }
+            return results
+        }
+    }
+
+    /// 取一个 candidate group 的所有 image rows（带必要字段计算 SHA256 + 决议 canonical）。
+    func fetchImagesInGroup(fileSize: Int64, format: String) throws -> [DedupImageRow] {
+        try sync { db in
+            let stmt = try db.prepare("""
+                SELECT id, birth_time, file_size, format, relative_path, url_bookmark, content_sha256
+                FROM images
+                WHERE file_size = ? AND format = ?;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int64(stmt, 1, fileSize), index: 1, db: db)
+            try checkBind(sqlite3_bind_text(stmt, 2, (format as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 2, db: db)
+
+            var results: [DedupImageRow] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let id = sqlite3_column_int64(stmt, 0)
+                let birth = Date(timeIntervalSince1970: sqlite3_column_double(stmt, 1))
+                let size = sqlite3_column_int64(stmt, 2)
+                let fmt = String(cString: sqlite3_column_text(stmt, 3))
+                let relPath = String(cString: sqlite3_column_text(stmt, 4))
+                let blobLen = sqlite3_column_bytes(stmt, 5)
+                let blobPtr = sqlite3_column_blob(stmt, 5)
+                let bookmark = blobPtr.map { Data(bytes: $0, count: Int(blobLen)) } ?? Data()
+                let sha: String? = sqlite3_column_type(stmt, 6) == SQLITE_NULL
+                    ? nil
+                    : String(cString: sqlite3_column_text(stmt, 6))
+                results.append(DedupImageRow(
+                    id: id, birthTime: birth, fileSize: size, format: fmt,
+                    relativePath: relPath, urlBookmark: bookmark, contentSha256: sha
+                ))
+            }
+            return results
+        }
+    }
+
+    /// 增量 handleRemoved 用：删行前 fetch (fileSize, format)，删完后 reEvaluateGroup 该 group。
+    func fetchImageGroupKey(folderId: Int64, relativePath: String) throws -> (fileSize: Int64, format: String)? {
+        try sync { db in
+            let stmt = try db.prepare("SELECT file_size, format FROM images WHERE folder_id = ? AND relative_path = ? LIMIT 1;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int64(stmt, 1, folderId), index: 1, db: db)
+            try checkBind(sqlite3_bind_text(stmt, 2, (relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 2, db: db)
+            if sqlite3_step(stmt) == SQLITE_ROW {
+                return (sqlite3_column_int64(stmt, 0), String(cString: sqlite3_column_text(stmt, 1)))
+            }
+            return nil
+        }
+    }
+
+    /// handleModified 后用：复合键 → image id；后续 resetSHA256AndCanonical 用 id 走 PK。
+    func fetchImageIdByPath(folderId: Int64, relativePath: String) throws -> Int64? {
+        try sync { db in
+            let stmt = try db.prepare("SELECT id FROM images WHERE folder_id = ? AND relative_path = ? LIMIT 1;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int64(stmt, 1, folderId), index: 1, db: db)
+            try checkBind(sqlite3_bind_text(stmt, 2, (relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 2, db: db)
+            if sqlite3_step(stmt) == SQLITE_ROW {
+                return sqlite3_column_int64(stmt, 0)
+            }
+            return nil
+        }
+    }
+
+    /// 删 root / handleRemoved 之后的 orphan cleanup：还标 canonical=0 的 row 但其 SHA256
+    /// 已没其他 row 共享（即同 SHA256 row 已被删了）→ promote 回 canonical=1。
+    /// 防止"被删 canonical 留下的孤儿 duplicate 在 grid 永远不显示"。
+    func promoteOrphanDuplicates() throws {
+        try sync { db in
+            let stmt = try db.prepare("""
+                UPDATE images SET dedup_canonical = 1
+                WHERE dedup_canonical = 0
+                  AND content_sha256 IS NOT NULL
+                  AND NOT EXISTS (
+                      SELECT 1 FROM images dup
+                      WHERE dup.content_sha256 = images.content_sha256
+                        AND dup.id != images.id
+                  );
+            """)
+            defer { sqlite3_finalize(stmt) }
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "promoteOrphanDuplicates: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
+    /// Inspector 副本段用 — 接收 image 的 absolute fullPath，自动反查 (id, sha256) 后调
+    /// fetchDuplicates 查同 SHA256 其他 row。fullPath 没匹配 row 或图未 hash → 返空 []。
+    func fetchDuplicatesByFullPath(_ fullPath: String) throws -> [(id: Int64, fullPath: String)] {
+        let selfData: (id: Int64, sha: String?)? = try sync { db in
+            let stmt = try db.prepare("""
+                SELECT i.id, i.content_sha256 FROM images i
+                JOIN folders f ON i.folder_id = f.id
+                WHERE f.root_path || '/' || i.relative_path = ? LIMIT 1;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_text(stmt, 1, (fullPath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 1, db: db)
+            if sqlite3_step(stmt) == SQLITE_ROW {
+                let id = sqlite3_column_int64(stmt, 0)
+                let sha: String? = sqlite3_column_type(stmt, 1) == SQLITE_NULL
+                    ? nil
+                    : String(cString: sqlite3_column_text(stmt, 1))
+                return (id, sha)
+            }
+            return nil
+        }
+        guard let row = selfData, let sha = row.sha else { return [] }
+        return try fetchDuplicates(imageId: row.id, sha256: sha)
+    }
+
+    /// Inspector 副本段用：找跟某 image 同 SHA256 的其他 row，返回 (id, fullPath)。
+    /// fullPath 通过 JOIN folders 拼 root_path + relative_path 得到。
+    func fetchDuplicates(imageId: Int64, sha256: String) throws -> [(id: Int64, fullPath: String)] {
+        try sync { db in
+            let stmt = try db.prepare("""
+                SELECT i.id, f.root_path || '/' || i.relative_path AS full_path
+                FROM images i
+                JOIN folders f ON i.folder_id = f.id
+                WHERE i.content_sha256 = ? AND i.id != ?
+                ORDER BY i.birth_time ASC;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_text(stmt, 1, (sha256 as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 1, db: db)
+            try checkBind(sqlite3_bind_int64(stmt, 2, imageId), index: 2, db: db)
+
+            var results: [(Int64, String)] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                results.append((sqlite3_column_int64(stmt, 0), String(cString: sqlite3_column_text(stmt, 1))))
             }
             return results
         }

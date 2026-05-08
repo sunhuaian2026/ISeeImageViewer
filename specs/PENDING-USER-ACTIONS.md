@@ -156,6 +156,17 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice G.3) **改名 = delete + insert**：rename 某图（same folder，新文件名）→ 5s 内 grid 老 cell 消失，新 filename cell 出现（按新 birth 时间归段；Slice H 之前不会自动 dedup link）
 - [ ] (2026-05-09 / `<pending>` / Slice G.3) **subfolder 内变化也监听**：在 managed root 的子目录里 cp 图 / rm 图 → 5s 内 grid 同步（FSEvents WatchRoot 默认监听 subfolders）
 
+### Slice H: 内容去重 SHA256 + cheap-first 粗筛
+
+- [ ] (2026-05-09 / `<pending>` / Slice H.1) **dedup canonical 跨 root**：在 root1 + root2 两个 managed folder 各 cp 一张相同图（确保 same file_size + same format） → 等扫描 + dedup pass 完成 → 智能文件夹 grid 应**只显示 1 张**（earliest birth_time 那张），不应两张都显示
+- [ ] (2026-05-09 / `<pending>` / Slice H.1) **dedup pass 后台不卡 UI**：往 managed folder 拖 1k+ 张图（含一些已知 dup） → grid 在扫描期间能正常滚动 / 切换 SF / 选图，不应 spinner 卡住
+- [ ] (2026-05-09 / `<pending>` / Slice H.1) **FSEvents 增量去重**：grid 已显示某图 → cp 一份到第二个 root（同 file_size+format）→ 5s 内 grid 不应出现"两张同图"（dedup pass on FSEvents 应识别副本）
+- [ ] (2026-05-09 / `<pending>` / Slice H.1) **modify 后 SHA256 重算**：替换某 dup 文件内容（同 path 不同内容） → 5s 内 grid 该图独立显示（不再被视为副本）；Inspector 副本段空
+- [ ] (2026-05-09 / `<pending>` / Slice H.1) **删 canonical 后 promote**：3 张 dup 图 A/B/C，A 是 canonical → rm A → 剩下 B/C 中 earliest 自动 promote canonical → grid 仍显示 1 张（B 或 C），不应 grid 空
+- [ ] (2026-05-09 / `<pending>` / Slice H.2) **Inspector 副本段渲染**：选 canonical 图打开 Inspector → 滚动到底部应有"副本（N 个）"Section，列出其他 path（truncation .middle 中间省略）+ 每条行末有 folder icon 按钮可点 → 在 Finder 中跳转
+- [ ] (2026-05-09 / `<pending>` / Slice H.2) **副本段互显**：选 canonical 看到 N-1 个副本；切到任一副本看 Inspector → 应也看到 N-1 个 path（含 canonical + 其他副本）
+- [ ] (2026-05-09 / `<pending>` / Slice H.2) **无副本时段不显示**：选普通图（无 dup）打开 Inspector → 应**没有**"副本"Section（不渲染空段）
+
 ### Slice B-α 延后项（polish，不阻塞 ship）
 
 - [ ] (2026-05-09 / Deferred / Slice B-α polish) **chip 深浅色模式下对比强化**：用户要求 chip 在 dark/light 各模式下跟 cell 的视觉对比再"跳"一些。当前状态：`.thickMaterial` + `Capsule().strokeBorder(.primary.opacity(DS.SectionHeader.chipBorderOpacity=0.12), lineWidth: DS.SectionHeader.chipBorderWidth=0.5)`。**待对齐**（重启时问用户）：(1) 哪个组合对比最弱？dark mode + dark cell / dark + light cell / light + light cell / light + dark cell（建议截图对比）；(2) 期望"强烈"方向：A stroke 加粗 + opacity 升（0.5pt×0.12 → 1pt×0.30）/ B `.ultraThickMaterial` + 微 shadow / C 反色 fill（dark mode chip 用 light fill / light mode chip 用 dark fill，告别 material 透感，macOS Photos.app / Files.app 模式）/ D material + accentColor tint（DS.Color.glowPrimary 弱化版）。**修法 surface 预期**：仅 `Glance/FolderBrowser/SmartFolderGridView.swift sectionHeader` + `Glance/DesignSystem.swift DS.SectionHeader` 段；不动 LazyVGrid pinnedViews、moveHighlight、locate、其他交互逻辑

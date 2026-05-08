@@ -2095,7 +2095,7 @@ git commit --allow-empty -m "Slice A.18: 整体串联实测通过 (happy path + 
 - [x] **Slice C**（merged into B）
 - [x] **Slice D**（hide toggle + Inspector source path，2026-05-09 ship V2.0-beta3）：稀疏 explicit 模型 + walk SQL + sidebar contextMenu + "在 Finder 中显示"
 - [x] **Slice G**（FSEvents 增量监听 + 删 root 清理，2026-05-09 ship V2.0-beta4）：FSEventsWatcher Swift wrapper + 每 root 一 stream + ItemCreated/Removed/Modified/Renamed 全 handle + FK CASCADE 删 root 清理
-- [ ] Slice H（内容去重 SHA256 + cheap-first）
+- [x] **Slice H**（内容去重 SHA256 + cheap-first，2026-05-09 ship V2.0-beta5）：ContentHasher CryptoKit + DedupPass cheap-first 算法 + Inspector 副本段 + orphan promote 兜底
 - [ ] Slice I（首次索引进度 UI）
 ```
 
@@ -2263,7 +2263,7 @@ git push
 **完成 commit**：G.1+G.2+G.3+G.4 单 commit ship（本 commit）
 **Ship**: V2.0-beta4 ✓
 
-### Slice H: 内容去重 SHA256 + cheap-first（2 天）
+### Slice H: 内容去重 SHA256 + cheap-first（2 天）✅ 2026-05-09 ship
 
 **Goal**: 索引时按 D3 cheap-first 算法判定 dedup_canonical；smart folder 结果只显示 canonical（其他副本在 Inspector 副本段列出）。
 

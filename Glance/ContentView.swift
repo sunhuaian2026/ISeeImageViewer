@@ -77,7 +77,13 @@ struct ContentView: View {
                 mainContent
                 if showInspector {
                     // V1 已删独立 Divider（commit 086ade2 改用 Inspector 自带 leading overlay）
-                    ImageInspectorView(url: inspectorURL)
+                    ImageInspectorView(
+                        url: inspectorURL,
+                        duplicatesProvider: { url in
+                            guard let store = indexStoreHolder.store else { return [] }
+                            return (try? store.fetchDuplicatesByFullPath(url.path)) ?? []
+                        }
+                    )
                         .frame(width: DS.Inspector.width)
                         .transition(.move(edge: .trailing).combined(with: .opacity))
                 }
