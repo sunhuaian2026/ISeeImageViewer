@@ -123,7 +123,7 @@ struct ContentView: View {
                         folderStore.selectedImageIndex = newIdx
                     }
                 )
-                .transition(.opacity)
+                .transition(.asymmetric(insertion: .identity, removal: .opacity))
             }
         }
         .animation(DS.Anim.normal, value: quickViewerIndex)
