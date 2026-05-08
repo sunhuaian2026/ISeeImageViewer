@@ -117,11 +117,11 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### Slice B-α: 时间分段 sticky header（5 段固定）
 
-- [ ] (2026-05-08 / `<pending>` / Slice B-α) **5 段标题渲染**：选中"全部最近" → grid 顶部按 birth_time 倒序依次出现段标题（今天 / 昨天 / 本周 / 本月 / 更早），空段不显示；段名文字 `.headline`、计数 `.caption · N 张` 灰色
+- [ ] (2026-05-08 / `<pending>` / Slice B-α) **5 段标题渲染（视觉已轻量化）**：选中"全部最近" → grid 顶部按 birth_time 倒序依次出现段标题（今天 / 昨天 / 本周 / 本月 / 更早），空段不显示；段名 `.subheadline.weight(.semibold)`、计数 `.caption · N 张` 灰色；header 背景为 `.regularMaterial`（半透明毛玻璃，**不应再呈现 dark mode 不透明黑横条感**）
 - [ ] (2026-05-08 / `<pending>` / Slice B-α) **sticky 行为**：滚动 grid 时当前段标题固定吸顶，下一段进入视口时无缝替换；不应出现"两段标题同时悬浮"或"标题瞬移"
 - [ ] (2026-05-08 / `<pending>` / Slice B-α) **跨午夜归属**：手动改系统时间至 0:01（系统设置 → 通用 → 日期与时间，关闭自动）→ 重启 Glance → 一张昨天 23:59 拍的图应归"昨天"段；改回今日中午时间该图归"今天"段
-- [ ] (2026-05-08 / `<pending>` / Slice B-α) **键盘导航跨段**：方向键 ↑↓←→ 在段间穿越仍能 highlight 跨过去（按 colCount 步长平铺，段标题视觉占一行不影响算法）；Space 进 QV / Esc 退仍工作
-- [ ] (2026-05-08 / `<pending>` / Slice B-α) **header 不挡底层热区**：sticky 标题悬浮时下方 cell 应被遮住而不是"看着被挡但仍可点"——若挡住的 cell 单击可触发，说明 header 背景未盖住或 hit-testing 漏了；应用 DS.Color.gridBackground 的不透明背景
+- [ ] (2026-05-08 / `<pending>` / Slice B-α follow-up) **键盘导航跨段（算法已重写）**：←→ 走 flat queryResult ±1（跨段自然连续）；↑↓ 段内同 col 上下移动；段尾按 ↓ 跳下一段第一行同 col（下一段不足时 clamp 到该行末 cell）；段首按 ↑ 跳上一段最后一行同 col（同样 clamp）；第一段第一行按 ↑ / 末段末行按 ↓ 原地；Space 进 QV / Esc 退仍工作
+- [ ] (2026-05-08 / `<pending>` / Slice B-α follow-up) **header hit-test 修法验证**：sticky 标题悬浮下方 cell 时点击 header 区域**不应**触发 cell 单击进 preview；现已加 `.contentShape(Rectangle()).onTapGesture {}` 显式吃 tap，验证修法生效
 - [ ] (2026-05-08 / `<pending>` / Slice B-α) **macOS 14 LazyVGrid pinnedViews 兼容性**：在最低部署版（macOS 14.0 Sonoma）上 sticky 行为表现一致——若标题抖动 / 重叠 / scroll 抖滚，记录现象后回退方案改自定义 ScrollView offset 监听（codex 跟我事先约定的降级路径）
 
 ---

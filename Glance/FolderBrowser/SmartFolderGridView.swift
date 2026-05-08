@@ -10,8 +10,12 @@
 //  relative path（D5）。
 //
 //  Slice B-α：时间分段 sticky header（D4 5 段：今天/昨天/本周/本月/更早），
-//  LazyVGrid pinnedViews [.sectionHeaders] 实现；空段跳过；
-//  键盘导航算法保留 colCount-based flat queryResult（视觉分组不影响 ↑↓）。
+//  LazyVGrid pinnedViews [.sectionHeaders] 实现；空段跳过。
+//  键盘导航：←→ 走 flat queryResult ±1（跨段自然连续）；
+//          ↑↓ 走 (sectionIdx, rowInSection, col) 模型，跨段跳邻段对应 col
+//          （col 超过目标行末则 clamp 到末 cell）。
+//  sections 在 body 顶部一次算，render + nav 共用同一快照（避免跨午夜
+//  render/nav 双源不一致 — codex review Q5.1）。
 //
 
 import SwiftUI
@@ -42,6 +46,8 @@ struct SmartFolderGridView: View {
             // colCount 用 grid 实际可用宽度算（geo.size.width 反映 mainContent 区，
             // 不含 sidebar / inspector），上下方向键步长才与 LazyVGrid 实际列数一致
             let colCount = computeColumnCount(width: geo.size.width)
+            // sections 一次算，render + ↑↓ nav 共用同一快照（codex Q5.1）
+            let sections = groupedByTimeBucket(smartFolderStore.queryResult, now: Date())
 
             ScrollViewReader { scrollProxy in
                 ScrollView {
@@ -53,7 +59,7 @@ struct SmartFolderGridView: View {
                             spacing: DS.Thumbnail.spacing,
                             pinnedViews: [.sectionHeaders]
                         ) {
-                            ForEach(groupedByTimeBucket(smartFolderStore.queryResult, now: Date())) { section in
+                            ForEach(sections) { section in
                                 Section {
                                     ForEach(section.images) { image in
                                         VStack(spacing: DS.Spacing.xs) {
@@ -136,31 +142,35 @@ struct SmartFolderGridView: View {
                     appState.toggleFullScreen()
                     return .handled
                 }
-                // 方向键导航
-                .onKeyPress(.leftArrow)  { moveHighlight(by: -1,        colCount: colCount, proxy: scrollProxy); return .handled }
-                .onKeyPress(.rightArrow) { moveHighlight(by: +1,        colCount: colCount, proxy: scrollProxy); return .handled }
-                .onKeyPress(.upArrow)    { moveHighlight(by: -colCount, colCount: colCount, proxy: scrollProxy); return .handled }
-                .onKeyPress(.downArrow)  { moveHighlight(by: +colCount, colCount: colCount, proxy: scrollProxy); return .handled }
+                // 方向键导航：←→ flat ±1，↑↓ (sectionIdx, row, col) 模型
+                .onKeyPress(.leftArrow)  { moveHighlight(.left,  sections: sections, colCount: colCount, proxy: scrollProxy); return .handled }
+                .onKeyPress(.rightArrow) { moveHighlight(.right, sections: sections, colCount: colCount, proxy: scrollProxy); return .handled }
+                .onKeyPress(.upArrow)    { moveHighlight(.up,    sections: sections, colCount: colCount, proxy: scrollProxy); return .handled }
+                .onKeyPress(.downArrow)  { moveHighlight(.down,  sections: sections, colCount: colCount, proxy: scrollProxy); return .handled }
             }
         }
     }
 
-    /// 时间分段 sticky header。背景用 DS.Color.gridBackground 不透明，pinned 时遮住下方滚动内容。
+    /// 时间分段 sticky header。`.regularMaterial` 半透明毛玻璃 — pinned 时仍能挡住下方
+    /// 滚动内容轮廓，但视觉比 DS.Color.gridBackground 不透明黑轻得多（codex Q3 / Bug 1）。
+    /// `.contentShape + .onTapGesture {}` 显式吃 tap，避免 sticky 时穿透到下方 cell（Bug 3）。
     @ViewBuilder
     private func sectionHeader(_ section: TimeBucketSection) -> some View {
         HStack(spacing: DS.Spacing.xs) {
             Text(section.bucket.displayName)
-                .font(.headline)
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
             Text("· \(section.images.count) 张")
                 .font(.caption)
                 .foregroundStyle(.secondary)
             Spacer()
         }
-        .padding(.vertical, DS.Spacing.xs)
+        .padding(.vertical, 4)
         .padding(.horizontal, DS.Spacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(DS.Color.gridBackground)
+        .background(.regularMaterial)
+        .contentShape(Rectangle())
+        .onTapGesture {}
     }
 
     @ViewBuilder
@@ -185,17 +195,99 @@ struct SmartFolderGridView: View {
 
     // MARK: - Helpers
 
-    private func moveHighlight(by delta: Int, colCount: Int, proxy: ScrollViewProxy) {
+    private enum MoveDirection { case left, right, up, down }
+
+    /// 键盘方向导航。←→ 走 flat queryResult ±1（A 方案，跨段自然连续，行为继承 V1）；
+    /// ↑↓ 走 (sectionIdx, rowInSection, col) 模型，跨段时跳邻段对应 col，col 超过目标行
+    /// 末则 clamp 到末 cell（codex Q1）。nil/stale highlightedID：down→第一段第一项 /
+    /// up→末段末项 / right→第一项 / left→第一项（mirror V1 nil 行为）。
+    private func moveHighlight(
+        _ direction: MoveDirection,
+        sections: [TimeBucketSection],
+        colCount: Int,
+        proxy: ScrollViewProxy
+    ) {
         let total = smartFolderStore.queryResult.count
-        guard total > 0 else { return }
-        let current = smartFolderStore.queryResult.firstIndex(where: { $0.id == highlightedID })
-            ?? (delta > 0 ? -1 : 0)
-        let next = max(0, min(total - 1, current + delta))
-        let nextImage = smartFolderStore.queryResult[next]
-        highlightedID = nextImage.id
-        withAnimation(DS.Anim.fast) {
-            proxy.scrollTo(nextImage.id, anchor: .center)
+        guard total > 0, !sections.isEmpty, colCount > 0 else { return }
+
+        let nextID: Int64?
+
+        switch direction {
+        case .left, .right:
+            // ←→ flat queryResult ±1，跨段自然连续
+            let delta = direction == .left ? -1 : +1
+            let current = smartFolderStore.queryResult.firstIndex(where: { $0.id == highlightedID })
+                ?? (delta > 0 ? -1 : 0)
+            let next = max(0, min(total - 1, current + delta))
+            nextID = smartFolderStore.queryResult[next].id
+
+        case .up, .down:
+            guard let location = locate(highlightedID, in: sections) else {
+                // nil/stale highlightedID：down→第一段第一项 / up→末段末项
+                if direction == .down {
+                    nextID = sections.first?.images.first?.id
+                } else {
+                    nextID = sections.last?.images.last?.id
+                }
+                break
+            }
+            let (sectionIdx, indexInSection) = location
+            let curSection = sections[sectionIdx]
+            let row = indexInSection / colCount
+            let col = indexInSection % colCount
+            let curRowCount = (curSection.images.count + colCount - 1) / colCount  // ceil
+
+            if direction == .up {
+                if row > 0 {
+                    // 段内上移（同段同 col 上一行；段内每行均满，无需 clamp）
+                    nextID = curSection.images[(row - 1) * colCount + col].id
+                } else if sectionIdx > 0 {
+                    // 跨上一段最后一行 + 同 col（clamp 到该行末 cell）
+                    let prev = sections[sectionIdx - 1]
+                    let prevRowCount = (prev.images.count + colCount - 1) / colCount
+                    let lastRowStart = (prevRowCount - 1) * colCount
+                    let lastRowMaxCol = prev.images.count - 1 - lastRowStart
+                    let targetCol = min(col, lastRowMaxCol)
+                    nextID = prev.images[lastRowStart + targetCol].id
+                } else {
+                    // 第一段第一行：原地
+                    return
+                }
+            } else { // .down
+                if row < curRowCount - 1 {
+                    // 段内下移（最后一行可能不满，clamp 到该行末 cell）
+                    let targetRowStart = (row + 1) * colCount
+                    let targetRowMaxCol = curSection.images.count - 1 - targetRowStart
+                    let targetCol = min(col, targetRowMaxCol)
+                    nextID = curSection.images[targetRowStart + targetCol].id
+                } else if sectionIdx < sections.count - 1 {
+                    // 跨下一段第一行 + 同 col（clamp，下一段可能不足一行）
+                    let nextSection = sections[sectionIdx + 1]
+                    let targetCol = min(col, nextSection.images.count - 1)
+                    nextID = nextSection.images[targetCol].id
+                } else {
+                    // 末段末行：原地
+                    return
+                }
+            }
         }
+
+        guard let id = nextID else { return }
+        highlightedID = id
+        withAnimation(DS.Anim.fast) {
+            proxy.scrollTo(id, anchor: .center)
+        }
+    }
+
+    /// 在 sections 数组里定位某 image id 的 (sectionIdx, indexInSection)。
+    private func locate(_ id: Int64?, in sections: [TimeBucketSection]) -> (Int, Int)? {
+        guard let id else { return nil }
+        for (sIdx, section) in sections.enumerated() {
+            if let imgIdx = section.images.firstIndex(where: { $0.id == id }) {
+                return (sIdx, imgIdx)
+            }
+        }
+        return nil
     }
 
     /// V2 grid 列定义：mirror V1 ImageGridView.gridColumns，min = thumbSize / max = thumbSize+20，
