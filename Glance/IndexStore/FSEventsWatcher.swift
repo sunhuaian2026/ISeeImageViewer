@@ -18,21 +18,12 @@
 import Foundation
 import CoreServices
 
-struct FSEvent {
-    let path: String
-    let flags: FSEventStreamEventFlags
-
-    var isFile: Bool       { flags & UInt32(kFSEventStreamEventFlagItemIsFile) != 0 }
-    var isCreated: Bool    { flags & UInt32(kFSEventStreamEventFlagItemCreated) != 0 }
-    var isRemoved: Bool    { flags & UInt32(kFSEventStreamEventFlagItemRemoved) != 0 }
-    var isRenamed: Bool    { flags & UInt32(kFSEventStreamEventFlagItemRenamed) != 0 }
-    var isModified: Bool   { flags & UInt32(kFSEventStreamEventFlagItemModified) != 0 }
-    var isInodeMetaMod: Bool { flags & UInt32(kFSEventStreamEventFlagItemInodeMetaMod) != 0 }
-    /// root 被改名/移动 — 当前 watcher 失效，caller 应 stop + 重启 watch
-    var isRootChanged: Bool { flags & UInt32(kFSEventStreamEventFlagRootChanged) != 0 }
-}
-
 final class FSEventsWatcher {
+
+    /// FSEvents events batch latency（events 到达后 N 秒派发 callback）。1.0s 是 Apple 推荐
+    /// 的折中：events 批处理减少回调频率 + 用户可感知的更新延迟 (≤ ~2s 总响应：1s batch
+    /// + ~1s SmartFolderStore 重 query + UI render，符合 spec G "5s 内"目标)。
+    static let defaultLatency: CFTimeInterval = 1.0
 
     private var stream: FSEventStreamRef?
     private let dispatchQueue: DispatchQueue
@@ -47,7 +38,7 @@ final class FSEventsWatcher {
     deinit { stop() }
 
     /// 启动监听 root 路径下的所有 file events。已 start 过则先 stop 再重启。
-    func start(rootPath: String, latency: CFTimeInterval = 1.0) {
+    func start(rootPath: String, latency: CFTimeInterval = FSEventsWatcher.defaultLatency) {
         stop()
 
         var context = FSEventStreamContext(

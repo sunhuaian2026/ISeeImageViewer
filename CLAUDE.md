@@ -92,7 +92,8 @@ ISeeImageViewer/                    ← 磁盘路径未改，repo 内部一切�
     │   ├── CompiledSmartFolderQuery.swift   ← Builder → Engine 之间的 SQL injection-safe contract
     │   ├── ImageMetadataReader.swift        ← URL → birth_time / file_size / format / dimensions（ImageIO，不解码像素）
     │   ├── FolderScanner.swift              ← 递归 enumerator + INSERT OR IGNORE 配合 UNIQUE 幂等；rootBookmark 复用到每条 image row
-    │   ├── FSEventsWatcher.swift            ← V2 Slice G FSEvents Swift wrapper（CoreServices FSEventStreamCreate / 每 root 一 stream / file-level events / latency 1s）
+    │   ├── FSEvent.swift                    ← V2 Slice G FSEvents 单 event record struct（path + flags + isFile/isCreated/isRemoved/... computed flags）
+    │   ├── FSEventsWatcher.swift            ← V2 Slice G FSEvents Swift wrapper（CoreServices FSEventStreamCreate / 每 root 一 stream / file-level events / defaultLatency 1s static let）
     │   ├── IndexStoreHolder.swift           ← 异步 init holder（@Published store + isReady Bool 让 .onChange 可观察）
     │   └── FolderStoreIndexBridge.swift     ← rootFolders diff → registerRoot/deleteRoot + 启动 FolderScanner + Slice G.2/3 watcher lifecycle + handle Created/Removed/Modified/Renamed events
     └── SmartFolder/                 ← V2 智能文件夹规则与查询
