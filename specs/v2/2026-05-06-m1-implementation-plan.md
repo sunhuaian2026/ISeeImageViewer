@@ -2090,10 +2090,10 @@ git commit --allow-empty -m "Slice A.18: 整体串联实测通过 (happy path + 
 ```markdown
 ### V2 进度
 
-- [x] **Slice A**（thin cross-folder MVP，~2026-05-XX 完成 commit YYYY）：IndexStore + 单 folder scan + "全部最近" + Sidebar IA + cross-folder grid 跑通 → V2.0-beta1 ship-able
-- [ ] Slice B（时间分段 sticky header）
-- [ ] Slice C（"本周新增"，merged into B）
-- [ ] Slice D（hide toggle 右键菜单 + Hover tooltip + Inspector source path）
+- [x] **Slice A**（thin cross-folder MVP，2026-05-08 ship V2.0-beta1）：IndexStore + 单 folder scan + "全部最近" + Sidebar IA + cross-folder grid 跑通
+- [x] **Slice B**（时间分段 chip sticky header + "本周新增"，2026-05-09 ship V2.0-beta2 tag `cf43e04`）：5 段算法 + LazyVGrid pinnedViews + Capsule chip + 键盘 (sectionIdx, row, col) 导航
+- [x] **Slice C**（merged into B）
+- [x] **Slice D**（hide toggle + Inspector source path，2026-05-09 ship V2.0-beta3）：稀疏 explicit 模型 + walk SQL + sidebar contextMenu + "在 Finder 中显示"
 - [ ] Slice G（FSEvents 增量监听）
 - [ ] Slice H（内容去重 SHA256 + cheap-first）
 - [ ] Slice I（首次索引进度 UI）
@@ -2210,18 +2210,19 @@ git push
 
 **Ship**: 跟 Slice B 一起 V2.0-beta2
 
-### Slice D: hide toggle 右键菜单（root + 子目录两层 + 状态继承）（1.5 天）
+### Slice D: hide toggle 右键菜单（root + 子目录两层 + 状态继承）（1.5 天）✅ 2026-05-09 ship
 
 **Goal**: V1 sidebar root folder + 子目录上右键 → "在智能文件夹中隐藏" toggle，状态可继承（hide root 默认 hide 整棵树，子目录可单独 unhide）。
 
 **Deliverables**:
-- folders 表写入 hide_in_smart_view（已有列）
-- SmartFolderQueryBuilder.emitAtom 中 .hidden case 改为真实 SQL（之前 placeholder）
-- FolderSidebarView 加 contextMenu
-- 状态继承计算逻辑：walk path 找最具体的 explicit hide
-- 验收：hide root → 智能文件夹 grid 该 root 图全消失；unhide 子目录 → 该子目录图重现
+- folders 表写入 hide_in_smart_view（schema 已有列 + parent_root_id 稀疏支持）✅
+- SmartFolderQueryBuilder.emitAtom 中 .hidden case 改为真实 walk SQL（path-length DESC 取最具体 explicit）✅
+- FolderSidebarView 加 contextMenu（root + 子目录两层 + 动态 label）✅
+- 状态继承计算逻辑：稀疏 explicit 模型 + path 上溯 walk + 客户端 / SQL 双侧实装 ✅
+- ImageInspectorView 加 "来源" Section + "在 Finder 中显示"按钮（合并 Slice E/F）✅
 
-**Ship**: V2.0-beta3
+**完成 commit**：D.1 `a39a6c5` + `4f318b5` + `6d8d234` / D.2 `a576198` + `e073001` / D.3 本 commit
+**Ship**: V2.0-beta3 ✓
 
 ### Slice E: Hover tooltip 显示 relative path（0.5 天，merged into D）
 
