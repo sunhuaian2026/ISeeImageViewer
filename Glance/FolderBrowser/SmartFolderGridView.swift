@@ -11,6 +11,9 @@
 //
 //  Slice B-α：时间分段 sticky header（D4 5 段：今天/昨天/本周/本月/更早），
 //  LazyVGrid pinnedViews [.sectionHeaders] 实现；空段跳过。
+//  Header 视觉形态：chip — Capsule + .regularMaterial 包左对齐文字，row 其余透明
+//  （cell 透过显示），破除"全宽横条"视觉感（前两次 #141419 不透明 / .regularMaterial
+//  全 row 半透明都失败的根因 = SwiftUI Section header 全宽属性，仅改 background 改不掉）。
 //  键盘导航：←→ 走 flat queryResult ±1（跨段自然连续）；
 //          ↑↓ 走 (sectionIdx, rowInSection, col) 模型，跨段跳邻段对应 col
 //          （col 超过目标行末则 clamp 到末 cell）。
@@ -151,26 +154,24 @@ struct SmartFolderGridView: View {
         }
     }
 
-    /// 时间分段 sticky header。`.regularMaterial` 半透明毛玻璃 — pinned 时仍能挡住下方
-    /// 滚动内容轮廓，但视觉比 DS.Color.gridBackground 不透明黑轻得多（codex Q3 / Bug 1）。
-    /// `.contentShape + .onTapGesture {}` 显式吃 tap，避免 sticky 时穿透到下方 cell（Bug 3）。
+    /// 时间分段 sticky header — chip 形态。row 自身完全透明（无 background），
+    /// pinned 时只看到左上角一个 Capsule chip 浮着，row 其余区域 cell 透过显示。
+    /// 破"全宽横条"视觉感（前两次修法 #141419 不透明 / .regularMaterial 半透明 row 都失败的根因）。
+    /// codex:rescue 5 项 review 通过（Q1 行高 ✓ / Q3 material+Capsule ✓ / Q4 idiom ✓ / Q5 无 LazyVGrid 不兼容 ✓ /
+    /// Q2 ⚠ pinned header 透明区域 hit-test 穿透无强保证，实测后兜底）。
     @ViewBuilder
     private func sectionHeader(_ section: TimeBucketSection) -> some View {
-        HStack(spacing: DS.Spacing.xs) {
-            Text(section.bucket.displayName)
-                .font(.subheadline.weight(.semibold))
+        HStack {
+            Text("\(section.bucket.displayName) · \(section.images.count) 张")
+                .font(.caption.weight(.semibold))
                 .foregroundStyle(.primary)
-            Text("· \(section.images.count) 张")
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                .padding(.horizontal, DS.Spacing.sm)
+                .padding(.vertical, DS.Spacing.xs)
+                .background(.regularMaterial, in: Capsule())
             Spacer()
         }
         .padding(.vertical, DS.Spacing.xs)
-        .padding(.horizontal, DS.Spacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.regularMaterial)
-        .contentShape(Rectangle())
-        .onTapGesture {}
     }
 
     @ViewBuilder

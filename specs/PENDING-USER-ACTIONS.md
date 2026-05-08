@@ -117,12 +117,12 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### Slice B-α: 时间分段 sticky header（5 段固定）
 
-- [ ] (2026-05-08 / `<pending>` / Slice B-α) **5 段标题渲染（视觉已轻量化）**：选中"全部最近" → grid 顶部按 birth_time 倒序依次出现段标题（今天 / 昨天 / 本周 / 本月 / 更早），空段不显示；段名 `.subheadline.weight(.semibold)`、计数 `.caption · N 张` 灰色；header 背景为 `.regularMaterial`（半透明毛玻璃，**不应再呈现 dark mode 不透明黑横条感**）
+- [ ] (2026-05-09 / `<pending>` / Slice B-α follow-up #2) **段头 chip 形态（破"横条"第三轮修法）**：sticky header 改成左上角浮动 capsule chip（"今天 · 3 张"），row 其余区域**完全透明**，cell 滚动时直接透 chip 之外区域显示；不应再呈现"全宽横条"视觉感（前两次修法 #141419 不透明黑 / `.regularMaterial` 半透明全 row 都失败的根因 = SwiftUI Section header 全宽属性，仅改 background 改不掉）
 - [ ] (2026-05-08 / `<pending>` / Slice B-α) **sticky 行为**：滚动 grid 时当前段标题固定吸顶，下一段进入视口时无缝替换；不应出现"两段标题同时悬浮"或"标题瞬移"
 - [ ] (2026-05-08 / `<pending>` / Slice B-α) **跨午夜归属**：手动改系统时间至 0:01（系统设置 → 通用 → 日期与时间，关闭自动）→ 重启 Glance → 一张昨天 23:59 拍的图应归"昨天"段；改回今日中午时间该图归"今天"段
 - [ ] (2026-05-08 / `<pending>` / Slice B-α follow-up) **键盘导航跨段（算法已重写）**：←→ 走 flat queryResult ±1（跨段自然连续）；↑↓ 段内同 col 上下移动；段尾按 ↓ 跳下一段第一行同 col（下一段不足时 clamp 到该行末 cell）；段首按 ↑ 跳上一段最后一行同 col（同样 clamp）；第一段第一行按 ↑ / 末段末行按 ↓ 原地；Space 进 QV / Esc 退仍工作
-- [ ] (2026-05-08 / `<pending>` / Slice B-α follow-up) **header hit-test 修法验证**：sticky 标题悬浮下方 cell 时点击 header 区域**不应**触发 cell 单击进 preview；现已加 `.contentShape(Rectangle()).onTapGesture {}` 显式吃 tap，验证修法生效
-- [ ] (2026-05-08 / `<pending>` / Slice B-α) **macOS 14 LazyVGrid pinnedViews 兼容性**：在最低部署版（macOS 14.0 Sonoma）上 sticky 行为表现一致——若标题抖动 / 重叠 / scroll 抖滚，记录现象后回退方案改自定义 ScrollView offset 监听（codex 跟我事先约定的降级路径）
+- [ ] (2026-05-09 / `<pending>` / Slice B-α follow-up #2) **chip 之外透明区域 hit-test 验证（codex Q2 ⚠ caveat 实测）**：sticky chip 浮在顶部时，**chip 之外的透明 row 区域**应该**允许**点击穿透到下方 cell（用户视觉上点的就是 cell 本身）；点 chip 自身应吃掉 tap（chip 是 Capsule 实体，Spacer 不参与 hit-test）。如果实测发现 chip 之外透明区仍被 SwiftUI Section header 整 row 抓走 hit-test 不能点 cell，反馈给我加 fallback（chip 形状 contentShape + Spacer 的 transparent area 显式 allow hit through）
+- [ ] (2026-05-09 / `<pending>` / Slice B-α follow-up #2) **chip + sticky 兼容性（macOS 14 Sonoma）**：sticky 时 SwiftUI Section header row 高度应等于 chip + DS.Spacing.xs 双侧 padding 自然高度（codex Q1 已 ✓）；如果实测 row 仍占据明显厚带（chip 之上/之下出现可见空白），说明 SwiftUI 在 LazyVGrid Section header 上施加了最小高度 → 反馈给我走 fallback（overlay chip + PreferenceKey 监听 ScrollView offset 自管 sticky，约 80 行重写）
 
 ---
 
