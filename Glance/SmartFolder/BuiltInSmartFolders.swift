@@ -32,11 +32,20 @@ enum BuiltInSmartFolders {
             .atom(.init(
                 field: .birthTime,
                 op: .betweenDuration,
-                value: .relativeTimeRange(start: "-7d", end: "now")
+                value: .relativeTimeRange(
+                    start: thisWeekAddedWindowStart,
+                    end: thisWeekAddedWindowEnd
+                )
             ))
         ]),
         sortBy: .birthTime,
         sortDescending: true,
         isBuiltIn: true
     )
+
+    /// 「本周新增」滑动窗口起点：往回数 7 天（resolveRelativeTime 解析 "-Nd" 格式，
+    /// 见 SmartFolderQueryBuilder.swift:113）
+    private static let thisWeekAddedWindowStart = "-7d"
+    /// 滑动窗口终点：当前时刻（resolveRelativeTime 特殊 token）
+    private static let thisWeekAddedWindowEnd = "now"
 }
