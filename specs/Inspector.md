@@ -92,6 +92,8 @@ struct ImageInspectorView: View {
     // Section "相机"：cameraMake, cameraModel, lensModel（有值才显示 section）
     // Section "拍摄参数"：aperture, shutterSpeed, iso, focalLength（有值才显示）
     // Section "位置"：gps map preview（有值才显示）
+    // Section "来源"（V2 Slice D.2）：absolute path（truncation .middle + textSelection）
+    //                                + "在 Finder 中显示"按钮（NSWorkspace.activateFileViewerSelecting）
 }
 ```
 
