@@ -280,4 +280,5 @@ struct ContentView: View {
     ContentView()
         .environmentObject(FolderStore(bookmarkManager: BookmarkManager()))
         .environmentObject(AppState())
+        .environmentObject(IndexStoreHolder())
 }

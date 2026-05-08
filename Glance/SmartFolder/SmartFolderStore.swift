@@ -52,8 +52,12 @@ final class SmartFolderStore: ObservableObject {
             let result = try await Task.detached(priority: .userInitiated) {
                 try capturedEngine.execute(folder)
             }.value
+            // Stale-write guard：query 跑过程中用户可能切到别的 SF 或清空 selection；
+            // 不匹配则丢弃旧结果，避免覆盖正在跑的新 query 写回来的数据
+            guard selected?.id == folder.id else { return }
             queryResult = result
         } catch {
+            guard selected?.id == folder.id else { return }
             lastError = "\(error)"
             queryResult = []
         }
