@@ -165,7 +165,7 @@ struct SmartFolderGridView: View {
                 .foregroundStyle(.secondary)
             Spacer()
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, DS.Spacing.xs)
         .padding(.horizontal, DS.Spacing.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(.regularMaterial)
