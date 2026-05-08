@@ -3,6 +3,10 @@ import SQLite3
 
 struct IndexedImage: Identifiable, Equatable {
     let id: Int64
+    /// **Root** folder 的 .withSecurityScope bookmark（不是 image 自己的）。macOS sandbox
+    /// 不允许给 enumerator 出来的子文件创建 .withSecurityScope bookmark，所以全部 image row
+    /// 共享所属 root 的 bookmark；读图时 resolve + startAccessing 后拼 relative_path 得 child URL。
+    /// Slice I rename 候选：→ rootBookmark 或者改为 folder_id → folders.root_url_bookmark lookup。
     let urlBookmark: Data
     let birthTime: Date
     let fileSize: Int64
@@ -15,6 +19,7 @@ struct IndexedImage: Identifiable, Equatable {
 }
 
 struct ImageInsertRecord {
+    /// 同 IndexedImage.urlBookmark 语义：root bookmark，不是 image 自己的
     let urlBookmark: Data
     let birthTime: Date
     let fileSize: Int64

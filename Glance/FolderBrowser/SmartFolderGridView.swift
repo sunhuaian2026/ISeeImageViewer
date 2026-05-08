@@ -87,18 +87,23 @@ private struct SmartFolderImageCell: View {
         }
     }
 
-    /// 解析 security-scoped bookmark → 复用 V1 ImageGridView 顶层 loadThumbnail。
+    /// 解析 root bookmark → startAccessing → 拼 root + relative_path 得到 child URL → 读缩略图。
+    /// (image.urlBookmark 实际是 root bookmark，不是 image 自己的 bookmark；macOS sandbox
+    /// 不允许给 enumerator 出来的子文件创建 .withSecurityScope bookmark，所以子访问只能
+    /// 通过 root active scope 隐式走。Slice I 重构候选：rename field / 改为 folder_id lookup。)
     private func loadThumb() async {
         var stale = false
-        guard let url = try? URL(
+        guard let rootURL = try? URL(
             resolvingBookmarkData: image.urlBookmark,
             options: [.withSecurityScope],
             bookmarkDataIsStale: &stale
         ) else { return }
-        let didStart = url.startAccessingSecurityScopedResource()
-        defer { if didStart { url.stopAccessingSecurityScopedResource() } }
+        let didStart = rootURL.startAccessingSecurityScopedResource()
+        defer { if didStart { rootURL.stopAccessingSecurityScopedResource() } }
 
-        let thumb = await loadThumbnail(url: url, maxPixelSize: 280)
+        // root + relative_path → child file URL，通过 root active scope 隐式访问
+        let fileURL = rootURL.appendingPathComponent(image.relativePath)
+        let thumb = await loadThumbnail(url: fileURL, maxPixelSize: 280)
         await MainActor.run {
             self.thumbnail = thumb
         }

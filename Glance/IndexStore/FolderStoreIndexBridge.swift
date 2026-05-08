@@ -52,11 +52,14 @@ final class FolderStoreIndexBridge: ObservableObject {
 
             // 局部 capture indexStore 避免 capturing self 的 Sendable 警告。
             // indexStore 是 class，引用本身可跨 actor 边界。
+            // rootBookmark capture 进 detached：scanner 把它复用到每条 image row 的
+            // url_bookmark（macOS sandbox 不允许子文件创建 .withSecurityScope bookmark）
             let store = self.indexStore
+            let rootBookmarkCopy = bookmark
             await Task.detached(priority: .utility) {
                 let scanner = FolderScanner(store: store)
                 do {
-                    try scanner.scan(rootURL: rootURL, folderId: folderId) { progress in
+                    try scanner.scan(rootURL: rootURL, rootBookmark: rootBookmarkCopy, folderId: folderId) { progress in
                         if progress.totalScanned % 200 == 0 {
                             print("[IndexStore] scanned \(progress.totalScanned), indexed \(progress.totalIndexed)")
                         }
