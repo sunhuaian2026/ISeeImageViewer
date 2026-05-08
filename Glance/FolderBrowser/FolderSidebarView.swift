@@ -80,12 +80,17 @@ struct FolderSidebarView: View {
 
     /// 找 node 所属的 root URL：root 节点本身 / 或某 root 是 node.url 路径前缀。
     /// 用于把 hide toggle 落到 IndexStore 的 (rootId, relativePath) 坐标。
+    /// 嵌套 root 场景（同时管理 /parent 和 /parent/child）必须取**最长前缀**，
+    /// 否则 /parent/child/foo.png 会被错路由到 /parent root（codex P2）。
     private func rootURL(for nodeURL: URL) -> URL? {
         let nodePath = nodeURL.standardizedFileURL.path
-        return folderStore.rootFolders.first { root in
+        let candidates = folderStore.rootFolders.filter { root in
             let rootPath = root.url.standardizedFileURL.path
             return rootPath == nodePath || nodePath.hasPrefix(rootPath + "/")
-        }?.url
+        }
+        return candidates.max(by: { lhs, rhs in
+            lhs.url.standardizedFileURL.path.count < rhs.url.standardizedFileURL.path.count
+        })?.url
     }
 
     // MARK: - 行视图

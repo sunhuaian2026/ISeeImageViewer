@@ -73,13 +73,15 @@ nonisolated extension IndexStore {
 
     /// Slice D — subfolder hide 状态写入（稀疏 explicit 模型）。
     /// 首次右键子目录 → INSERT new row；已 explicit set 过 → UPDATE 该行。
-    /// 走 ON CONFLICT (parent_root_id, relative_path)（schema unique idx 已建）。
+    /// ON CONFLICT 目标 **必须含 WHERE 子句** 匹配 schema 的 *partial* unique idx
+    /// `idx_folders_subpath ... WHERE parent_root_id IS NOT NULL`，否则 SQLite 拒绝 prepare（codex P1）。
     func upsertSubfolderHide(rootId: Int64, relativePath: String, hidden: Bool) throws {
         try sync { db in
             let stmt = try db.prepare("""
                 INSERT INTO folders (root_url_bookmark, root_path, relative_path, parent_root_id, hide_in_smart_view)
                 VALUES (NULL, NULL, ?, ?, ?)
-                ON CONFLICT (parent_root_id, relative_path) DO UPDATE SET hide_in_smart_view = excluded.hide_in_smart_view;
+                ON CONFLICT (parent_root_id, relative_path) WHERE parent_root_id IS NOT NULL
+                DO UPDATE SET hide_in_smart_view = excluded.hide_in_smart_view;
             """)
             defer { sqlite3_finalize(stmt) }
             try checkBindBool(sqlite3_bind_text(stmt, 1, (relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 1, db: db)

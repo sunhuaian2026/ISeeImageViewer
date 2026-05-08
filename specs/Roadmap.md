@@ -6,15 +6,16 @@
 
 ---
 
-## 当前进度（2026-05-08）
+## 当前进度（2026-05-09）
 
-**V2 M1 Slice A 完成（V2.0-beta1 ship-able）+ V1 v1.0 ready 待发布**
+**V2 M1 Slice B 完成（V2.0-beta2 ship-able）+ Slice D.1 hide toggle 端到端实装**
 
-- **V2 M1 Slice A（thin cross-folder MVP）**：IndexStore (sqlite3) + 单 folder scan + "全部最近" 智能文件夹 + Sidebar IA 改造（V2 SmartFolderListView 上 + V1 folder tree 下）+ cross-folder grid 视觉/交互完整对齐 V1 → 跑通 → 见下方 V2 进度段。Slice A 19 task 全部 ship，可独立 release V2.0-beta1
-- **V1 v1.0**：看图主功能稳定（grid / preview / QuickViewer / Inspector / Sort / KeyboardShortcuts / Prefetch / AppIcon / Rename / 全屏 F 键全局生效）
-- 工程化基建：`/go` 五步（含 post-commit sync 闭环）/ `verify.sh` 三段 oracle / `build/Glance.app` 自动 sync `~/sync/` / pre-push codex hook / build 版本号注入 + BuildInfo sidecar / 自定义关于面板含点击复制
-- 2026-05-07 session 收尾 6 个 V1 .swift bug fix + /go 流程 sync gap 沉淀 + Distribution v1.0 真公证 DMG 生成（commit `0c9f699` / SHA256 `47fff7c4...` / 2.4 MB / universal binary）
-- 下一步主线：① v1.0 公开发布（待用户拍板 3 项不可逆 ② Slice B 时间分段 sticky header（V2.0-beta2）
+- **V2 M1 Slice A（V2.0-beta1）**：IndexStore (sqlite3) + 单 folder scan + "全部最近" 智能文件夹 + Sidebar IA 改造 + cross-folder grid 完整对齐 V1
+- **V2 M1 Slice B（V2.0-beta2，2026-05-09 ship + tag）**：时间分段 chip sticky header（5 段算法 + LazyVGrid pinnedViews + Capsule chip + thickMaterial + strokeBorder hairline）+ 第 2 内置 SF「本周新增」+ 键盘 (sectionIdx, row, col) 导航算法
+- **V2 M1 Slice D.1**（hide toggle 端到端进行中）：稀疏 explicit 模型 IndexStore CRUD + walk SQL + sidebar contextMenu 动态 label + ContentView 桥
+- **V1 v1.0**：已公开发布（GitHub Release + DMG + 仓库 public，2026-05-08 commit `0c9f699`）
+- 工程化基建：`/go` 五步 / `verify.sh` 三段 oracle / `build/Glance.app` 自动 sync `~/sync/` / pre-push codex hook / build 版本号注入 + BuildInfo sidecar
+- 下一步主线：Slice D.2 Inspector 来源 path 段 + Show in Finder 按钮 → Slice D.3 ship V2.0-beta3
 - 远期 Refactor：Focus 架构父持有重构（详见待开发段）
 
 ---
