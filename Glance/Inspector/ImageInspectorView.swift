@@ -20,8 +20,8 @@ struct ImageInspectorView: View {
             } else if viewModel.isLoading {
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else if let info = viewModel.info {
-                infoForm(info)
+            } else if let info = viewModel.info, let url {
+                infoForm(info, url: url)
             } else {
                 ContentUnavailableView(
                     "无法读取元信息",
@@ -46,7 +46,7 @@ struct ImageInspectorView: View {
     // MARK: - Form
 
     @ViewBuilder
-    private func infoForm(_ info: ImageInfo) -> some View {
+    private func infoForm(_ info: ImageInfo, url: URL) -> some View {
         Form {
             Section("文件信息") {
                 LabeledContent("文件名", value: info.fileName)
@@ -80,6 +80,23 @@ struct ImageInspectorView: View {
             if let gps = info.gps {
                 Section("位置") {
                     LabeledContent("GPS", value: gps)
+                }
+            }
+
+            // Slice D.2: 来源段。跨 folder 智能文件夹场景下用户找原文件路径的快捷入口；
+            // V1 单 folder 模式同样有用（confirm 当前选中图属于哪个文件夹）。
+            Section("来源") {
+                LabeledContent("路径") {
+                    Text(url.path)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .textSelection(.enabled)
+                        .foregroundStyle(.secondary)
+                }
+                Button {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                } label: {
+                    Label("在 Finder 中显示", systemImage: "folder")
                 }
             }
         }

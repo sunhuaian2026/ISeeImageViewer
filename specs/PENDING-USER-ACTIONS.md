@@ -139,6 +139,13 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice D.1) **状态持久化（重启不丢）**：执行任意 hide toggle → 退出 Glance → 重启 → sidebar 右键看 menu label 与 grid 显示状态都跟退出前一致（IndexStore SQLite 持久化）
 - [ ] (2026-05-09 / `<pending>` / Slice D.1) **menu label 动态准确**：右键 root 看到 label 说"隐藏"，点击 hide 后再次右键应说"显示"；同样测 subfolder（含跨继承场景：root.hide=1 子目录 menu label 显"显示"）
 
+### Slice D.2: Inspector 来源 path 段 + Show in Finder
+
+- [ ] (2026-05-09 / `<pending>` / Slice D.2) **来源段渲染**：选图开 Inspector → 滚动到底部应有"来源"Section，含"路径"row 显示完整 absolute path（长 path 中间 truncation 显 "..."），可选中复制（textSelection enabled）+ "在 Finder 中显示"按钮（folder icon）
+- [ ] (2026-05-09 / `<pending>` / Slice D.2) **Show in Finder 行为**：点 "在 Finder 中显示"按钮 → Finder 弹出/前置 + 在父目录窗口里高亮选中该文件
+- [ ] (2026-05-09 / `<pending>` / Slice D.2) **V1 / V2 双模式生效**：V1 单文件夹模式选图 / V2 智能文件夹（全部最近 / 本周新增）选图，Inspector 来源段都正确显示对应图的真实 path（不是 root path）
+- [ ] (2026-05-09 / `<pending>` / Slice D.2) **path 选中复制**：长按拖选 path 文字 → 复制 → 粘贴到 Finder 地址栏 / 终端 → 能定位到文件
+
 ### Slice B-α 延后项（polish，不阻塞 ship）
 
 - [ ] (2026-05-09 / Deferred / Slice B-α polish) **chip 深浅色模式下对比强化**：用户要求 chip 在 dark/light 各模式下跟 cell 的视觉对比再"跳"一些。当前状态：`.thickMaterial` + `Capsule().strokeBorder(.primary.opacity(DS.SectionHeader.chipBorderOpacity=0.12), lineWidth: DS.SectionHeader.chipBorderWidth=0.5)`。**待对齐**（重启时问用户）：(1) 哪个组合对比最弱？dark mode + dark cell / dark + light cell / light + light cell / light + dark cell（建议截图对比）；(2) 期望"强烈"方向：A stroke 加粗 + opacity 升（0.5pt×0.12 → 1pt×0.30）/ B `.ultraThickMaterial` + 微 shadow / C 反色 fill（dark mode chip 用 light fill / light mode chip 用 dark fill，告别 material 透感，macOS Photos.app / Files.app 模式）/ D material + accentColor tint（DS.Color.glowPrimary 弱化版）。**修法 surface 预期**：仅 `Glance/FolderBrowser/SmartFolderGridView.swift sectionHeader` + `Glance/DesignSystem.swift DS.SectionHeader` 段；不动 LazyVGrid pinnedViews、moveHighlight、locate、其他交互逻辑
