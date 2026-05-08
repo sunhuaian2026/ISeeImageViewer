@@ -25,38 +25,12 @@
 （本段 CC 维护，追加新项。测完移到 Done。）
 
 - [ ] (2026-04-27 / `<pending>` / followup) **架构**：把双 `.onTapGesture(count:1+2)` 替换为 `Button + .buttonStyle(.plain)` + 单一 action 互斥（codex 建议；macOS lazy 容器双 tap recognizer 有已知 edge case，独立改动避免 scope 失控）
-- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · dark 模式开关边线同步**：dark 模式下按 ⌘I 开 Inspector → 左缘 0.5pt 边线随 Inspector 一起从右滑入，过程中**不出现粉色短暂闪现 / 不"提前到位"**；再按 ⌘I 关 → 边线随 Inspector 一起滑出，**不延迟、不残留**
-- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · light 模式开关边线同步**：同上 2 项在 light 模式复测（边线应是浅黑半透明 #000 0.08，跟 dark 是同一 AdaptiveColor 的另一端）
-- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · 切文件夹/取消选图自动关 Inspector**：选中图片开 Inspector → 切到另一个文件夹（侧边栏点） → Inspector 自动关 + 边线同步消失，无残留；再选图开 Inspector → 按 Esc 退选图 → 同上
-- [ ] (2026-05-07 / `<pending>` / bugfix) **Inspector · 内容回归**：Inspector 显示文件名/尺寸/EXIF/相机参数/GPS 各字段不变；isLoading spinner 行为不变；切换图片 Form 内容跟着更新；ContentUnavailableView 提示文案不变
-- [ ] (2026-05-07 / `<pending>` / bugfix) **focus ring · 真根因修法核心验证**：系统强调色保持粉色（外观 → 强调色 → 粉色）→ 启动 app → 单击缩略图进 ImagePreviewView → 整个 app 不应再有粉色框；按 ⌘I 开 Inspector → preview 右缘和 Inspector 之间不应再有粉色长条；点击 app 失焦后再聚焦 → 不再出现"刚回来粉色框闪一下"的现象
-- [ ] (2026-05-07 / `<pending>` / bugfix) **focus ring · ImageGridView 同步禁用**：grid 模式（无图片选中）→ 整个 grid 区域不应有粉色 focus ring 围在缩略图网格周围；grid 高亮（紫色 highlightedURL 圆角矩形）应仍正常显示
-- [ ] (2026-05-07 / `<pending>` / bugfix) **focus ring · QuickViewerOverlay 同步禁用**：双击缩略图进 QuickViewer → 整个 overlay 不应有粉色 focus ring；强制深色 overlay 中所有自定义 UI（顶栏 / nav 按钮 / filmstrip）视觉不变
-- [ ] (2026-05-07 / `<pending>` / bugfix) **focus ring · 键盘功能回归**（不能 onKeyPress 退化）：grid 方向键移 highlight / preview 方向键切图 / preview Esc 退回 grid / preview Space 进 QuickViewer / QuickViewer 方向键切图 / QuickViewer Esc 退回 全部仍正常工作；切文件夹 / 切预览图 后 onAppear 焦点路由仍生效
-- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · 核心**：杀掉旧 Glance → 装新 build → 关于面板 commit hash 应是 v2 那版 → 单击 cell 进 ImagePreviewView → 顶部应**无浅灰横条**，文件名 + ⓘ + 外观切换按钮直接坐在 NSWindow title bar 上（注意 e39fbbf v1 实机零变化已废，v2 走 SwiftUI .toolbarBackground 绘制层）
-- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · 进出 QV 回归**：双击进 QuickViewer → ESC 退 → 再单击进 preview → 仍无浅灰横条
-- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · sidebar 列**：左上 `+` 按钮 + sidebar toggle 视觉位置 / 间距不变
-- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · Traffic light 回归**：进 QV 隐藏 / 退 QV 恢复行为不变（commit a064033 / 45a61f1 / 6da903c 已修过 3 次的回归区域）
-- [ ] (2026-05-07 / `<pending>` / bugfix · 真解 v2) **toolbar background hidden · 外观切换**：浅色 / 深色 / 跟随系统切换 → toolbar 视觉跟着切，无残留
-- [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · QV 视觉回归**：QV 内顶栏 / nav 按钮 / filmstrip / 关闭按钮 / 缩放比例显示 / 进度 n/m 仍是深色，QV 视觉跟修改前完全一致
-- [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · AppearanceMode 切换回归**：浅色 / 深色 / 跟随系统切换 → 立即生效，QV 进出后切换仍即时；进 QV 前后切换外观也无干扰
-- [ ] (2026-05-07 / `<pending>` / bugfix) **QV colorScheme env · 深色模式回归**：深色模式 → 进出 QV → 主 app 保持深色（不应该误触发任何浅化）
-- [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 核心**：grid 单击 cell 1.png → 进 preview → 方向键 → 到 5.png → ESC 退回 grid → **grid 紫色高亮应跟到 5.png**（修前停在 1.png）
-- [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 双击 → QV 路径回归**（44ba6ee 区域）：grid 单击 cell A → highlight=A → 双击 cell B → 进 QuickViewer → ESC 退 QV → highlight 应在 B（不变，跟修前一致）
-- [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 排序回归**：grid 模式 → 切换排序方式 → highlight 自动清空（因 onChange(of: images)）→ 再单击/方向键正常工作；进 preview 后切排序 → preview 仍显示同图 (175e82a 行为不变)
-- [ ] (2026-05-07 / `<pending>` / bugfix) **Bug 4 · 焦点 race 回归**（5b29600 / 59a9d86 区域）：单击 cell → preview → ESC → grid 方向键正常工作；单击 → preview → 双击 → QV → ESC → grid 方向键正常工作
-- [ ] (2026-05-07 / `<pending>` / bugfix · Bug 4 扩展) **6da903c 回归**（最关键 — 不能破坏）：grid 双击 cell A 进 QV → **不动方向键** → ESC 退 QV → **回 grid，不进 preview**（保持 6da903c 行为）
-- [ ] (2026-05-07 / `<pending>` / bugfix · Bug 4 扩展) **QV 导航多渠道全覆盖**：QV 内用方向键 / nav button (左右气泡按钮) / filmstrip tap **三种方式**切到 Z → ESC 退 QV → **三种方式都让 highlight/preview 同步 Z**（codex 标盲点 1，验证 onChange viewModel.currentIndex 一处覆盖三渠道）
-- [ ] (2026-05-06 / `ab1fe89` / bugfix) **dark 模式贴 macOS 系统配色 + 失焦响应**（partial — 待 v1.0.1 重新审）：原 commit ab1fe89 删 4 处 hardcoded background 想让系统 sidebar material 接管，实测 sidebar 上半 row 区域有 vibrancy + 漏壁纸色，但 row 之下空白区是深黑色 windowBackground（条纹感）。codex:rescue 给的 NSVisualEffectView 桥方案落地后引发**关于窗口居中回归**（具体因果链未定），同时颜色仍不一致，已 revert 回 ab1fe89 状态。**期望视觉**：app 切到 dark → 侧边栏整片跟 Finder/Mail/Notes 一致（vibrancy + 漏出桌面壁纸色 + 失焦自动褪色） + 内容区中性灰；侧边栏选中 / 未选中行视觉一致（无条纹）。**当前 ab1fe89 状态可接受作 v1.0**（条纹但不影响核心功能），下次审计走 SwiftUI ZStack vs NavigationSplitView column 行为 + 验证 codex 方案为何引发居中回归
-- [ ] (2026-05-05 / `<pending>` / dist) **部署目标降级回归**：装 `~/sync/Glance.app` 跑 7 路径（启动 / 拖文件夹 / 单击进 preview + 方向键 / 双击进 QuickViewer 缩放拖拽 / 全屏 F 键 / 排序菜单 / 关于面板点击复制 + toast），确认 macOS 部署目标 26.2 → 14.0 未破坏现有功能
-- [ ] (2026-05-05 / `<pending>` / dist) **notarytool keychain profile 配置**（一次性）：① 进 https://appleid.apple.com/account/manage 「登录与安全 → App 专用密码」生成 App-specific password（命名如 `glance-notary`）；② 终端跑：`xcrun notarytool store-credentials "glance-notary" --apple-id 16414766@qq.com --team-id 8KW8Z92GRA --password <粘贴 App-specific password>`；③ 验证：`xcrun notarytool history --keychain-profile "glance-notary" --max-results 1` 无报错
-- [ ] (2026-05-05 / `<pending>` / dist) **完整 release 流程跑通**：跑 `make release`（5-15 分钟，含公证），观察输出无错；产物 `dist/Glance-1.0.0.dmg` 生成，SHA256 + size 正常
+- [ ] (2026-05-06 / `ab1fe89` / bugfix · v1.0.1) **dark 模式贴 macOS 系统配色 + 失焦响应**（partial — 待 v1.0.1 重新审）：原 commit ab1fe89 删 4 处 hardcoded background 想让系统 sidebar material 接管，实测 sidebar 上半 row 区域有 vibrancy + 漏壁纸色，但 row 之下空白区是深黑色 windowBackground（条纹感）。codex:rescue 给的 NSVisualEffectView 桥方案落地后引发**关于窗口居中回归**（具体因果链未定），同时颜色仍不一致，已 revert 回 ab1fe89 状态。**期望视觉**：app 切到 dark → 侧边栏整片跟 Finder/Mail/Notes 一致（vibrancy + 漏出桌面壁纸色 + 失焦自动褪色） + 内容区中性灰；侧边栏选中 / 未选中行视觉一致（无条纹）。**当前 ab1fe89 状态可接受作 v1.0**（条纹但不影响核心功能），下次审计走 SwiftUI ZStack vs NavigationSplitView column 行为 + 验证 codex 方案为何引发居中回归
 - [ ] (2026-05-05 / `<pending>` / dist) **DMG Gatekeeper 实测**：把 `dist/Glance-1.0.0.dmg` 拷到一台干净 Mac（**不能是签名机器**，否则 Gatekeeper 自动信任本机签）；双击挂载 → 拖到 Applications → 双击启动；预期：**直接打开**，不弹「无法验证开发者」/「损坏」/「未知开发者」对话框；活动监视器显示 Glance 正常运行
-- [ ] (2026-05-05 / `<pending>` / dist) **GitHub 仓库改 public**：`gh repo edit sunhuaian2026/ISeeImageViewer --visibility public --accept-visibility-change-consequences`（或 GitHub 网页 Settings → Danger Zone）；改完确认能匿名访问 `https://github.com/sunhuaian2026/ISeeImageViewer`
-- [ ] (2026-05-05 / `<pending>` / dist) **GitHub Release v1.0.0**：tag `v1.0.0`，上传 `dist/Glance-1.0.0.dmg` + sidecar `Glance-1.0.0.dmg.sha256`，写 release notes（CC 起草）。命令模板：`gh release create v1.0.0 dist/Glance-1.0.0.dmg --title "Glance 1.0.0 · 一眼" --notes-file <release-notes.md>`
-- [ ] (2026-05-05 / `<pending>` / dist) **README 加下载入口**：项目 README 顶部加下载按钮（指 latest release）+ macOS 14+ 系统要求说明；首页带产品截图（grid / preview / QuickViewer / Inspector 各 1 张）
-- [ ] (2026-05-05 / `<pending>` / dist · 可选) **GitHub 仓库改名 ISeeImageViewer → Glance**：与 V1 发布解耦，发完 v1.0.0 后再做。改名后 GitHub 自动留旧路径 redirect，不影响已发链接
-- [x] (2026-05-05 / `bd25fd0`) **关于面板 Copyright 字段**（已用 8f927d1 自定义 about panel 取代）：标准面板 wrap 点不雅观（"小红书"和"382336617"被自动拆两行），故升级到自定义 panel — 见下方测试项 ✓ 2026-05-05
+- [ ] (2026-05-05 / `<pending>` / dist · 不可逆) **GitHub 仓库改 public**：`gh repo edit sunhuaian2026/ISeeImageViewer --visibility public --accept-visibility-change-consequences`（或 GitHub 网页 Settings → Danger Zone）；改完确认能匿名访问 `https://github.com/sunhuaian2026/ISeeImageViewer`
+- [ ] (2026-05-05 / `<pending>` / dist · 不可逆) **GitHub Release v1.0.0**：tag `v1.0.0`，上传 `dist/Glance-1.0.0.dmg` + sidecar `Glance-1.0.0.dmg.sha256`，写 release notes（CC 起草）。命令模板：`gh release create v1.0.0 dist/Glance-1.0.0.dmg --title "Glance 1.0.0 · 一眼" --notes-file <release-notes.md>`
+- [ ] (2026-05-05 / `<pending>` / dist) **README 加下载入口**（依赖 GitHub Release 创建后回填 latest 链接）：项目 README 顶部加下载按钮（指 latest release）+ macOS 14+ 系统要求说明；首页带产品截图（grid / preview / QuickViewer / Inspector 各 1 张）
+- [ ] (2026-05-05 / `<pending>` / dist · 可选 v1.0.1) **GitHub 仓库改名 ISeeImageViewer → Glance**：与 V1 发布解耦，发完 v1.0.0 后再做。改名后 GitHub 自动留旧路径 redirect，不影响已发链接
 
 ---
 
@@ -131,3 +105,29 @@
 - [x] (2026-05-05 / `8f927d1`) **自定义关于面板 · 弹窗触发**：菜单触发自定义窗口（非系统 NSAboutPanel），AppIcon / 名称 / 版本号 / 两行 contact 完整 ✓ 2026-05-05
 - [x] (2026-05-05 / `8f927d1`) **自定义关于面板 · 点击复制 + toast**：hover 手指 cursor / 点击复制 / toast / ⌘V 粘贴验证 ✓ 2026-05-05
 - [x] (2026-05-05 / `8f927d1`) **自定义关于面板 · 版本号动态读取**：关于窗口版本号字符串与 BuildInfo.txt version 字段一致 ✓ 2026-05-05
+- [x] (2026-05-05 / `bd25fd0`) **关于面板 Copyright 字段**（历史，已被 8f927d1 自定义 about panel 取代）：标准面板 wrap 点不雅观（"小红书"和"382336617"被自动拆两行），升级到自定义 panel ✓ 2026-05-05
+- [x] (2026-05-07 / `086ade2`) **Inspector · dark 模式开关边线同步**：dark 模式下按 ⌘I 开/关 Inspector → 边线随 Inspector 同步滑入/滑出，无粉色闪现/不"提前到位"/不延迟/不残留 ✓ 2026-05-08
+- [x] (2026-05-07 / `086ade2`) **Inspector · light 模式开关边线同步**：light 模式同上行为正常，边线为浅黑半透明 #000 0.08 ✓ 2026-05-08
+- [x] (2026-05-07 / `086ade2`) **Inspector · 切文件夹/取消选图自动关 Inspector**：切文件夹 / Esc 退选图 → Inspector 自动关 + 边线同步消失，无残留 ✓ 2026-05-08
+- [x] (2026-05-07 / `086ade2`) **Inspector · 内容回归**：文件名/尺寸/EXIF/相机参数/GPS 字段不变；isLoading spinner 行为不变；切图 Form 内容跟着更新；ContentUnavailableView 文案不变 ✓ 2026-05-08
+- [x] (2026-05-07 / `086ade2`) **focus ring · 真根因修法核心验证**：系统强调色粉色 → 启动 app → 单击进 ImagePreviewView → 整个 app 无粉色框；⌘I 开 Inspector → preview 右缘 + Inspector 间无粉色长条；失焦再聚焦 → 无"刚回来粉色框闪一下" ✓ 2026-05-08
+- [x] (2026-05-07 / `086ade2`) **focus ring · ImageGridView 同步禁用**：grid 模式无图片选中 → grid 区域无粉色 focus ring；紫色 highlightedURL 圆角矩形仍正常 ✓ 2026-05-08
+- [x] (2026-05-07 / `086ade2`) **focus ring · QuickViewerOverlay 同步禁用**：QV overlay 无粉色 focus ring；强制深色 overlay 自定义 UI（顶栏 / nav / filmstrip）视觉不变 ✓ 2026-05-08
+- [x] (2026-05-07 / `086ade2`) **focus ring · 键盘功能回归**：grid 方向键 / preview 方向键 / preview Esc / preview Space / QV 方向键 / QV Esc 全正常；切文件夹 / 切预览图 onAppear 焦点路由仍生效 ✓ 2026-05-08
+- [x] (2026-05-07 / `c0c833a`) **toolbar background hidden · 核心**（真解 v2，e39fbbf v1 已废）：单击 cell 进 ImagePreviewView → 顶部无浅灰横条，文件名 + ⓘ + 外观切换按钮直接坐在 NSWindow title bar ✓ 2026-05-08
+- [x] (2026-05-07 / `c0c833a`) **toolbar background hidden · 进出 QV 回归**：双击进 QV → ESC → 再单击进 preview → 仍无浅灰横条 ✓ 2026-05-08
+- [x] (2026-05-07 / `c0c833a`) **toolbar background hidden · sidebar 列**：左上 `+` 按钮 + sidebar toggle 视觉位置/间距不变 ✓ 2026-05-08
+- [x] (2026-05-07 / `c0c833a`) **toolbar background hidden · Traffic light 回归**：进 QV 隐藏 / 退 QV 恢复行为不变（a064033 / 45a61f1 / 6da903c 历史区域）✓ 2026-05-08
+- [x] (2026-05-07 / `c0c833a`) **toolbar background hidden · 外观切换**：浅色 / 深色 / 跟随系统切换 → toolbar 视觉跟切，无残留 ✓ 2026-05-08
+- [x] (2026-05-07 / `3cdb991`) **QV colorScheme env · QV 视觉回归**：QV 内顶栏 / nav / filmstrip / 关闭按钮 / 缩放比例 / n/m 仍深色，视觉跟修前一致 ✓ 2026-05-08
+- [x] (2026-05-07 / `3cdb991`) **QV colorScheme env · AppearanceMode 切换回归**：浅 / 深 / 跟随系统切换立即生效；QV 进出后切换仍即时；进 QV 前后切换外观无干扰 ✓ 2026-05-08
+- [x] (2026-05-07 / `3cdb991`) **QV colorScheme env · 深色模式回归**：深色模式 → 进出 QV → 主 app 保持深色（无误浅化）✓ 2026-05-08
+- [x] (2026-05-07 / `b44a175`) **Bug 4 · 核心**：grid 单击 1.png → preview → 方向键到 5.png → ESC → grid 紫色高亮跟到 5.png（修前停在 1.png）✓ 2026-05-08
+- [x] (2026-05-07 / `b44a175`) **Bug 4 · 双击 → QV 路径回归**（44ba6ee 区域）：grid 单击 A → highlight=A → 双击 B → QV → ESC → highlight=B（不变，跟修前一致）✓ 2026-05-08
+- [x] (2026-05-07 / `b44a175`) **Bug 4 · 排序回归**：grid 切排序 → highlight 自动清空（onChange of: images）→ 再单击/方向键正常；preview 内切排序仍显示同图（175e82a 行为不变）✓ 2026-05-08
+- [x] (2026-05-07 / `b44a175`) **Bug 4 · 焦点 race 回归**（5b29600 / 59a9d86 区域）：单击 → preview → ESC → grid 方向键正常；单击 → preview → 双击 → QV → ESC → grid 方向键正常 ✓ 2026-05-08
+- [x] (2026-05-07 / `02a36dc`) **Bug 4 扩展 · 6da903c 回归**（最关键）：grid 双击 A 进 QV → 不动方向键 → ESC → 回 grid 不进 preview（保 6da903c 行为）✓ 2026-05-08
+- [x] (2026-05-07 / `02a36dc`) **Bug 4 扩展 · QV 三渠道全覆盖**：QV 内方向键 / nav button / filmstrip tap 切到 Z → ESC → 三种方式都让 highlight/preview 同步 Z（codex 标盲点 1）✓ 2026-05-08
+- [x] (2026-05-05 / `0c9f699`) **部署目标降级回归**：装 `~/sync/Glance.app` 跑 7 路径（启动 / 拖文件夹 / 单击进 preview + 方向键 / 双击进 QV 缩放拖拽 / 全屏 F 键 / 排序菜单 / 关于面板点击复制 + toast），macOS 部署目标 26.2 → 14.0 未破坏现有功能 ✓ 2026-05-08
+- [x] (2026-05-05 / `0c9f699`) **notarytool keychain profile 配置**（一次性，5/5 配过 + 5/7 ACL 丢后重存）：App-specific password 生成 → `xcrun notarytool store-credentials "glance-notary"` → `xcrun notarytool history` 验证无报错 ✓ 2026-05-07
+- [x] (2026-05-05 / `0c9f699`) **完整 release 流程跑通**：`make release` 真跑成功（archive + Developer ID 签 + create-dmg + notarize Accepted + stapler staple）；产物 `dist/Glance-1.0.0.dmg` 2.4 MB universal binary，公证 Submission ID `cb7db74c-afbb-4e12-98a5-912ca15eefff` Accepted ✓ 2026-05-07
