@@ -70,8 +70,6 @@ make release        # 公开分发包（Release + Developer ID 签 + Hardened Ru
 make release-dry    # 同上但跳过公证（本地干跑验证签名 + DMG 流程）
 ```
 
-详见 [`CLAUDE.md`](CLAUDE.md) 与 [`specs/Roadmap.md`](specs/Roadmap.md)。
-
 ## 反馈与贡献
 
 - 🐛 Bug / 功能建议 → [GitHub Issues](https://github.com/sunhuaian2026/Glance/issues)

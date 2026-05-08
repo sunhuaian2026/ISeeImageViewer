@@ -2,3 +2,10 @@ build/
 dist/
 .DS_Store
 .verify-logs/
+
+# Private dev notes / CC 工具配置 / QA 流程 / 历史归档（公开 repo Plan 1 极简）
+CLAUDE.md
+.claude/
+specs/
+docs/archive/
+.githooks/
