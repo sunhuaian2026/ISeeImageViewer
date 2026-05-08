@@ -38,9 +38,13 @@ struct ContentView: View {
     @StateObject private var previewVM = ImagePreviewViewModel()
 
     private var inspectorURL: URL? {
+        // mirror previewOverlay / QuickViewer .overlay 的 image source 选择：V2 mode 用
+        // 本地 v2Urls，V1 mode 用 folderStore.images。前者是 commit 26c457a 拆出来的本地
+        // @State，避免 V1 排序保护逻辑误关 V2 QV
+        let images = smartFolderStore.selected != nil ? v2Urls : folderStore.images
         guard let idx = folderStore.selectedImageIndex,
-              idx < folderStore.images.count else { return nil }
-        return folderStore.images[idx]
+              idx < images.count else { return nil }
+        return images[idx]
     }
 
     var body: some View {
