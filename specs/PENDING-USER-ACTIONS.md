@@ -124,6 +124,13 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice B-α follow-up #2) **chip 之外透明区域 hit-test 验证（codex Q2 ⚠ caveat 实测）**：sticky chip 浮在顶部时，**chip 之外的透明 row 区域**应该**允许**点击穿透到下方 cell（用户视觉上点的就是 cell 本身）；点 chip 自身应吃掉 tap（chip 是 Capsule 实体，Spacer 不参与 hit-test）。如果实测发现 chip 之外透明区仍被 SwiftUI Section header 整 row 抓走 hit-test 不能点 cell，反馈给我加 fallback（chip 形状 contentShape + Spacer 的 transparent area 显式 allow hit through）
 - [ ] (2026-05-09 / `<pending>` / Slice B-α follow-up #2) **chip + sticky 兼容性（macOS 14 Sonoma）**：sticky 时 SwiftUI Section header row 高度应等于 chip + DS.Spacing.xs 双侧 padding 自然高度（codex Q1 已 ✓）；如果实测 row 仍占据明显厚带（chip 之上/之下出现可见空白），说明 SwiftUI 在 LazyVGrid Section header 上施加了最小高度 → 反馈给我走 fallback（overlay chip + PreferenceKey 监听 ScrollView offset 自管 sticky，约 80 行重写）
 
+### Slice B-β: 「本周新增」内置 SmartFolder
+
+- [ ] (2026-05-09 / `<pending>` / Slice B-β) **sidebar 自动出现 2 个 SF**：启动 Glance → 智能文件夹区显示 2 个 ⚙️ entry 按顺序：「全部最近」+「本周新增」；点击「本周新增」高亮切换 + grid 内容刷新
+- [ ] (2026-05-09 / `<pending>` / Slice B-β) **本周新增结果正确性**：「本周新增」选中后 grid 显示的图全部为 birth_time ≥ 7 天前（含今天）的图；老图（≥ 7 天）不出现；切回「全部最近」图数应 ≥「本周新增」
+- [ ] (2026-05-09 / `<pending>` / Slice B-β) **滑动窗口语义**：「本周新增」是滑窗 -7d/now（不是自然周）。验证：今天周三的话，上周三的图应在；上周二的图不在。**与 D4 段头"本周"双轨独立**——「本周新增」grid 内的图按 D4 时间分段段头分布到"今天/昨天/本周"三段（不会出现"本月"或"更早"段，因为查询窗口只 -7d）
+- [ ] (2026-05-09 / `<pending>` / Slice B-β) **空数据兜底**：如果你机器上 7 天内无新图，「本周新增」应显示空态（"暂无图片"占位），不应报错或卡死
+
 ### Slice B-α 延后项（polish，不阻塞 ship）
 
 - [ ] (2026-05-09 / Deferred / Slice B-α polish) **chip 深浅色模式下对比强化**：用户要求 chip 在 dark/light 各模式下跟 cell 的视觉对比再"跳"一些。当前状态：`.thickMaterial` + `Capsule().strokeBorder(.primary.opacity(DS.SectionHeader.chipBorderOpacity=0.12), lineWidth: DS.SectionHeader.chipBorderWidth=0.5)`。**待对齐**（重启时问用户）：(1) 哪个组合对比最弱？dark mode + dark cell / dark + light cell / light + light cell / light + dark cell（建议截图对比）；(2) 期望"强烈"方向：A stroke 加粗 + opacity 升（0.5pt×0.12 → 1pt×0.30）/ B `.ultraThickMaterial` + 微 shadow / C 反色 fill（dark mode chip 用 light fill / light mode chip 用 dark fill，告别 material 透感，macOS Photos.app / Files.app 模式）/ D material + accentColor tint（DS.Color.glowPrimary 弱化版）。**修法 surface 预期**：仅 `Glance/FolderBrowser/SmartFolderGridView.swift sectionHeader` + `Glance/DesignSystem.swift DS.SectionHeader` 段；不动 LazyVGrid pinnedViews、moveHighlight、locate、其他交互逻辑

@@ -2193,9 +2193,9 @@ git push
 - SmartFolderGridView 改造为 LazyVGrid sectioned + sticky `pinnedViews` ✅ B-α
 - 验收：滚动 grid 时段标题固定在顶部；跨午夜午夜段 0:01 截图正确归"昨天"段（人工测试 → PENDING）
 
-**进度**：B-α 完成（本 commit）；B-β（thisWeekAdded SF）+ B-γ（/go 收尾）待开始。
+**进度**：B-α 完成 + 4 轮 follow-up（25d6a94 / 60a2de2 / bd4cfa7 / c5b048a / ef08f72）；**B-β 完成（thisWeekAdded SF + 规则定义 + sidebar 自动渲染）**；B-γ（/go 收尾 + tag V2.0-beta2）待开始。
 
-**Ship**: V2.0-beta2（B-β + B-γ 完成后）
+**Ship**: V2.0-beta2（B-γ 完成后）
 
 ### Slice C: 第 2 个 SF "本周新增"（0.5 天，merged into B）
 
