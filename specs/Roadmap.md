@@ -127,6 +127,7 @@
 | 阶段 | 模块 | Spec | 优先级 | 前置依赖 | 说明 |
 |------|------|------|--------|----------|------|
 | Refactor | Focus 架构父持有重构 | （待写）| 中 | 5b29600 / 59a9d86 ESC race fix | 三个分散 `@FocusState`（grid / preview / QuickViewer）在 dismiss 路径的 race 已修两次。codex high effort 强烈建议改父持有：`ContentView` 加 `@FocusState focusTarget: FocusTarget?` enum，子 view 通过 `.focused($parentFocus, equals: .grid/.preview/.quickViewer)` 绑定，由 ContentView 集中仲裁焦点。本次仍走 incremental trigger UUID 修补，但下次同类 bug 出现前必须做 |
+| Feature | sidebar 文件夹刷新菜单 | （待写）| 中 | 无 | 用户在 Finder 删/改/加图后 app 内容栏 stale 不会自动同步。sidebar 文件夹右键 contextMenu 加「刷新」菜单项（建议带 ⌘R 快捷键）→ 重扫该文件夹的图片列表 + 子文件夹树 + 图片数 badge；FolderStore 已有 scan 逻辑可复用。FSEvents/DirectoryMonitor 自动同步是 v2 范畴，v1.0.1 先用手动刷新兜底 |
 
 ---
 
