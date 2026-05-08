@@ -204,53 +204,89 @@ struct ContentView: View {
 
     // MARK: - Main Content
 
+    /// 主区 = baseGrid（V1 ImageGridView 或 V2 SmartFolderGridView，互斥）+ previewOverlay
+    /// （共享给两种 grid 模式，selectedImageIndex 非 nil 时 fade in）。
+    /// V1 / V2 共享同一个 ImagePreviewView + folderStore.images 数组：
+    /// - V1 模式：V1 selectFolder 把 folder 内图 URL 灌进 folderStore.images
+    /// - V2 模式：cell 单击/双击时 populateImagesFromV2() 从 queryResult 重建 URL 灌进
     @ViewBuilder
     private var mainContent: some View {
-        if smartFolderStore.selected != nil {
-            SmartFolderGridView()
-        } else {
-            v1MainContent
+        ZStack {
+            baseGrid
+            previewOverlay
         }
     }
 
     @ViewBuilder
-    private var v1MainContent: some View {
-        ZStack {
-            // ImageGridView 始终保留在层级里，避免返回时缩略图全部重载
+    private var baseGrid: some View {
+        if smartFolderStore.selected != nil {
+            SmartFolderGridView(
+                onSingleClick: { idx in
+                    populateImagesFromV2()
+                    folderStore.selectedImageIndex = idx
+                },
+                onDoubleClick: { idx in
+                    populateImagesFromV2()
+                    // 双击时单击 handler 也会触发并设置 selectedImageIndex，此处清除，确保 QuickViewer
+                    // 关闭后回到列表页而非预览页（同 V1 ImageGridView onDoubleClick 逻辑）
+                    folderStore.selectedImageIndex = nil
+                    quickViewerEntry = .grid
+                    quickViewerIndex = idx
+                }
+            )
+        } else {
+            // V1 ImageGridView 始终保留在层级里，避免返回时缩略图全部重载
             ImageGridView(
                 gridFocusTrigger: gridFocusTrigger,
                 onDoubleClick: { index in
-                    // 双击时单击 handler 也会触发并设置 selectedImageIndex，
-                    // 此处清除，确保 QuickViewer 关闭后回到列表页而非预览页。
                     folderStore.selectedImageIndex = nil
                     quickViewerEntry = .grid
                     quickViewerIndex = index
                 }
             )
+        }
+    }
 
-            // 收紧渲染条件：QV 期间 (quickViewerIndex != nil) 不渲染 ImagePreviewView，
-            // 避免 QV 内方向键写 selectedImageIndex 时 .id(idx) 触发 preview 在后台重建/loadImage。
-            // codex 标的盲点：.id(idx) 让 preview 在 selectedImageIndex 变化时整体重建（不只是 onChange）
-            if let idx = folderStore.selectedImageIndex, quickViewerIndex == nil {
-                ImagePreviewView(
-                    vm: previewVM,
-                    images: folderStore.images,
-                    startIndex: idx,
-                    focusTrigger: previewFocusTrigger,
-                    onDismiss: {
-                        folderStore.selectedImageIndex = nil
-                    },
-                    onQuickView: { index in
-                        quickViewerEntry = .preview
-                        quickViewerIndex = index
-                    }
-                )
-                .id(idx)
-                .transition(.asymmetric(
-                    insertion: .scale(scale: 0.97).combined(with: .opacity),
-                    removal:   .scale(scale: 0.97).combined(with: .opacity)
-                ))
-            }
+    @ViewBuilder
+    private var previewOverlay: some View {
+        // 收紧渲染条件：QV 期间 (quickViewerIndex != nil) 不渲染 ImagePreviewView，
+        // 避免 QV 内方向键写 selectedImageIndex 时 .id(idx) 触发 preview 在后台重建/loadImage
+        if let idx = folderStore.selectedImageIndex, quickViewerIndex == nil {
+            ImagePreviewView(
+                vm: previewVM,
+                images: folderStore.images,
+                startIndex: idx,
+                focusTrigger: previewFocusTrigger,
+                onDismiss: {
+                    folderStore.selectedImageIndex = nil
+                },
+                onQuickView: { index in
+                    quickViewerEntry = .preview
+                    quickViewerIndex = index
+                }
+            )
+            .id(idx)
+            .transition(.asymmetric(
+                insertion: .scale(scale: 0.97).combined(with: .opacity),
+                removal:   .scale(scale: 0.97).combined(with: .opacity)
+            ))
+        }
+    }
+
+    /// V2 cell 被点击时把 SmartFolderStore.queryResult 转成 V1 风格的 URL 数组灌进
+    /// folderStore.images，让 ImagePreviewView / QuickViewerOverlay 两条 V1 路径无缝复用。
+    /// URL = resolve(image.urlBookmark = root bookmark) + appendingPathComponent(relative_path)。
+    /// 子 URL 通过 V1 BookmarkManager 已 startAccessing 的 root scope 隐式访问，
+    /// NSImage(contentsOf:) / CGImageSourceCreateWithURL 都能读。
+    private func populateImagesFromV2() {
+        folderStore.images = smartFolderStore.queryResult.compactMap { image in
+            var stale = false
+            guard let rootURL = try? URL(
+                resolvingBookmarkData: image.urlBookmark,
+                options: [.withSecurityScope],
+                bookmarkDataIsStale: &stale
+            ) else { return nil }
+            return rootURL.appendingPathComponent(image.relativePath)
         }
     }
 

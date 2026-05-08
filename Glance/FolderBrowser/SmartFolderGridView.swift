@@ -15,6 +15,12 @@ struct SmartFolderGridView: View {
 
     @EnvironmentObject var smartFolderStore: SmartFolderStore
 
+    /// 单击 cell 回调（参数：被点 cell 在 queryResult 中的当前位置 index）。
+    /// 实时 firstIndex 查找避免 LazyVGrid 复用 cell 时闭包捕获 index 过期（参考 V1 c112059 修法）。
+    let onSingleClick: (Int) -> Void
+    /// 双击 cell 回调（同 onSingleClick 的 index 语义）。
+    let onDoubleClick: (Int) -> Void
+
     private let columns = [
         GridItem(.adaptive(minimum: 140, maximum: 200), spacing: DS.Spacing.sm)
     ]
@@ -27,6 +33,19 @@ struct SmartFolderGridView: View {
                 LazyVGrid(columns: columns, spacing: DS.Spacing.sm) {
                     ForEach(smartFolderStore.queryResult) { image in
                         SmartFolderImageCell(image: image)
+                            .contentShape(Rectangle())
+                            // 双击优先注册（macOS SwiftUI 双 onTapGesture pattern；count:1 在 count:2 之后注册可让
+                            // tap recognizer 优先识别双击不触发单击）。参考 V1 ImageGridView 同模式。
+                            .onTapGesture(count: 2) {
+                                if let idx = smartFolderStore.queryResult.firstIndex(where: { $0.id == image.id }) {
+                                    onDoubleClick(idx)
+                                }
+                            }
+                            .onTapGesture(count: 1) {
+                                if let idx = smartFolderStore.queryResult.firstIndex(where: { $0.id == image.id }) {
+                                    onSingleClick(idx)
+                                }
+                            }
                     }
                 }
                 .padding(DS.Spacing.md)
