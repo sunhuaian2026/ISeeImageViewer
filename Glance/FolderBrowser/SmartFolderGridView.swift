@@ -44,12 +44,21 @@ struct SmartFolderGridView: View {
                     if smartFolderStore.queryResult.isEmpty {
                         emptyState
                     } else {
-                        LazyVGrid(
-                            columns: [GridItem(.adaptive(minimum: cellMinWidth, maximum: cellMaxWidth), spacing: DS.Spacing.sm)],
-                            spacing: DS.Spacing.sm
-                        ) {
+                        LazyVGrid(columns: gridColumns, spacing: DS.Thumbnail.spacing) {
                             ForEach(smartFolderStore.queryResult) { image in
-                                SmartFolderImageCell(image: image, isHighlighted: highlightedID == image.id)
+                                VStack(spacing: DS.Spacing.xs) {
+                                    SmartFolderImageCell(
+                                        image: image,
+                                        isHighlighted: highlightedID == image.id,
+                                        size: folderStore.thumbnailSize
+                                    )
+                                    Text(image.filename)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                        .lineLimit(1)
+                                        .truncationMode(.middle)
+                                        .frame(maxWidth: folderStore.thumbnailSize)
+                                }
                                     .id(image.id)
                                     .contentShape(Rectangle())
                                     // 双击优先注册（macOS SwiftUI 双 onTapGesture pattern；count:1 在 count:2 之后注册可让
@@ -68,7 +77,8 @@ struct SmartFolderGridView: View {
                                     }
                             }
                         }
-                        .padding(DS.Spacing.md)
+                        .animation(DS.Anim.fast, value: folderStore.thumbnailSize)
+                        .padding(DS.Spacing.sm)
                     }
                 }
                 .background(DS.Color.gridBackground)
@@ -156,58 +166,75 @@ struct SmartFolderGridView: View {
         }
     }
 
-    /// V2 grid LazyVGrid 列数估算：mirror V1 SwiftUI .adaptive(minimum:) 算法，
-    /// floor((W + spacing) / (cellMin + spacing))。padding(DS.Spacing.md) 两侧。
-    private func computeColumnCount(width: CGFloat) -> Int {
-        let gridWidth = width - 2 * DS.Spacing.md
-        return max(1, Int((gridWidth + DS.Spacing.sm) / (cellMinWidth + DS.Spacing.sm)))
+    /// V2 grid 列定义：mirror V1 ImageGridView.gridColumns，min = thumbSize / max = thumbSize+20，
+    /// 共享 folderStore.thumbnailSize 作 source of truth（V1 toolbar slider 调动时 V2 也跟着变）。
+    private var gridColumns: [GridItem] {
+        [GridItem(.adaptive(
+            minimum: folderStore.thumbnailSize,
+            maximum: folderStore.thumbnailSize + 20
+        ), spacing: DS.Thumbnail.spacing)]
     }
 
-    private let cellMinWidth: CGFloat = 140
-    private let cellMaxWidth: CGFloat = 200
+    /// V2 grid LazyVGrid 列数估算：mirror V1 SwiftUI .adaptive(minimum:) 算法，
+    /// floor((W + spacing) / (cellMin + spacing))。padding(DS.Spacing.sm) 两侧。
+    private func computeColumnCount(width: CGFloat) -> Int {
+        let gridWidth = width - 2 * DS.Spacing.sm
+        let cellWidth = folderStore.thumbnailSize
+        return max(1, Int((gridWidth + DS.Thumbnail.spacing) / (cellWidth + DS.Thumbnail.spacing)))
+    }
 }
 
+/// mirror V1 ImageGridView.ThumbnailCell：方形 cell + scaledToFill + clipped + hover scale +
+/// HiDPI 像素尺寸。共享 folderStore.thumbnailSize 让 V1 toolbar slider 同步控制 V2 cell 大小。
 private struct SmartFolderImageCell: View {
     let image: IndexedImage
     var isHighlighted: Bool = false
+    var size: CGFloat = DS.Thumbnail.defaultSize
     @State private var thumbnail: NSImage?
+    @State private var isHovered = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.xs) {
-            Group {
-                if let thumbnail {
-                    Image(nsImage: thumbnail)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                } else {
-                    ProgressView()
-                }
+        ZStack {
+            if let thumbnail {
+                Image(nsImage: thumbnail)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: size, height: size)
+                    .clipped()
+            } else {
+                Rectangle()
+                    .fill(Color.secondary.opacity(0.15))
+                    .frame(width: size, height: size)
+                    .overlay { ProgressView() }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 140)
-            .background(DS.Color.appBackground)
-            .clipShape(RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius))
-            // mirror V1 ThumbnailCell isHighlighted 视觉：accent 半透明填充 + 2pt accent stroke
-            .overlay {
-                if isHighlighted {
-                    RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
-                        .fill(Color.accentColor.opacity(0.12))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
-                                .stroke(Color.accentColor, lineWidth: 2)
-                        )
-                }
-            }
-            .animation(DS.Anim.fast, value: isHighlighted)
-
-            Text(image.filename)
-                .font(.caption)
-                .lineLimit(1)
-                .truncationMode(.middle)
         }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius))
+        .overlay {
+            if isHovered && !isHighlighted {
+                RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
+                    .fill(DS.Color.hoverOverlay)
+            }
+        }
+        .overlay {
+            if isHighlighted {
+                RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
+                    .fill(Color.accentColor.opacity(0.12))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: DS.Thumbnail.cornerRadius)
+                            .stroke(Color.accentColor, lineWidth: 2)
+                    )
+            }
+        }
+        .scaleEffect(isHovered && !isHighlighted ? 1.03 : 1.0)
+        .animation(.easeOut(duration: 0.15), value: isHovered)
+        .animation(DS.Anim.fast, value: isHighlighted)
+        .animation(DS.Anim.fast, value: size)
+        .onHover { isHovered = $0 }
         .help(image.relativePath)
         .task(id: image.id) {
-            await loadThumb()
+            thumbnail = nil
+            await loadThumb(targetSize: size)
         }
     }
 
@@ -215,7 +242,7 @@ private struct SmartFolderImageCell: View {
     /// (image.urlBookmark 实际是 root bookmark，不是 image 自己的 bookmark；macOS sandbox
     /// 不允许给 enumerator 出来的子文件创建 .withSecurityScope bookmark，所以子访问只能
     /// 通过 root active scope 隐式走。Slice I 重构候选：rename field / 改为 folder_id lookup。)
-    private func loadThumb() async {
+    private func loadThumb(targetSize: CGFloat) async {
         var stale = false
         guard let rootURL = try? URL(
             resolvingBookmarkData: image.urlBookmark,
@@ -227,7 +254,10 @@ private struct SmartFolderImageCell: View {
 
         // root + relative_path → child file URL，通过 root active scope 隐式访问
         let fileURL = rootURL.appendingPathComponent(image.relativePath)
-        let thumb = await loadThumbnail(url: fileURL, maxPixelSize: 280)
+        // HiDPI 锐化：mirror V1 ThumbnailCell 的 maxPixelSize = size × backingScaleFactor
+        let scale = NSScreen.main?.backingScaleFactor ?? 2.0
+        let thumb = await loadThumbnail(url: fileURL, maxPixelSize: Int(targetSize * scale))
+        guard !Task.isCancelled else { return }
         await MainActor.run {
             self.thumbnail = thumb
         }
