@@ -6,15 +6,16 @@
 
 ---
 
-## 当前进度（2026-05-07）
+## 当前进度（2026-05-08）
 
-**v1.0 ready，待用户拍板 3 项不可逆操作发布**
+**V2 M1 Slice A 完成（V2.0-beta1 ship-able）+ V1 v1.0 ready 待发布**
 
-- 看图主功能全部稳定（grid / preview / QuickViewer / Inspector / Sort / KeyboardShortcuts / Prefetch / AppIcon / Rename / 全屏 F 键全局生效）
+- **V2 M1 Slice A（thin cross-folder MVP）**：IndexStore (sqlite3) + 单 folder scan + "全部最近" 智能文件夹 + Sidebar IA 改造（V2 SmartFolderListView 上 + V1 folder tree 下）+ cross-folder grid 视觉/交互完整对齐 V1 → 跑通 → 见下方 V2 进度段。Slice A 19 task 全部 ship，可独立 release V2.0-beta1
+- **V1 v1.0**：看图主功能稳定（grid / preview / QuickViewer / Inspector / Sort / KeyboardShortcuts / Prefetch / AppIcon / Rename / 全屏 F 键全局生效）
 - 工程化基建：`/go` 五步（含 post-commit sync 闭环）/ `verify.sh` 三段 oracle / `build/Glance.app` 自动 sync `~/sync/` / pre-push codex hook / build 版本号注入 + BuildInfo sidecar / 自定义关于面板含点击复制
-- 2026-05-07 session 收尾 6 个 .swift bug fix（焦点 ring / toolbar background / QV colorScheme env / Bug 4 grid highlight / Bug 4 扩展 QV 同步 / F 键全局 grid+preview）+ /go 流程 sync gap 沉淀 + Distribution v1.0 真公证 DMG 生成（commit `0c9f699` build `0c9f699.0507-2004` / SHA256 `47fff7c4...` / size 2.4 MB / universal binary 验证 / staple worked）
-- 下一步主线：v1.0 公开发布（待用户拍板 ① DMG 干净 Mac Gatekeeper 实测 ② GitHub 仓库 visibility public ③ gh release create — 三项均**不可逆**操作 CC 不擅自跑）
-- 远期 Refactor：Focus 架构父持有重构（详见待开发段，等下次 focus race bug 出现前必做）
+- 2026-05-07 session 收尾 6 个 V1 .swift bug fix + /go 流程 sync gap 沉淀 + Distribution v1.0 真公证 DMG 生成（commit `0c9f699` / SHA256 `47fff7c4...` / 2.4 MB / universal binary）
+- 下一步主线：① v1.0 公开发布（待用户拍板 3 项不可逆 ② Slice B 时间分段 sticky header（V2.0-beta2）
+- 远期 Refactor：Focus 架构父持有重构（详见待开发段）
 
 ---
 
@@ -270,3 +271,83 @@ V2 引入跨文件夹聚合（智能文件夹）+ 找回（搜索 + 类似图）
 22. **D9 V2 timeline = 13-15 周 + 每 milestone 跟一个 minor 版本**：M1 4-5 周 / M2 3 周 / M3 3-4 周 / M4 2-2.5 周（M4 optional）。每 milestone 完成跟一个 minor 版本发布（M1 → V2.0-beta1，M2 → V2.1，M3 → V2.2，M4 → V2.3），不等全部 M1-M4 完成才发 V2 大版本。每个 milestone 是端到端 vertical slice（端到端可跑 + 用户可感知 + 独立可 ship）。Why: 横切式拆分把集成 bug 全推到末尾爆雷；vertical slice 让风险前置 + 用户每片都有可感知收益 + 反馈密度比 3 个月一次大版本高得多。How to apply: 写 implementation plan 时每个 milestone 验证三标准（可跑 / 可感知 / 可 ship）；不达标的切片要重组。
 
 23. **D10 V2 scope freeze（18 项 explicit "不做"清单）**：culling 工作流 / tag 标签系统 / color palette / 自然语言搜索（CLIP）/ "已读未读" seen-state / 跨设备同步 / 导入到自有库 / 编辑调色旋转写回 / NSPredicate 嵌套规则 / NOT operator / glob 黑名单 / 视频动图 LivePhoto 索引 / iCloud Drive placeholder + 网络盘 + 外接设备 / OCR 文本搜索 / Photos Memories 智能相册推荐 / Favorites 收藏 Star ratings / 多 library 切换 / EXIF metadata 写回——共 18 项 V2 范围外。Why: 每项都有 brainstorming + grill 阶段的明确 trade-off 推演（详见 V2 spec 不做段）；scope freeze 是单人项目按时 ship 的核心保障。How to apply: 收到"V2 能不能加 X"诉求时先查这 18 条；命中即拒（refer 到此条），不命中再走"加新 feature 决策流程"。
+
+---
+
+## V2 进度
+
+### M1 - 跨文件夹聚合 MVP（4-5 周）
+
+| Slice | 状态 | Ship as | 完成日期 | 关键 commit |
+|---|---|---|---|---|
+| **A** ⭐ thin cross-folder MVP | ✅ 完成 | V2.0-beta1 | 2026-05-08 | 见下方表格 |
+| B 时间分段 sticky header（5 段固定）+ "本周新增" + hover tooltip | ⏳ 未开始 | V2.0-beta2 | — | — |
+| D hide toggle 右键菜单（root + 子目录 + 状态继承）+ Inspector source path | ⏳ 未开始 | V2.0-beta3 | — | — |
+| G FSEvents 增量监听 + 删 root folder 清理 | ⏳ 未开始 | V2.0-beta4 | — | — |
+| H 内容去重 SHA256 + cheap-first 粗筛 | ⏳ 未开始 | V2.0-beta5 | — | — |
+| I 首次索引进度 UI + 错误处理 + SmartFolderStore enum-state 重构 | ⏳ 未开始 | V2.0 RC + GA | — | — |
+
+### Slice A 完成详细（19 task）
+
+**完成 commit 列表**（按时序，对应 plan task 编号）：
+
+| Task | Goal | Commit |
+|---|---|---|
+| A.1 | IndexDatabase sqlite3 thin wrapper | `01f2b4b` |
+| A.2 | IndexStoreSchema v1 forward-looking | `d7ad2b0` |
+| A.3 | IndexStore high-level entry + auto-migrate | `de802b7` |
+| A.4 | ManagedFolder + folders 表 CRUD | `be9f9fe` |
+| A.5 | IndexedImage + images 表 CRUD + CompiledSmartFolderQuery | `8a08327` |
+| A.6 | ImageMetadataReader（URL → birth_time/size/format/dimensions）| `fb085ba` |
+| A.7 | FolderScanner（递归扫描 + 写入 IndexStore）| `5ce3b2a` |
+| A.8 | SmartFolder + Predicate/Atom/Op/Value structs | `c681e9a` |
+| A.9 | SmartFolderQueryBuilder（Predicate → SQL）| `f47b2a1` |
+| A.10 | SmartFolderEngine（compile + execute）| `c47ae25` |
+| A.11 | BuiltInSmartFolders（"全部最近"）| `603383b` |
+| A.12 | SmartFolderStore @MainActor + 项目级 nonisolated retrofit | `c6e600f` |
+| **merge** | merge main → v2/dev（V1 bug fix 21 commits 拉进来）| `86b2a24` |
+| - | verify.sh allow-list 加 SQLite3（macOS 系统 framework）| `1fc32d9` |
+| - | M1 plan A.13/A.17 reality check 重跑（merge 后修订 V1 现状假设）| `c5d73a8` |
+| A.13 | GlanceApp 注入 IndexStoreHolder | `b49feb7` |
+| A.14 | FolderStoreIndexBridge（订阅 rootFolders + 注册 + scan）| `1600a99` |
+| A.15 | SmartFolderListView（sidebar 智能文件夹 UI）| `536b0fe` |
+| A.16 | SmartFolderGridView（cross-folder grid + V1 loadThumbnail 复用）| `6449552` |
+| A.17 | ContentView 改造（sidebar VStack + V2 wire-up + EnvironmentObject 双注入）| `879078f` |
+| A.17 P3 | codex review 修法（Preview env 注入 + stale query guard）| `557bb39` |
+| A.18 P0 | insertImageIfAbsent SELECT-first（让 constraint violation 真实 surface 取代 OR IGNORE 静默吞）| `f83cc9b` |
+| A.18 P0 | root bookmark 替代 per-child bookmark（macOS sandbox 不允许给 enumerator 子文件创建 .withSecurityScope bookmark）| `7ef8d81` |
+| A.18 follow-up | V2 grid 加最小交互（单击预览 / 双击 QuickViewer）| `a9b3ac2` |
+| A.18 follow-up | V2 grid 加 navigationTitle / highlight + v2Urls 替代 folderStore.images | `26c457a` |
+| A.18 P0 | QV transition insertion 改 .identity 消除 baseGrid 暴露（codex:rescue 真根因 fix，前 2 次诊断错）| `553c0f6` |
+| A.18 follow-up | V2 grid 加 keyboard 支持（mirror V1 ImageGridView：focus / arrow / space / F）| `9ea131e` |
+| A.18 P1 | inspectorURL V2 mode 用 v2Urls 替代 folderStore.images（v2Urls 拆分后 Inspector 显空）| `2dd7c1b` |
+| A.18 follow-up | V2 cell 视觉对齐 V1 ThumbnailCell（方形 + scaledToFill + hover scale + HiDPI）| `6da2689` |
+| A.19 | Slice A 收尾 + Roadmap + PENDING + 完整 commit | （本次）|
+
+### Slice A 关键技术决策（实施过程沉淀）
+
+**1. P0 P0：bookmark sandbox 限制**
+sandbox app 不允许给 enumerator 出来的子 URL 创建 `.withSecurityScope` bookmark（子 URL 仅通过 active 父 scope 隐式访问）。结果：FolderScanner 不能给每个 image 单独存 bookmark，全部 image row 共享所属 root 的 bookmark；读图时 resolve(rootBookmark) → startAccessing → root.appendingPathComponent(relative_path) 重建子 URL。`IndexedImage.urlBookmark` 字段语义从"image 自己的 bookmark"变成"image 所在 root 的 bookmark"，字段名 Slice I rename 候选。
+
+**2. INSERT OR IGNORE 不能给 schema 用**
+SQLite OR IGNORE 吞掉所有 constraint violation（NOT NULL / FK / CHECK / UNIQUE），不只是 UNIQUE 冲突。诊断错误时混淆"行不存在"vs"行被 IGNORE"。修法：SELECT-first → INSERT (no IGNORE) 让真实错误 surface + 错误消息加 record dump（folder_id / relative_path / filename / format / file_size / bookmark_size）。
+
+**3. V1/V2 双源耦合 trade-off**
+ImagePreviewView / QuickViewerOverlay / Inspector 在 V2 mode 用 ContentView 本地 `@State v2Urls`，V1 mode 用 `folderStore.images`，避开 V1 排序保护逻辑（onChange of images → 关 QV）误关 V2 QV。Slice I 重构候选：让这些 view 不直接依赖 folderStore.images，完全走显式参数。
+
+**4. SwiftUI transition 时序导致视觉闪烁**
+QuickViewer 用 `.transition(.opacity)` fade in 跟 preview 同时退场，中间时间窗口 baseGrid 透过两层半透明暴露。修法：QV insertion 改 `.identity`（即时出现）+ removal 保留 `.opacity`（fade out）。codex:rescue 独立 trace 发现的根因，前 2 次自诊断走偏教训：bug 修 ≥2 次必须 codex:rescue review。
+
+**5. V2 grid 视觉/交互完整 mirror V1 ImageGridView**
+A.18 实测发现 plan A.16 把 V2 cell 标"无交互"导致用户测不下去，且 V2 cell aspectRatio.fit + 矩形不规则视觉割裂感强。修法：单击/双击 + navigationTitle + highlight + keyboard + scaledToFill 方形 + hover scale + HiDPI 像素，全部 mirror V1 ThumbnailCell pattern；共享 `folderStore.thumbnailSize` 让 V1 toolbar slider 同步控制 V2 cell 大小。
+
+### Slice A 累积模型（V2.0-beta1 deliverables）
+
+- 1 个内置 SmartFolder："全部最近"（rule：managed=true AND hidden=false AND dedupCanonicalOrNull=true，order: birth_time desc）
+- 1 个 cross-folder grid view（SmartFolderGridView）+ 1 个 sidebar UI（SmartFolderListView）
+- IndexStore 持久化：~/Library/Containers/com.sunhongjun.glance/Data/Library/Application Support/Glance/index.sqlite
+- folders 表 + images 表（v1 schema 含 M1+M2+M3 forward-looking 字段）+ 5 个 index
+- FolderScanner 单次递归扫描（无 FSEvents 增量，Slice G 才上）
+- V1/V2 selection 互斥 + V2 keyboard 完整支持 + Inspector 共享路径
+- **不含**：时间分段 sticky header（B）/ hide toggle 菜单（D）/ FSEvents（G）/ dedup（H）/ 进度 UI（I）
+

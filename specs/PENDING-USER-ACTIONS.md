@@ -58,6 +58,63 @@
 - [ ] (2026-05-05 / `<pending>` / dist · 可选) **GitHub 仓库改名 ISeeImageViewer → Glance**：与 V1 发布解耦，发完 v1.0.0 后再做。改名后 GitHub 自动留旧路径 redirect，不影响已发链接
 - [x] (2026-05-05 / `bd25fd0`) **关于面板 Copyright 字段**（已用 8f927d1 自定义 about panel 取代）：标准面板 wrap 点不雅观（"小红书"和"382336617"被自动拆两行），故升级到自定义 panel — 见下方测试项 ✓ 2026-05-05
 
+### V2 Slice A（2026-05-08 完成 / 待用户复测）
+
+**端到端基础**
+- [ ] (2026-05-08 / Slice A) **V2 全部最近 · 单 root**：清干净 DB（`rm -rf "$HOME/Library/Containers/com.sunhongjun.glance/Data/Library/Application Support/Glance/"`）→ 启动 V2 → 加 1 个含 ~100 张图的 root folder → console 5 秒内出 `[IndexStore] scan complete for /path/...` → 切到 ⚙️ "全部最近" → grid 显示该 folder 的图按 birth_time 倒序
+- [ ] (2026-05-08 / Slice A) **V2 全部最近 · 多 root**：再加第 2 个 root folder → "全部最近" grid 应看到两个 folder 的图**混排**按 birth_time 倒序
+- [ ] (2026-05-08 / Slice A) **V1↔V2 互斥**：V1 sidebar 点选具体 folder → 主区切到 V1 ImageGridView（cell + size slider + sort menu）→ 切到 ⚙️ "全部最近" → 主区回 V2 grid，V1 选中清空；反向也对称
+- [ ] (2026-05-08 / Slice A) **V1 行为零退化**：V1 mode 跑 7 路径（启动 / 拖文件夹 / 单击进 preview + 方向键 / 双击进 QuickViewer 缩放拖拽 / 全屏 F 键 / 排序菜单 / Inspector ⌘I）跟 v1.0 一致
+
+**V2 cell 视觉/交互（mirror V1 ThumbnailCell）**
+- [ ] (2026-05-08 / Slice A) **V2 cell 方形 + 不 letterbox**：V2 grid cell 是方形（180×180 默认），图片填满（不留黑边 letterbox）
+- [ ] (2026-05-08 / Slice A) **V2 cell hover 效果**：鼠标悬停 cell → 1.03× 微放大 + 暗化 dim overlay（mirror V1 ThumbnailCell）
+- [ ] (2026-05-08 / Slice A) **V2 cell 共享 thumbnailSize**：V1 mode 拖动顶部 size slider → 切回 V2 mode → V2 cell 大小跟着变了（V1 / V2 共享 folderStore.thumbnailSize 一处控制两边）
+- [ ] (2026-05-08 / Slice A) **V2 cell HiDPI 锐利**：retina 屏 V2 缩略图清晰（maxPixelSize = size × backingScaleFactor）
+- [ ] (2026-05-08 / Slice A) **V2 cell hover tooltip**：鼠标悬停 cell ≥1s → 浮出 tooltip 显示 relative path（如 `nature_01.jpg` 或 `subfolder/foo.jpg`，D5）
+- [ ] (2026-05-08 / Slice A) **V2 cell highlight 跟 V1 一致**：单击 cell → 紫色（accent color）边框 + 半透明填充
+
+**V2 grid keyboard（mirror V1 ImageGridView）**
+- [ ] (2026-05-08 / Slice A) **V2 grid 自动焦点**：进 V2 mode → grid 自动有焦点（直接按方向键就工作，无需先点 cell）
+- [ ] (2026-05-08 / Slice A) **V2 grid 方向键导航**：左 / 右 / 上 / 下 → highlight 在 V2 grid 内移动，scroll 自动跟随到中心
+- [ ] (2026-05-08 / Slice A) **V2 grid Space → QV**：highlight cell 后按 Space → 进 QuickViewer（无 highlight 时取第 1 张）
+- [ ] (2026-05-08 / Slice A) **V2 grid F → 全屏**：按 F → 切换全窗口全屏（跟 V1 / QV / preview 一致）
+- [ ] (2026-05-08 / Slice A) **V2 grid 焦点路由 · preview 退出**：单击 cell → preview → ESC → grid 焦点回来，方向键继续
+- [ ] (2026-05-08 / Slice A) **V2 grid 焦点路由 · QV 退出**：双击 cell → QV → ESC → grid 焦点回来，highlight 落在最后浏览的图
+- [ ] (2026-05-08 / Slice A) **V2 grid 焦点路由 · preview→QV→preview**：单击 cell → preview → ←→ 浏览到 Z → 双击 → QV → ESC → preview 回 Z → ESC → grid highlight 在 Z
+
+**V2 mode 主区切换（mirror V1）**
+- [ ] (2026-05-08 / Slice A) **V2 单击 cell → preview**：cell 单击 → fade in V1 风格 ImagePreviewView，顶部 toolbar 显示 filename
+- [ ] (2026-05-08 / Slice A) **V2 双击 cell → QV 不闪 grid**（codex:rescue 真根因 fix 验证）：cell 双击 → QV 即时出现，**没有中间 grid 暴露闪烁**（修前会闪 ~200ms）
+- [ ] (2026-05-08 / Slice A) **V2 preview→QV 不闪 grid**：单击进 preview → space 或双击图 → QV 即时出现，**也不闪 grid**
+- [ ] (2026-05-08 / Slice A) **V2 QV 导航**：QV 内方向键 / nav button / filmstrip tap → 主图正确切换；QV 内 ESC 仍按入口走（grid 双击进的 → 退回 grid；preview 双击进的 → 退回 preview）
+- [ ] (2026-05-08 / Slice A) **V2 mode Inspector**：V2 mode 单击 cell 进 preview → ⌘I 或 ⓘ 按钮 → Inspector 显示**选中图的文件名 / 尺寸 / EXIF / GPS**（非空态）
+
+**幂等性（codex review 重点 + bookmark sandbox 限制 verify）**
+- [ ] (2026-05-08 / Slice A) **重启幂等 · grid 自动恢复**：关闭 V2（Cmd+Q）→ 重启 → ⚙️ "全部最近" 默认选中 + grid 自动出图，**无需重扫**（IndexStore 持久化生效）
+- [ ] (2026-05-08 / Slice A) **重启幂等 · console 不再 scan**：重启后 console **不应再出** `[IndexStore] scan complete`（registerRoot path 去重 + UNIQUE(folder_id, relative_path) 配合）
+- [ ] (2026-05-08 / Slice A) **重启幂等 · DB 行数稳定**：连续重启 3-5 次后跑命令验证 image / folder 行数不持续增长：
+
+```bash
+DB="$HOME/Library/Containers/com.sunhongjun.glance/Data/Library/Application Support/Glance/index.sqlite"
+sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count(*) FROM images;"
+```
+
+- [ ] (2026-05-08 / Slice A) **path 变化不破坏幂等**：把一个 root folder 在 Finder 重命名（同磁盘位置）→ 重启 V2 → folders 表**不应出现重复行**（registerRoot 用 standardizedFileURL.path 做 unique key）
+- [ ] (2026-05-08 / Slice A) **DB 文件位置确认**（plan 路径错，注意 sandbox container）：`ls -la "$HOME/Library/Containers/com.sunhongjun.glance/Data/Library/Application Support/Glance/"` 应有 `index.sqlite` + `index.sqlite-shm` + `index.sqlite-wal` 三个文件
+
+**边界 case**
+- [ ] (2026-05-08 / Slice A) **空 folder**：拖一个 0 张图的空 folder 到 V1 sidebar → V2 "全部最近" grid 不应崩，仍显示其他 root 的图（不应误进入"暂无图片"占位态）
+- [ ] (2026-05-08 / Slice A) **大 folder（性能目标，非硬性）**：加 1 万张图的大 folder → 首次扫描 < 10 分钟（plan D9 性能目标）；扫描期间 grid 应渐进显示已索引图（每批 50 张 console 进度日志）
+- [ ] (2026-05-08 / Slice A) **删除 root folder**：V1 sidebar 删除一个 root folder → V1 sidebar entry 消失；V2 "全部最近" grid 暂仍显示该 folder 的旧图（**Slice G FSEvents 才会清理孤立行**，Slice A 接受此 known limitation）
+
+**已知限制 / 推后的 Slice A scope**
+- [ ] (2026-05-08 / Slice A · followup Slice B+) **V2 grid toolbar size slider**：V2 mode 时顶部 toolbar 没有 V1 那种缩略图 size slider（80-280pt 拖动条）。当前用户只能通过先切到 V1 mode 拖 slider 间接调节。Slice B+ 决定 V2 grid 自带 toolbar 还是 ContentView 共用
+- [ ] (2026-05-08 / Slice A · followup Slice B+) **V2 grid toolbar 排序按钮**：V2 mode 没有排序方式 / 升降序切换（V1 有 6 种排序）。跨 folder sort 语义需要 design 拍（按 filename 跨 folder 不直观，按 birth_time / file_size 更合理）
+- [ ] (2026-05-08 / Slice A · followup Slice I) **v2Urls / folderStore.images 双源耦合**：当前 V2 模式 ContentView 拆出本地 `@State v2Urls`，preview / QuickViewer / Inspector 三处都要 `smartFolderStore.selected != nil ? v2Urls : folderStore.images` 选 source。Slice I 重构候选：让 ImagePreviewView/QuickViewerOverlay/Inspector 不直接依赖 folderStore.images，完全走显式参数；移除 V1/V2 双向耦合
+- [ ] (2026-05-08 / Slice A · followup Slice I) **IndexedImage.urlBookmark 字段 rename**：实际存的是 root bookmark（不是 image 自己的 bookmark，sandbox 不允许给 enumerator 子文件创建 .withSecurityScope bookmark）。Slice I rename 候选：→ rootBookmark 或干脆改为 folder_id → folders.root_url_bookmark lookup
+- [ ] (2026-05-08 / Slice A · followup Slice I) **computeV2Urls() 同步 resolve 性能**：cell 单击/双击时同步 resolve ~100 张 bookmark 可能 50-200ms 主线程卡顿（codex:rescue 已标）。Slice I 性能优化阶段处理（缓存已 resolve 的 root URL / 异步预热）
+
 ---
 
 ## Done
