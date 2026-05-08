@@ -4,7 +4,7 @@
 
 [![macOS 14+](https://img.shields.io/badge/macOS-14.0+-blue.svg)](https://www.apple.com/macos/sonoma/) [![Universal](https://img.shields.io/badge/Universal-arm64%20%2B%20x86__64-green.svg)](https://www.apple.com/mac/) [![Notarized](https://img.shields.io/badge/Apple-Notarized-success.svg)](#)
 
-**[⬇ 下载 v1.0.0](https://github.com/sunhuaian2026/ISeeImageViewer/releases/latest)** · 邮箱 `16414766@qq.com` · 小红书 `382336617`
+**[⬇ 下载 v1.0.0](https://github.com/sunhuaian2026/Glance/releases/latest)** · 邮箱 `16414766@qq.com` · 小红书 `382336617`
 
 ### 缩略图网格
 
@@ -49,7 +49,7 @@
 
 ## 安装
 
-下载 [latest release](https://github.com/sunhuaian2026/ISeeImageViewer/releases/latest) 的 DMG → 双击 → 拖 `Glance.app` 到 `Applications` → Launchpad / Spotlight 启动。
+下载 [latest release](https://github.com/sunhuaian2026/Glance/releases/latest) 的 DMG → 双击 → 拖 `Glance.app` 到 `Applications` → Launchpad / Spotlight 启动。
 
 ✅ 已通过 Apple 公证（Notarization），双击直接打开，不弹任何 Gatekeeper 警告。
 
@@ -74,7 +74,7 @@ make release-dry    # 同上但跳过公证（本地干跑验证签名 + DMG 流
 
 ## 反馈与贡献
 
-- 🐛 Bug / 功能建议 → [GitHub Issues](https://github.com/sunhuaian2026/ISeeImageViewer/issues)
+- 🐛 Bug / 功能建议 → [GitHub Issues](https://github.com/sunhuaian2026/Glance/issues)
 - 📧 邮箱：16414766@qq.com
 - 📕 小红书：**382336617**
 
