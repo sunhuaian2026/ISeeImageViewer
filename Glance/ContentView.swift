@@ -236,7 +236,8 @@ struct ContentView: View {
                     folderStore.selectedImageIndex = nil
                     quickViewerEntry = .grid
                     quickViewerIndex = idx
-                }
+                },
+                gridFocusTrigger: gridFocusTrigger
             )
         } else {
             // V1 ImageGridView 始终保留在层级里，避免返回时缩略图全部重载
