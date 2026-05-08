@@ -172,7 +172,10 @@ struct SmartFolderGridView: View {
                 // .regularMaterial 撞色边界融，靠 material 厚度补不来 — 系统 widget/menu
                 // hairline 同模式：macOS Calendar.app / Mail.app sidebar items）
                 .overlay(
-                    Capsule().strokeBorder(.primary.opacity(0.12), lineWidth: 0.5)
+                    Capsule().strokeBorder(
+                        .primary.opacity(DS.SectionHeader.chipBorderOpacity),
+                        lineWidth: DS.SectionHeader.chipBorderWidth
+                    )
                 )
             Spacer()
         }

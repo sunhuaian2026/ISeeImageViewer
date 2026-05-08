@@ -92,6 +92,15 @@ enum DS {
         static let cornerRadius: CGFloat = 12
     }
 
+    // MARK: - SectionHeader（V2 时间分段 chip）
+
+    enum SectionHeader {
+        // chip strokeBorder hairline（参考 macOS Calendar.app / Mail.app sidebar items）
+        // 0.5pt 在 HiDPI 下对应 1 物理像素；opacity 0.12 跟系统 separator 视觉强度一致
+        static let chipBorderWidth: CGFloat = 0.5
+        static let chipBorderOpacity: Double = 0.12
+    }
+
     // MARK: - Animation
 
     enum Anim {
