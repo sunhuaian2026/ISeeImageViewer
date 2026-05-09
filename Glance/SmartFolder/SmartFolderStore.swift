@@ -32,13 +32,17 @@ final class SmartFolderStore: ObservableObject {
     var selected: SmartFolder? {
         switch state {
         case .idle: return nil
-        case .loading(let f), .loaded(let f, _), .error(let f, _): return f
+        case .loading(let f, _), .loaded(let f, _), .error(let f, _): return f
         }
     }
 
+    /// .loading 期间返回 staleImages 让 grid 不清空避免闪屏；.loaded 返回真实结果。
     var queryResult: [IndexedImage] {
-        if case .loaded(_, let imgs) = state { return imgs }
-        return []
+        switch state {
+        case .loaded(_, let imgs): return imgs
+        case .loading(_, let stale): return stale
+        case .idle, .error: return []
+        }
     }
 
     var isQuerying: Bool {
@@ -54,19 +58,23 @@ final class SmartFolderStore: ObservableObject {
     // MARK: - State transitions
 
     /// Select a smart folder and refresh its query result. nil → state .idle。
+    /// 切到不同 SF 时不 carry stale（用户主动切，期望立刻看到新 SF 数据）；
+    /// 同 SF refresh 时 carry 当前 queryResult 作为 stale，避免重复 refresh 闪屏。
     func select(_ folder: SmartFolder?) async {
         guard let folder else {
             state = .idle
             return
         }
-        state = .loading(folder)
+        let stale: [IndexedImage] = (selected?.id == folder.id) ? queryResult : []
+        state = .loading(folder, staleImages: stale)
         await runQuery(for: folder)
     }
 
     /// Re-execute the currently-selected smart folder query.
+    /// Carry 当前 queryResult 作为 stale → grid 在 loading 期间继续显示旧数据。
     func refreshSelected() async {
         guard let folder = selected else { return }
-        state = .loading(folder)
+        state = .loading(folder, staleImages: queryResult)
         await runQuery(for: folder)
     }
 
@@ -78,12 +86,12 @@ final class SmartFolderStore: ObservableObject {
             let result = try await Task.detached(priority: .userInitiated) {
                 try captured.execute(folder)
             }.value
-            // Stale-write guard：仅当当前 state 仍指向同一 folder 才写回结果
-            if case .loading(let cur) = state, cur.id == folder.id {
+            // Stale-write guard：仅当当前 state 仍指向同一 folder 的 .loading 才写回结果
+            if case .loading(let cur, _) = state, cur.id == folder.id {
                 state = .loaded(folder, result)
             }
         } catch {
-            if case .loading(let cur) = state, cur.id == folder.id {
+            if case .loading(let cur, _) = state, cur.id == folder.id {
                 state = .error(folder, "\(error)")
             }
         }

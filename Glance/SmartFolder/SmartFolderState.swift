@@ -12,8 +12,9 @@ import Foundation
 enum SmartFolderState: Equatable {
     /// 初始 / 用户清 selection / IndexStore 未就绪
     case idle
-    /// query 进行中（grid 显示 ProgressView empty state）
-    case loading(SmartFolder)
+    /// query 进行中。`staleImages` carry 上一次 .loaded 的结果（同 SF refresh 场景），
+    /// 让 grid 在 loading 期间继续渲染旧数据避免视觉闪烁；切到新 SF 时传 `[]`。
+    case loading(SmartFolder, staleImages: [IndexedImage])
     /// query 成功（grid 显示结果，可能为空数组 = 无图）
     case loaded(SmartFolder, [IndexedImage])
     /// query 失败（grid 显示错误占位 + lastError 文案）
