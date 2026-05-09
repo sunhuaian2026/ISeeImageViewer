@@ -178,11 +178,11 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### Slice I 启动双 loading 闪屏 fix（2026-05-09 · 修法 2 方案 5 落地）
 
-- [ ] (2026-05-09 / `<pending>` / Slice I bugfix v2) **启动 grid 不闪 · 核心**：冷启动 Glance（多 root 已索引场景）→ 主区显示 grid 后**不应再消失/重新出现**。允许 progress chip 短暂出现（FSEvents 增量），但 grid 本身始终保留旧数据，无空白闪烁
-- [ ] (2026-05-09 / `<pending>` / Slice I bugfix v2) **手动切 SF 立即清空**：在「全部最近」grid 浏览中 → 点 sidebar「本周新增」→ grid 应**立刻清空 + loading**（不 carry「全部最近」的 stale 数据），新 SF 数据出来后填充。验证 select(不同 SF) 时不 carry stale 的语义
-- [ ] (2026-05-09 / `<pending>` / Slice I bugfix v2) **同 SF refresh 不闪**：选中某 SF → 后台触发 refresh（如 Finder 拖图进 managed folder 触发 FSEvents → onIndexChanged → refreshSelected）→ grid 中旧 cell **不应消失**，新数据回来后无缝替换
-- [ ] (2026-05-09 / `<pending>` / Slice I bugfix v2) **空库首启动仍走 emptyState**：`rm -rf` DB → 启动 → 加首个 root → 空库阶段 SmartFolderGridView 应正常显示 emptyState（"暂无图片"）；扫完后 grid 出图。验证 stale=`[]` + loaded([]) 两条空路径都触发 emptyState
-- [ ] (2026-05-09 / `<pending>` / Slice I bugfix v2) **stale cell 点击行为**：grid loading 期间快速点 stale cell（启动后 1 秒内）→ 行为应是预览旧 image（不崩、不 nil 错误），即使该 image 在 refresh 后已被 dedup 清除。trade-off 验证：codex 标的 race 接受度
+- [ ] (2026-05-09 / `5f1e365` / Slice I bugfix v2) **启动 grid 不闪 · 核心**：冷启动 Glance（多 root 已索引场景）→ 主区显示 grid 后**不应再消失/重新出现**。允许 progress chip 短暂出现（FSEvents 增量），但 grid 本身始终保留旧数据，无空白闪烁
+- [ ] (2026-05-09 / `5f1e365` / Slice I bugfix v2) **手动切 SF 立即清空**：在「全部最近」grid 浏览中 → 点 sidebar「本周新增」→ grid 应**立刻清空 + loading**（不 carry「全部最近」的 stale 数据），新 SF 数据出来后填充。验证 select(不同 SF) 时不 carry stale 的语义
+- [ ] (2026-05-09 / `5f1e365` / Slice I bugfix v2) **同 SF refresh 不闪**：选中某 SF → 后台触发 refresh（如 Finder 拖图进 managed folder 触发 FSEvents → onIndexChanged → refreshSelected）→ grid 中旧 cell **不应消失**，新数据回来后无缝替换
+- [ ] (2026-05-09 / `5f1e365` / Slice I bugfix v2) **空库首启动仍走 emptyState**：`rm -rf` DB → 启动 → 加首个 root → 空库阶段 SmartFolderGridView 应正常显示 emptyState（"暂无图片"）；扫完后 grid 出图。验证 stale=`[]` + loaded([]) 两条空路径都触发 emptyState
+- [ ] (2026-05-09 / `5f1e365` / Slice I bugfix v2) **stale cell 点击行为**：grid loading 期间快速点 stale cell（启动后 1 秒内）→ 行为应是预览旧 image（不崩、不 nil 错误），即使该 image 在 refresh 后已被 dedup 清除。trade-off 验证：codex 标的 race 接受度
 - [ ] (2026-05-09 / `<pending>` / Slice I bugfix) **启动单次 loading**：冷启动 Glance（不要 `rm -rf` DB，确保有 root + 已索引数据）→ 主区只看到 1 次 loading 过渡（idle → loading → loaded）就显示 grid，不应再"loading 完→消失→又 loading 一下→出图"两次循环
 - [ ] (2026-05-09 / `3ad6f1f` / Slice I bugfix) **首次启动空库**：`rm -rf "$HOME/Library/Containers/com.sunhongjun.glance/Data/Library/Application Support/Glance/"` → 启动 → 加 root → 等扫完。期间应只在 scan + dedup 完成那一刻看到 loading（不应启动瞬间就 loading 一次再 loading 一次）
 - [ ] (2026-05-09 / `3ad6f1f` / Slice I bugfix) **添加 root 后 grid 自动出图**：app 已启动且选中"全部最近"→ Cmd+O 或拖 Finder 文件夹添加新 root → 等扫完（含 dedup pass）→ grid 自动反映新 root 的图。验证 onIndexChanged → refreshSelected 链路在添加路径仍工作（修法删了手动 refresh，全靠 bridge 内部 triggerDedupFullPass 的回调）
