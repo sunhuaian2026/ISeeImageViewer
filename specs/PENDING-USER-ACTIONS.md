@@ -178,10 +178,10 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### Slice I 启动双 loading 闪屏 fix（2026-05-09）
 
-- [ ] (2026-05-09 / `<pending>` / Slice I bugfix) **启动单次 loading**：冷启动 Glance（不要 `rm -rf` DB，确保有 root + 已索引数据）→ 主区只看到 1 次 loading 过渡（idle → loading → loaded）就显示 grid，不应再"loading 完→消失→又 loading 一下→出图"两次循环
-- [ ] (2026-05-09 / `<pending>` / Slice I bugfix) **首次启动空库**：`rm -rf "$HOME/Library/Containers/com.sunhongjun.glance/Data/Library/Application Support/Glance/"` → 启动 → 加 root → 等扫完。期间应只在 scan + dedup 完成那一刻看到 loading（不应启动瞬间就 loading 一次再 loading 一次）
-- [ ] (2026-05-09 / `<pending>` / Slice I bugfix) **添加 root 后 grid 自动出图**：app 已启动且选中"全部最近"→ Cmd+O 或拖 Finder 文件夹添加新 root → 等扫完（含 dedup pass）→ grid 自动反映新 root 的图。验证 onIndexChanged → refreshSelected 链路在添加路径仍工作（修法删了手动 refresh，全靠 bridge 内部 triggerDedupFullPass 的回调）
-- [ ] (2026-05-09 / `<pending>` / Slice I bugfix) **删除 root 后 grid 自动清理**：删 root（V1 sidebar 右键移除）→ grid 自动从"全部最近"清掉该 root 的图。验证 unregister → triggerDedupFullPass → onIndexChanged 链路仍工作
+- [ ] (2026-05-09 / `3ad6f1f` / Slice I bugfix) **启动单次 loading**：冷启动 Glance（不要 `rm -rf` DB，确保有 root + 已索引数据）→ 主区只看到 1 次 loading 过渡（idle → loading → loaded）就显示 grid，不应再"loading 完→消失→又 loading 一下→出图"两次循环
+- [ ] (2026-05-09 / `3ad6f1f` / Slice I bugfix) **首次启动空库**：`rm -rf "$HOME/Library/Containers/com.sunhongjun.glance/Data/Library/Application Support/Glance/"` → 启动 → 加 root → 等扫完。期间应只在 scan + dedup 完成那一刻看到 loading（不应启动瞬间就 loading 一次再 loading 一次）
+- [ ] (2026-05-09 / `3ad6f1f` / Slice I bugfix) **添加 root 后 grid 自动出图**：app 已启动且选中"全部最近"→ Cmd+O 或拖 Finder 文件夹添加新 root → 等扫完（含 dedup pass）→ grid 自动反映新 root 的图。验证 onIndexChanged → refreshSelected 链路在添加路径仍工作（修法删了手动 refresh，全靠 bridge 内部 triggerDedupFullPass 的回调）
+- [ ] (2026-05-09 / `3ad6f1f` / Slice I bugfix) **删除 root 后 grid 自动清理**：删 root（V1 sidebar 右键移除）→ grid 自动从"全部最近"清掉该 root 的图。验证 unregister → triggerDedupFullPass → onIndexChanged 链路仍工作
 
 ### Slice B-α 延后项（polish，不阻塞 ship）
 
