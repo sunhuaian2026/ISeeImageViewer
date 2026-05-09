@@ -176,6 +176,13 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice I.2) **错误 banner**：模拟扫描失败（如某文件 IO error）→ mainContent 顶部出现红色 capsule banner "「root_name」扫描失败：..." → 点 X 按钮 dismiss → banner 消失，主 UI 仍可滚动
 - [ ] (2026-05-09 / `<pending>` / Slice I.3) **enum-state 重构无回归**：所有 V2 grid 行为（query 切换 / 重 query / 空态 / preview 方向键 navigate / Inspector 同步）跟 Slice H 一致，没有 race / stale-write / 重复刷新等异常
 
+### Slice I 启动双 loading 闪屏 fix（2026-05-09）
+
+- [ ] (2026-05-09 / `<pending>` / Slice I bugfix) **启动单次 loading**：冷启动 Glance（不要 `rm -rf` DB，确保有 root + 已索引数据）→ 主区只看到 1 次 loading 过渡（idle → loading → loaded）就显示 grid，不应再"loading 完→消失→又 loading 一下→出图"两次循环
+- [ ] (2026-05-09 / `<pending>` / Slice I bugfix) **首次启动空库**：`rm -rf "$HOME/Library/Containers/com.sunhongjun.glance/Data/Library/Application Support/Glance/"` → 启动 → 加 root → 等扫完。期间应只在 scan + dedup 完成那一刻看到 loading（不应启动瞬间就 loading 一次再 loading 一次）
+- [ ] (2026-05-09 / `<pending>` / Slice I bugfix) **添加 root 后 grid 自动出图**：app 已启动且选中"全部最近"→ Cmd+O 或拖 Finder 文件夹添加新 root → 等扫完（含 dedup pass）→ grid 自动反映新 root 的图。验证 onIndexChanged → refreshSelected 链路在添加路径仍工作（修法删了手动 refresh，全靠 bridge 内部 triggerDedupFullPass 的回调）
+- [ ] (2026-05-09 / `<pending>` / Slice I bugfix) **删除 root 后 grid 自动清理**：删 root（V1 sidebar 右键移除）→ grid 自动从"全部最近"清掉该 root 的图。验证 unregister → triggerDedupFullPass → onIndexChanged 链路仍工作
+
 ### Slice B-α 延后项（polish，不阻塞 ship）
 
 - [ ] (2026-05-09 / Deferred / Slice B-α polish) **chip 深浅色模式下对比强化**：用户要求 chip 在 dark/light 各模式下跟 cell 的视觉对比再"跳"一些。当前状态：`.thickMaterial` + `Capsule().strokeBorder(.primary.opacity(DS.SectionHeader.chipBorderOpacity=0.12), lineWidth: DS.SectionHeader.chipBorderWidth=0.5)`。**待对齐**（重启时问用户）：(1) 哪个组合对比最弱？dark mode + dark cell / dark + light cell / light + light cell / light + dark cell（建议截图对比）；(2) 期望"强烈"方向：A stroke 加粗 + opacity 升（0.5pt×0.12 → 1pt×0.30）/ B `.ultraThickMaterial` + 微 shadow / C 反色 fill（dark mode chip 用 light fill / light mode chip 用 dark fill，告别 material 透感，macOS Photos.app / Files.app 模式）/ D material + accentColor tint（DS.Color.glowPrimary 弱化版）。**修法 surface 预期**：仅 `Glance/FolderBrowser/SmartFolderGridView.swift sectionHeader` + `Glance/DesignSystem.swift DS.SectionHeader` 段；不动 LazyVGrid pinnedViews、moveHighlight、locate、其他交互逻辑

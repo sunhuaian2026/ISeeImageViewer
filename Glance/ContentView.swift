@@ -197,13 +197,12 @@ struct ContentView: View {
             guard ready else { return }
             Task { await wireIfReady() }
         }
-        // V2 受管文件夹增删 → bridge sync + 当前 SF 重 query
+        // V2 受管文件夹增删 → bridge sync。bridge 内部 registerAndScan / unregister 末尾
+        // 都跑 triggerDedupFullPass → onIndexChanged → refreshSelected，所以这里不再
+        // 主动 refreshSelected，避免启动时 rootFolders 异步还原触发的"双 loading 闪屏"。
         .onChange(of: folderStore.rootFolders) { _, newRoots in
             guard let bridge = indexBridge else { return }
-            Task {
-                await bridge.sync(with: newRoots)
-                await smartFolderStore.refreshSelected()
-            }
+            Task { await bridge.sync(with: newRoots) }
         }
         // V2 selection 互斥：smart folder 选中 → 清 V1；反之亦然
         .onChange(of: folderStore.selectedFolder) { _, newFolder in
