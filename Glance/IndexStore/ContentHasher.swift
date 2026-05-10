@@ -9,7 +9,8 @@
 import Foundation
 import CryptoKit
 
-enum ContentHasher {
+// ContentHasher.sha256 由 nonisolated DedupPass 在 detached task 调用，标 nonisolated 避免 actor isolation warning。
+nonisolated enum ContentHasher {
 
     /// 计算文件 SHA256 hex 字符串（小写）。失败返回 nil（caller 决定 retry / 跳过）。
     /// caller 必须先 startAccessingSecurityScopedResource (sandbox)；本函数仅读 file。

@@ -18,7 +18,10 @@
 
 import Foundation
 
-enum DedupPass {
+// DedupPass 必须 nonisolated：所有调用都在 Task.detached 内（FolderStoreIndexBridge
+// triggerDedupFullPass / triggerDedupGroup），避免编译器把 static method 推断成
+// MainActor isolated 导致 detached task 调用 warning。
+nonisolated enum DedupPass {
 
     /// 全候选 dedup pass：扫所有 (file_size, format) candidate group，计算 SHA256 +
     /// 决议 canonical。FolderScanner 完成后调一次（或 root 删除后）。

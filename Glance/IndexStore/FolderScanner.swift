@@ -43,6 +43,10 @@ nonisolated final class FolderScanner {
         var totalIndexed = 0
         var lastIndexed: URL?
         var skippingForResume = (resumeFrom != nil)
+        // Cleanup pass：仅完整 scan（非 resume）时收集，扫完删 stored - seen 的 stale row。
+        // resume 场景跳过 cleanup 避免误删 lastProcessedPath 之前已 indexed 但本次未 enumerate 的合法 row。
+        let isFullScan = (resumeFrom == nil)
+        var seenPaths: Set<String> = []
 
         for case let fileURL as URL in enumerator {
             // Slice I.2 — Task cancellation：用户点 X / app 关闭 → break loop（cursor 已持久化）
@@ -84,6 +88,7 @@ nonisolated final class FolderScanner {
             _ = try store.insertImageIfAbsent(record)
             totalIndexed += 1
             lastIndexed = fileURL
+            if isFullScan { seenPaths.insert(relPath) }
 
             if totalIndexed % 100 == 0 {
                 // Slice I.2 — 每 100 张写 cursor 让重启可 resume from 该位置
@@ -97,6 +102,21 @@ nonisolated final class FolderScanner {
         onProgress?(ScanProgress(totalScanned: totalScanned, totalIndexed: totalIndexed, lastIndexed: lastIndexed))
         // Slice I.2 — 扫完清 cursor，下次启动不再 resume
         try? store.clearLastProcessedPath(rootId: folderId)
+
+        // Cleanup pass — 完整 scan 后删 stale row（FSEvents 离线漏掉的 delete/move）。
+        // resume 场景 seenPaths 不全，跳过；DedupPass 在 cleanup 后由 caller 重跑修正 canonical。
+        if isFullScan {
+            do {
+                let stored = try store.fetchAllRelativePaths(folderId: folderId)
+                let stalePaths = Array(stored.subtracting(seenPaths))
+                if !stalePaths.isEmpty {
+                    let removed = try store.deleteImages(folderId: folderId, relativePaths: stalePaths)
+                    print("[FolderScanner] cleanup folderId=\(folderId): removed \(removed) stale rows (offline delete/move)")
+                }
+            } catch {
+                print("[FolderScanner] cleanup FAILED for folderId=\(folderId): \(error)")
+            }
+        }
     }
 
     private func relativePath(of file: URL, under root: URL) -> String {

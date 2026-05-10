@@ -118,6 +118,47 @@ nonisolated extension IndexStore {
         }
     }
 
+    /// Cleanup pass — 拉某 folder 下所有 row 的 relative_path，给 FolderScanner 做
+    /// 完整 scan 后的 garbage collection（删除文件已不存在的 stale row）。
+    /// FSEvents 只在 app 运行期监听；离线移动 / 删除靠下次 scan 末尾这一步补。
+    func fetchAllRelativePaths(folderId: Int64) throws -> Set<String> {
+        try sync { db in
+            let stmt = try db.prepare("SELECT relative_path FROM images WHERE folder_id = ?;")
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int64(stmt, 1, folderId), index: 1, db: db)
+            var result = Set<String>()
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                if let cString = sqlite3_column_text(stmt, 0) {
+                    result.insert(String(cString: cString))
+                }
+            }
+            return result
+        }
+    }
+
+    /// 批量删除（folder_id, relative_path）匹配的 row。供 FolderScanner cleanup pass 用。
+    /// 单 transaction 内多次 DELETE，比循环调 deleteImage 高效。返回成功删除条数。
+    @discardableResult
+    func deleteImages(folderId: Int64, relativePaths: [String]) throws -> Int {
+        guard !relativePaths.isEmpty else { return 0 }
+        return try sync { db in
+            let stmt = try db.prepare("DELETE FROM images WHERE folder_id = ? AND relative_path = ?;")
+            defer { sqlite3_finalize(stmt) }
+            var deleted = 0
+            for path in relativePaths {
+                sqlite3_reset(stmt)
+                sqlite3_clear_bindings(stmt)
+                try checkBind(sqlite3_bind_int64(stmt, 1, folderId), index: 1, db: db)
+                try checkBind(sqlite3_bind_text(stmt, 2, (path as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 2, db: db)
+                guard sqlite3_step(stmt) == SQLITE_DONE else {
+                    throw IndexDatabaseError.stepFailed(message: "deleteImages: \(db.lastErrorMessage())")
+                }
+                deleted += Int(sqlite3_changes(db.handle))
+            }
+            return deleted
+        }
+    }
+
     /// Slice G.3 — 更新单条 image row 元数据（FSEvents Modified 触发）。
     /// 仅 metadata 字段（birth_time / file_size / format / filename / dimensions）；
     /// content_sha256 / dedup_canonical 是 Slice H 字段，本 slice 保留 NULL 不重算。

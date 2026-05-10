@@ -176,6 +176,14 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice I.2) **错误 banner**：模拟扫描失败（如某文件 IO error）→ mainContent 顶部出现红色 capsule banner "「root_name」扫描失败：..." → 点 X 按钮 dismiss → banner 消失，主 UI 仍可滚动
 - [ ] (2026-05-09 / `<pending>` / Slice I.3) **enum-state 重构无回归**：所有 V2 grid 行为（query 切换 / 重 query / 空态 / preview 方向键 navigate / Inspector 同步）跟 Slice H 一致，没有 race / stale-write / 重复刷新等异常
 
+### FolderScanner cleanup pass — stale row 自愈（2026-05-10）
+
+- [ ] (2026-05-10 / `<pending>` / scan cleanup) **离线移动 stale row 自动清**：装新 build → 重启 Glance → 等首次 scan 完 → console 应有 `[FolderScanner] cleanup folderId=N: removed M stale rows (offline delete/move)` log → 「全部最近」原本卡 spinner 的 `00-cover.png` / `05-card-05.png` 等 cell 应消失（被 cleanup pass 删了 stale row）
+- [ ] (2026-05-10 / `<pending>` / scan cleanup) **当前用户库直接修复**：你目前库里的 stale row（id=42 / id=43 等）应在重启后第一次 scan 完成时被清掉；不需要手动跑 SQL
+- [ ] (2026-05-10 / `<pending>` / scan cleanup) **离线删除文件 → 重启清行**：app 关闭状态下在 Finder 删某 managed folder 里的图 → 重启 Glance → 等 scan 完 → grid 应不再显示该图（cleanup pass 删 row）
+- [ ] (2026-05-10 / `<pending>` / scan cleanup) **resume 场景不误删**：扫描中途 Cmd+Q（cursor 写入）→ 重启自动 resume → 完成 resume 后**不应**触发 cleanup（resumeFrom != nil 时跳过 cleanup pass）；已 indexed 的图保留
+- [ ] (2026-05-10 / `<pending>` / scan cleanup) **dedup canonical 自动重定位**：cleanup 删了 stale row 后 `triggerDedupFullPass` 自动重跑（registerAndScan 末尾已挂）→ canonical 在剩余 row 间重新决策，grid 正确显示
+
 ### Slice I 启动双 loading 闪屏 fix（2026-05-09 · 修法 2 方案 5 落地）
 
 - [ ] (2026-05-09 / `5f1e365` / Slice I bugfix v2) **启动 grid 不闪 · 核心**：冷启动 Glance（多 root 已索引场景）→ 主区显示 grid 后**不应再消失/重新出现**。允许 progress chip 短暂出现（FSEvents 增量），但 grid 本身始终保留旧数据，无空白闪烁
