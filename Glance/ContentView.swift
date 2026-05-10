@@ -397,6 +397,21 @@ struct ContentView: View {
         } else {
             await smartFolderStore.refreshSelected()
         }
+
+        // M2 Slice J — feature print indexer 启动 + 回调挂载
+        let indexer = FeaturePrintIndexer(store: store)
+        let holderRef2 = indexStoreHolder  // shadow capture（指针不变 capture 安全）
+        indexer.onProgress = { progress in
+            holderRef2.featurePrintProgress = progress
+        }
+        indexer.onError = { msg in
+            holderRef2.lastError = msg
+        }
+        holderRef2.featurePrintIndexer = indexer
+        holderRef2.cancelFeaturePrintIndexing = { [weak indexer] in
+            indexer?.cancel()
+        }
+        indexer.start()
     }
 
     // MARK: - Slice D — hide toggle 路由（ContentView 拼桥：sidebar URL → IndexStore id+relativePath）
