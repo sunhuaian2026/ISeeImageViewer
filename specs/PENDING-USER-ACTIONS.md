@@ -176,6 +176,13 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice I.2) **错误 banner**：模拟扫描失败（如某文件 IO error）→ mainContent 顶部出现红色 capsule banner "「root_name」扫描失败：..." → 点 X 按钮 dismiss → banner 消失，主 UI 仍可滚动
 - [ ] (2026-05-09 / `<pending>` / Slice I.3) **enum-state 重构无回归**：所有 V2 grid 行为（query 切换 / 重 query / 空态 / preview 方向键 navigate / Inspector 同步）跟 Slice H 一致，没有 race / stale-write / 重复刷新等异常
 
+### Slice D follow-up — root hide 图标提示（2026-05-10）
+
+- [ ] (2026-05-10 / `<pending>` / Slice D follow-up) **root hide 显示 eye.slash**：sidebar 右键 root → "在智能文件夹中隐藏" → 该 root 行 folder 名右侧应出现灰色 `eye.slash` 图标；hover 该图标 → 浮 tooltip "在智能文件夹中隐藏"
+- [ ] (2026-05-10 / `<pending>` / Slice D follow-up) **取消 hide 图标消失**：右键已 hide 的 root → "在智能文件夹中显示" → eye.slash 图标立即消失
+- [ ] (2026-05-10 / `<pending>` / Slice D follow-up) **subfolder hide 不显图标**：root visible 状态下，右键某 subfolder → "在智能文件夹中隐藏" → subfolder 行**不应**出现图标（仅 root 层显，子目录靠 contextMenu label 表达）
+- [ ] (2026-05-10 / `<pending>` / Slice D follow-up) **重启状态保留**：hide 某 root → 退出 Glance → 重启 → 该 root 仍带 eye.slash 图标（IndexStore 持久化）
+
 ### SVG 支持（2026-05-10）
 
 - [ ] (2026-05-10 / `c88c7ae` / SVG support) **V2 grid SVG 缩略图渲染**：装新 build → 重启 → 拖 `.svg` 文件到 managed folder → 「全部最近」grid 应**正常显示 SVG 缩略图**，不再卡 spinner

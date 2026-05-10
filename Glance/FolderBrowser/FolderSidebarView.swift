@@ -102,6 +102,14 @@ struct FolderSidebarView: View {
 
         HStack {
             Label(node.url.lastPathComponent, systemImage: "folder")
+            // Slice D follow-up — root 层若被在智能文件夹中隐藏，加 eye.slash 图标提示；
+            // 仅 root，subfolder 嵌套继承规则复杂留 contextMenu label 表达
+            if isRoot, isEffectivelyHidden?(node.url, node.url) == true {
+                Image(systemName: "eye.slash")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .help("在智能文件夹中隐藏")
+            }
             Spacer()
             if let count, count > 0 {
                 Text("\(count)")
