@@ -245,6 +245,13 @@ struct ContentView: View {
                     })
                     .transition(.opacity.combined(with: .move(edge: .top)))
                 }
+                // M2 Slice J — feature print 索引进度 chip（紫色调区分扫描 chip）
+                if let fpProgress = indexStoreHolder.featurePrintProgress {
+                    FeaturePrintProgressView(progress: fpProgress, onCancel: {
+                        indexStoreHolder.cancelFeaturePrintIndexing?()
+                    })
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                }
                 // Slice I.2 — 错误 banner（扫描失败 / dedup 失败 → holder.lastError 非 nil）
                 if let err = indexStoreHolder.lastError {
                     HStack(spacing: DS.Spacing.xs) {
@@ -281,6 +288,7 @@ struct ContentView: View {
         }
         .animation(DS.Anim.fast, value: indexStoreHolder.progress)
         .animation(DS.Anim.fast, value: indexStoreHolder.lastError)
+        .animation(DS.Anim.fast, value: indexStoreHolder.featurePrintProgress)
     }
 
     @ViewBuilder

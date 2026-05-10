@@ -110,6 +110,14 @@ enum DS {
         static let errorBorderOpacity: Double = 0.3
     }
 
+    // MARK: - Similarity（V2 M2 Slice J — feature print 索引进度 chip）
+
+    enum Similarity {
+        /// fp 进度 chip 用紫色调（视觉与扫描进度区分；DS.Color.glowPrimary 系）
+        static let chipAccent: SwiftUI.Color = .accentColor
+        static let spinnerScale: CGFloat = 0.7
+    }
+
     // MARK: - Animation
 
     enum Anim {
