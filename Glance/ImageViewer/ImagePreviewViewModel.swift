@@ -43,9 +43,7 @@ final class ImagePreviewViewModel: ObservableObject {
         prefetchAdjacent(images: images, currentIndex: index)
         imageLoadTask = Task { [weak self] in
             let result: NSImage? = await Task.detached(priority: .userInitiated) {
-                guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
-                      let cg = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return nil }
-                return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+                loadFullNSImage(url: url)
             }.value
             guard let self, !Task.isCancelled else { return }
             self.nsImage = result
@@ -70,6 +68,9 @@ final class ImagePreviewViewModel: ObservableObject {
 
         for idx in targets {
             let url = images[idx]
+            // SVG 是 vector 没 CGImage 形态；prefetchCache 类型 [Int: CGImage] 存不了，
+            // 跳过 prefetch（vector 文件通常 KB 级，cache miss 时主路径走 NSImage 直接 load 不亏）
+            if url.pathExtension.lowercased() == "svg" { continue }
             prefetchTasks[idx] = Task { [weak self] in
                 let img: CGImage? = await Task.detached(priority: .utility) {
                     guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),

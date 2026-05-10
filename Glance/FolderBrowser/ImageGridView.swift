@@ -273,6 +273,18 @@ struct ThumbnailCell: View {
 
 // MARK: - Thumbnail Loading（internal，供 FilmstripCell 复用）
 
+/// 加载完整 NSImage（preview / QuickViewer 大图用）。SVG 走 NSImage(contentsOf:)
+/// 让 macOS CoreSVG rasterize；raster 格式走 CGImageSource → CGImage → NSImage。
+/// 必须在 detached task 内调用（IO + 解码）。
+func loadFullNSImage(url: URL) -> NSImage? {
+    if url.pathExtension.lowercased() == "svg" {
+        return NSImage(contentsOf: url)
+    }
+    guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
+          let cg = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return nil }
+    return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
+}
+
 func loadThumbnail(url: URL, maxPixelSize: Int = 200) async -> NSImage? {
     await Task.detached(priority: .userInitiated) {
         // SVG: vector 无内嵌 raster thumbnail，CGImageSourceCreateThumbnailAtIndex 常 return

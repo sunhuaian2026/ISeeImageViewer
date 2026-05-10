@@ -205,9 +205,7 @@ class QuickViewerViewModel: ObservableObject {
         imageLoadTask?.cancel()
         imageLoadTask = Task {
             let result: NSImage? = await Task.detached(priority: .userInitiated) {
-                guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
-                      let cgImg = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return nil }
-                return NSImage(cgImage: cgImg, size: NSSize(width: cgImg.width, height: cgImg.height))
+                loadFullNSImage(url: url)
             }.value
             guard !Task.isCancelled else { return }
             currentNSImage = result
@@ -227,6 +225,8 @@ class QuickViewerViewModel: ObservableObject {
 
         for idx in targets {
             let url = images[idx]
+            // SVG vector 没 CGImage 形态，跳过 prefetch（cache miss 时主路径走 NSImage 直 load）
+            if url.pathExtension.lowercased() == "svg" { continue }
             prefetchTasks[idx] = Task.detached(priority: .background) { [weak self] in
                 guard let self else { return }
                 guard let src = CGImageSourceCreateWithURL(url as CFURL, nil),
