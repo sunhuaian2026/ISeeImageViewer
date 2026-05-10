@@ -178,11 +178,11 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### Slice D follow-up #2 — hide 图标扩到 subfolder explicit（2026-05-10）
 
-- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **subfolder 单独 hide 显图标**：root visible 状态下 → 右键某 subfolder → "在智能文件夹中隐藏" → **该 subfolder 行**应出现 eye.slash 图标 + tooltip"在智能文件夹中隐藏"
-- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **root hide 整树 subfolder 不显图标**：右键 root → "在智能文件夹中隐藏" → root 行显图标 ✓；展开 root → 各 subfolder 行**不应**显图标（继承非 explicit，避免视觉噪音）
-- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **subfolder 单独 unhide 不显图标**：root hide 状态下 → 右键某 subfolder → "在智能文件夹中显示"（subfolder 行 explicit hide=0）→ subfolder 行**不应**显图标（explicit unhide ≠ hide）
-- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **explicit + 继承双层冗余场景**：root hide → 右键某 subfolder → "在智能文件夹中隐藏"（冗余 explicit）→ root 显 / 该 subfolder 也显（双图标 — explicit 表达一致，冗余但不错）
-- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **重启状态保留**：执行任意 explicit hide → 退出重启 → 图标位置跟退出前一致
+- [ ] (2026-05-10 / `f34edb7` / Slice D follow-up #2) **subfolder 单独 hide 显图标**：root visible 状态下 → 右键某 subfolder → "在智能文件夹中隐藏" → **该 subfolder 行**应出现 eye.slash 图标 + tooltip"在智能文件夹中隐藏"
+- [ ] (2026-05-10 / `f34edb7` / Slice D follow-up #2) **root hide 整树 subfolder 不显图标**：右键 root → "在智能文件夹中隐藏" → root 行显图标 ✓；展开 root → 各 subfolder 行**不应**显图标（继承非 explicit，避免视觉噪音）
+- [ ] (2026-05-10 / `f34edb7` / Slice D follow-up #2) **subfolder 单独 unhide 不显图标**：root hide 状态下 → 右键某 subfolder → "在智能文件夹中显示"（subfolder 行 explicit hide=0）→ subfolder 行**不应**显图标（explicit unhide ≠ hide）
+- [ ] (2026-05-10 / `f34edb7` / Slice D follow-up #2) **explicit + 继承双层冗余场景**：root hide → 右键某 subfolder → "在智能文件夹中隐藏"（冗余 explicit）→ root 显 / 该 subfolder 也显（双图标 — explicit 表达一致，冗余但不错）
+- [ ] (2026-05-10 / `f34edb7` / Slice D follow-up #2) **重启状态保留**：执行任意 explicit hide → 退出重启 → 图标位置跟退出前一致
 
 ### Slice D follow-up — root hide 图标提示（2026-05-10）
 
