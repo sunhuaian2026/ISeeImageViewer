@@ -24,6 +24,14 @@ final class FolderStoreIndexBridge: ObservableObject {
     private var watchers: [Int64: FSEventsWatcher] = [:]
     private let watcherQueue = DispatchQueue(label: "com.sunhongjun.glance.fsevents", qos: .utility)
 
+    /// M2 Slice J — FSEvents 派发新图后触发 fp indexer 重启拉一批新行。ContentView wireIfReady
+    /// 调 setFeaturePrintIndexer 注入。weak 引用避免 retain cycle（indexer 由 IndexStoreHolder 强持）。
+    private weak var featurePrintIndexer: FeaturePrintIndexer?
+
+    func setFeaturePrintIndexer(_ indexer: FeaturePrintIndexer) {
+        self.featurePrintIndexer = indexer
+    }
+
     /// Slice G.2 — 当 FSEvents 派发的 events 更新了 IndexStore 后调用此 closure，
     /// 让 caller (ContentView) 触发 smartFolderStore.refreshSelected() 刷 grid。
     var onIndexChanged: (() -> Void)? = nil
@@ -249,6 +257,8 @@ final class FolderStoreIndexBridge: ObservableObject {
             _ = try indexStore.insertImageIfAbsent(record)
             // Slice H — 新图入索引 → 重新决议该 (file_size, format) group 的 canonical
             triggerDedupGroup(fileSize: metadata.fileSize, format: metadata.format)
+            // M2 Slice J — 通知 fp indexer 重启拉新一批（含本图）
+            featurePrintIndexer?.enqueueIfNeeded()
             return true
         } catch {
             print("[FSEvents] insertImageIfAbsent FAILED \(path): \(error)")

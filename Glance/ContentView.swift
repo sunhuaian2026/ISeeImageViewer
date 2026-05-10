@@ -411,6 +411,7 @@ struct ContentView: View {
         holderRef2.cancelFeaturePrintIndexing = { [weak indexer] in
             indexer?.cancel()
         }
+        bridge.setFeaturePrintIndexer(indexer)
         indexer.start()
     }
 
