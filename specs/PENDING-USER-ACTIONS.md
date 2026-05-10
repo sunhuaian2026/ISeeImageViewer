@@ -178,11 +178,11 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### FolderScanner cleanup pass — stale row 自愈（2026-05-10）
 
-- [ ] (2026-05-10 / `<pending>` / scan cleanup) **离线移动 stale row 自动清**：装新 build → 重启 Glance → 等首次 scan 完 → console 应有 `[FolderScanner] cleanup folderId=N: removed M stale rows (offline delete/move)` log → 「全部最近」原本卡 spinner 的 `00-cover.png` / `05-card-05.png` 等 cell 应消失（被 cleanup pass 删了 stale row）
-- [ ] (2026-05-10 / `<pending>` / scan cleanup) **当前用户库直接修复**：你目前库里的 stale row（id=42 / id=43 等）应在重启后第一次 scan 完成时被清掉；不需要手动跑 SQL
-- [ ] (2026-05-10 / `<pending>` / scan cleanup) **离线删除文件 → 重启清行**：app 关闭状态下在 Finder 删某 managed folder 里的图 → 重启 Glance → 等 scan 完 → grid 应不再显示该图（cleanup pass 删 row）
-- [ ] (2026-05-10 / `<pending>` / scan cleanup) **resume 场景不误删**：扫描中途 Cmd+Q（cursor 写入）→ 重启自动 resume → 完成 resume 后**不应**触发 cleanup（resumeFrom != nil 时跳过 cleanup pass）；已 indexed 的图保留
-- [ ] (2026-05-10 / `<pending>` / scan cleanup) **dedup canonical 自动重定位**：cleanup 删了 stale row 后 `triggerDedupFullPass` 自动重跑（registerAndScan 末尾已挂）→ canonical 在剩余 row 间重新决策，grid 正确显示
+- [ ] (2026-05-10 / `3914a01` / scan cleanup) **离线移动 stale row 自动清**：装新 build → 重启 Glance → 等首次 scan 完 → console 应有 `[FolderScanner] cleanup folderId=N: removed M stale rows (offline delete/move)` log → 「全部最近」原本卡 spinner 的 `00-cover.png` / `05-card-05.png` 等 cell 应消失（被 cleanup pass 删了 stale row）
+- [ ] (2026-05-10 / `3914a01` / scan cleanup) **当前用户库直接修复**：你目前库里的 stale row（id=42 / id=43 等）应在重启后第一次 scan 完成时被清掉；不需要手动跑 SQL
+- [ ] (2026-05-10 / `3914a01` / scan cleanup) **离线删除文件 → 重启清行**：app 关闭状态下在 Finder 删某 managed folder 里的图 → 重启 Glance → 等 scan 完 → grid 应不再显示该图（cleanup pass 删 row）
+- [ ] (2026-05-10 / `3914a01` / scan cleanup) **resume 场景不误删**：扫描中途 Cmd+Q（cursor 写入）→ 重启自动 resume → 完成 resume 后**不应**触发 cleanup（resumeFrom != nil 时跳过 cleanup pass）；已 indexed 的图保留
+- [ ] (2026-05-10 / `3914a01` / scan cleanup) **dedup canonical 自动重定位**：cleanup 删了 stale row 后 `triggerDedupFullPass` 自动重跑（registerAndScan 末尾已挂）→ canonical 在剩余 row 间重新决策，grid 正确显示
 
 ### Slice I 启动双 loading 闪屏 fix（2026-05-09 · 修法 2 方案 5 落地）
 
