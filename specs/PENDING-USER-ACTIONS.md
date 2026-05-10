@@ -178,11 +178,11 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### SVG 支持（2026-05-10）
 
-- [ ] (2026-05-10 / `<pending>` / SVG support) **V2 grid SVG 缩略图渲染**：装新 build → 重启 → 拖 `.svg` 文件到 managed folder → 「全部最近」grid 应**正常显示 SVG 缩略图**，不再卡 spinner
-- [ ] (2026-05-10 / `<pending>` / SVG support) **V1 grid SVG 显示**：选 V1 mode 某个含 SVG 的具体 folder → 该 SVG 应在缩略图网格里出现（之前 supportedExtensions 不含 svg → V1 完全过滤）
-- [ ] (2026-05-10 / `<pending>` / SVG support) **ImagePreviewView SVG**：单击 SVG cell → 进 preview → SVG 应正常显示；方向键切换到下一张非 SVG 图也正常
-- [ ] (2026-05-10 / `<pending>` / SVG support) **QuickViewer SVG**：双击 SVG cell → 进 QV → SVG 应能正常显示 + 滚轮缩放无糊（vector 无限缩放）；方向键切换其他格式正常
-- [ ] (2026-05-10 / `<pending>` / SVG support) **混合格式排序**：folder 内有 svg + png + jpg 混合 → 排序菜单切换（按修改时间 / 名字等）→ SVG 正确排序，缩略图不消失
+- [ ] (2026-05-10 / `c88c7ae` / SVG support) **V2 grid SVG 缩略图渲染**：装新 build → 重启 → 拖 `.svg` 文件到 managed folder → 「全部最近」grid 应**正常显示 SVG 缩略图**，不再卡 spinner
+- [ ] (2026-05-10 / `c88c7ae` / SVG support) **V1 grid SVG 显示**：选 V1 mode 某个含 SVG 的具体 folder → 该 SVG 应在缩略图网格里出现（之前 supportedExtensions 不含 svg → V1 完全过滤）
+- [ ] (2026-05-10 / `c88c7ae` / SVG support) **ImagePreviewView SVG**：单击 SVG cell → 进 preview → SVG 应正常显示；方向键切换到下一张非 SVG 图也正常
+- [ ] (2026-05-10 / `c88c7ae` / SVG support) **QuickViewer SVG**：双击 SVG cell → 进 QV → SVG 应能正常显示 + 滚轮缩放无糊（vector 无限缩放）；方向键切换其他格式正常
+- [ ] (2026-05-10 / `c88c7ae` / SVG support) **混合格式排序**：folder 内有 svg + png + jpg 混合 → 排序菜单切换（按修改时间 / 名字等）→ SVG 正确排序，缩略图不消失
 
 ### FolderScanner cleanup pass — stale row 自愈（2026-05-10）
 
