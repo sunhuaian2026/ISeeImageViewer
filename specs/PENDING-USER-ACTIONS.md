@@ -176,6 +176,14 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice I.2) **错误 banner**：模拟扫描失败（如某文件 IO error）→ mainContent 顶部出现红色 capsule banner "「root_name」扫描失败：..." → 点 X 按钮 dismiss → banner 消失，主 UI 仍可滚动
 - [ ] (2026-05-09 / `<pending>` / Slice I.3) **enum-state 重构无回归**：所有 V2 grid 行为（query 切换 / 重 query / 空态 / preview 方向键 navigate / Inspector 同步）跟 Slice H 一致，没有 race / stale-write / 重复刷新等异常
 
+### SVG 支持（2026-05-10）
+
+- [ ] (2026-05-10 / `<pending>` / SVG support) **V2 grid SVG 缩略图渲染**：装新 build → 重启 → 拖 `.svg` 文件到 managed folder → 「全部最近」grid 应**正常显示 SVG 缩略图**，不再卡 spinner
+- [ ] (2026-05-10 / `<pending>` / SVG support) **V1 grid SVG 显示**：选 V1 mode 某个含 SVG 的具体 folder → 该 SVG 应在缩略图网格里出现（之前 supportedExtensions 不含 svg → V1 完全过滤）
+- [ ] (2026-05-10 / `<pending>` / SVG support) **ImagePreviewView SVG**：单击 SVG cell → 进 preview → SVG 应正常显示；方向键切换到下一张非 SVG 图也正常
+- [ ] (2026-05-10 / `<pending>` / SVG support) **QuickViewer SVG**：双击 SVG cell → 进 QV → SVG 应能正常显示 + 滚轮缩放无糊（vector 无限缩放）；方向键切换其他格式正常
+- [ ] (2026-05-10 / `<pending>` / SVG support) **混合格式排序**：folder 内有 svg + png + jpg 混合 → 排序菜单切换（按修改时间 / 名字等）→ SVG 正确排序，缩略图不消失
+
 ### FolderScanner cleanup pass — stale row 自愈（2026-05-10）
 
 - [ ] (2026-05-10 / `3914a01` / scan cleanup) **离线移动 stale row 自动清**：装新 build → 重启 Glance → 等首次 scan 完 → console 应有 `[FolderScanner] cleanup folderId=N: removed M stale rows (offline delete/move)` log → 「全部最近」原本卡 spinner 的 `00-cover.png` / `05-card-05.png` 等 cell 应消失（被 cleanup pass 删了 stale row）

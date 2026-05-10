@@ -82,7 +82,7 @@ class FolderStore: ObservableObject {
     private let bookmarkManager: BookmarkManager
 
     private static let supportedExtensions: Set<String> = [
-        "jpg", "jpeg", "png", "heic", "heif", "gif", "webp", "tiff"
+        "jpg", "jpeg", "png", "heic", "heif", "gif", "webp", "tiff", "svg"
     ]
 
     init(bookmarkManager: BookmarkManager) {

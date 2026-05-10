@@ -275,6 +275,18 @@ struct ThumbnailCell: View {
 
 func loadThumbnail(url: URL, maxPixelSize: Int = 200) async -> NSImage? {
     await Task.detached(priority: .userInitiated) {
+        // SVG: vector 无内嵌 raster thumbnail，CGImageSourceCreateThumbnailAtIndex 常 return
+        // nil → spinner 永卡。走 NSImage 让 macOS CoreSVG rasterize；通过 size 控制目标尺寸，
+        // SwiftUI 渲染时按 vector 数据重新栅格化无糊。
+        if url.pathExtension.lowercased() == "svg" {
+            guard let img = NSImage(contentsOf: url),
+                  img.size.width > 0, img.size.height > 0 else { return nil }
+            let scale = min(CGFloat(maxPixelSize) / img.size.width,
+                            CGFloat(maxPixelSize) / img.size.height,
+                            1.0)
+            img.size = NSSize(width: img.size.width * scale, height: img.size.height * scale)
+            return img
+        }
         guard let source = CGImageSourceCreateWithURL(url as CFURL, nil) else { return nil }
         let options: [CFString: Any] = [
             kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
