@@ -178,10 +178,10 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### Slice D follow-up — root hide 图标提示（2026-05-10）
 
-- [ ] (2026-05-10 / `<pending>` / Slice D follow-up) **root hide 显示 eye.slash**：sidebar 右键 root → "在智能文件夹中隐藏" → 该 root 行 folder 名右侧应出现灰色 `eye.slash` 图标；hover 该图标 → 浮 tooltip "在智能文件夹中隐藏"
-- [ ] (2026-05-10 / `<pending>` / Slice D follow-up) **取消 hide 图标消失**：右键已 hide 的 root → "在智能文件夹中显示" → eye.slash 图标立即消失
-- [ ] (2026-05-10 / `<pending>` / Slice D follow-up) **subfolder hide 不显图标**：root visible 状态下，右键某 subfolder → "在智能文件夹中隐藏" → subfolder 行**不应**出现图标（仅 root 层显，子目录靠 contextMenu label 表达）
-- [ ] (2026-05-10 / `<pending>` / Slice D follow-up) **重启状态保留**：hide 某 root → 退出 Glance → 重启 → 该 root 仍带 eye.slash 图标（IndexStore 持久化）
+- [ ] (2026-05-10 / `3cd463c` / Slice D follow-up) **root hide 显示 eye.slash**：sidebar 右键 root → "在智能文件夹中隐藏" → 该 root 行 folder 名右侧应出现灰色 `eye.slash` 图标；hover 该图标 → 浮 tooltip "在智能文件夹中隐藏"
+- [ ] (2026-05-10 / `3cd463c` / Slice D follow-up) **取消 hide 图标消失**：右键已 hide 的 root → "在智能文件夹中显示" → eye.slash 图标立即消失
+- [ ] (2026-05-10 / `3cd463c` / Slice D follow-up) **subfolder hide 不显图标**：root visible 状态下，右键某 subfolder → "在智能文件夹中隐藏" → subfolder 行**不应**出现图标（仅 root 层显，子目录靠 contextMenu label 表达）
+- [ ] (2026-05-10 / `3cd463c` / Slice D follow-up) **重启状态保留**：hide 某 root → 退出 Glance → 重启 → 该 root 仍带 eye.slash 图标（IndexStore 持久化）
 
 ### SVG 支持（2026-05-10）
 
