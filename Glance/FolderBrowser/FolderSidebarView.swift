@@ -134,6 +134,10 @@ struct FolderSidebarView: View {
             Button("在 Finder 中显示") {
                 NSWorkspace.shared.selectFile(nil, inFileViewerRootedAtPath: node.url.path)
             }
+            // V1 mode 当前选中的 folder 才显"刷新"，避免歧义（右键非 selected node 看到"刷新"会困惑刷哪个）
+            if folderStore.selectedFolder == node.url {
+                Button("刷新") { folderStore.refreshCurrentFolder() }
+            }
             if let toggle = onToggleHide, let rootURL = rootURL(for: node.url) {
                 let hidden = isEffectivelyHidden?(rootURL, node.url) ?? false
                 Button(hidden ? "在智能文件夹中显示" : "在智能文件夹中隐藏") {

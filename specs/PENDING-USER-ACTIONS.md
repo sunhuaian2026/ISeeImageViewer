@@ -176,6 +176,15 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice I.2) **错误 banner**：模拟扫描失败（如某文件 IO error）→ mainContent 顶部出现红色 capsule banner "「root_name」扫描失败：..." → 点 X 按钮 dismiss → banner 消失，主 UI 仍可滚动
 - [ ] (2026-05-09 / `<pending>` / Slice I.3) **enum-state 重构无回归**：所有 V2 grid 行为（query 切换 / 重 query / 空态 / preview 方向键 navigate / Inspector 同步）跟 Slice H 一致，没有 race / stale-write / 重复刷新等异常
 
+### V1 mode grid 自动刷新 + 手动刷新（2026-05-10）
+
+- [ ] (2026-05-10 / `<pending>` / V1 refresh) **V1 自动 FSEvents · 增**：V1 mode 选某 folder → grid 显示 → 用 Finder 拖一张图到该 folder → 5s 内 grid 自动出现新图（不用手动刷新）
+- [ ] (2026-05-10 / `<pending>` / V1 refresh) **V1 自动 FSEvents · 删**：V1 mode 选某 folder → 用 Finder 删该 folder 内某图 → 5s 内 grid 自动消失
+- [ ] (2026-05-10 / `<pending>` / V1 refresh) **V1 自动 FSEvents · 改**：V1 mode 选某 folder → 用 Finder 替换某图（cp 覆盖）→ 5s 内 grid 同步（缩略图重新加载）
+- [ ] (2026-05-10 / `<pending>` / V1 refresh) **手动刷新**：右键当前选中的 folder → 出现"刷新"菜单项 → 点 → grid reload。**右键非选中的 folder** → 不应出现"刷新"项（避免歧义刷哪个）
+- [ ] (2026-05-10 / `<pending>` / V1 refresh) **切 folder watcher 切换**：选 folderA → 拖图进 folderA 验证 grid 出现 → 切到 folderB → 拖图进 folderA → folderB grid **不应**响应（folderA watcher 已 stop，selectedFolder guard 也防漏）→ 切回 folderA grid 显示新图
+- [ ] (2026-05-10 / `<pending>` / V1 refresh) **删 folder 停 watcher**：选 folderA → 右键移除 folderA → watcher 应自动停（无 leak），不再有事件触发；之后选别的 folder 正常工作
+
 ### Slice D follow-up #2 — hide 图标扩到 subfolder explicit（2026-05-10）
 
 - [ ] (2026-05-10 / `f34edb7` / Slice D follow-up #2) **subfolder 单独 hide 显图标**：root visible 状态下 → 右键某 subfolder → "在智能文件夹中隐藏" → **该 subfolder 行**应出现 eye.slash 图标 + tooltip"在智能文件夹中隐藏"

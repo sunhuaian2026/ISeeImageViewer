@@ -73,6 +73,11 @@ class FolderStore: ObservableObject {
         images = sortImagesSync(images)
     }
 
+    /// V1 mode 当前选中 folder 的 FSEvents watcher。selectFolder 时停旧启新；
+    /// removeFolder / 切到 V2 时停。callback 内 guard selectedFolder == 监听的 url 防 race。
+    private var currentFolderWatcher: FSEventsWatcher?
+    private let folderWatcherQueue = DispatchQueue(label: "com.sunhongjun.glance.fs.v1", qos: .utility)
+
     @Published var thumbnailSize: CGFloat = DS.Thumbnail.defaultSize {
         didSet {
             UserDefaults.standard.set(Double(thumbnailSize), forKey: "thumbnailSize")
@@ -177,9 +182,11 @@ class FolderStore: ObservableObject {
         bookmarkManager.removeBookmark(for: url)
         rootFolders.removeAll { $0.url == url }
         imageCountByFolder.removeValue(forKey: url)
-        // 若选中的是被删除树中的任意节点，则取消选择
+        // 若选中的是被删除树中的任意节点，则取消选择 + 停 V1 watcher
         if let selected = selectedFolder,
            selected == url || selected.path.hasPrefix(url.path + "/") {
+            currentFolderWatcher?.stop()
+            currentFolderWatcher = nil
             selectedFolder = nil
             images = []
             selectedImageIndex = nil
@@ -187,10 +194,40 @@ class FolderStore: ObservableObject {
     }
 
     func selectFolder(_ url: URL) {
+        // 停旧 watcher（防切 folder 后旧 events 派发到错的 selectedFolder）
+        currentFolderWatcher?.stop()
+        currentFolderWatcher = nil
+
         selectedFolder = url
         selectedImageIndex = nil
         images = []
         Task { await scanImages(in: url) }
+
+        // V1 FSEvents：监听 url 子树文件变化 → reload images
+        startCurrentFolderWatcher(for: url)
+    }
+
+    /// V1 grid 手动刷新当前 folder（sidebar 右键"刷新"调）。
+    /// 兜底 FSEvents 偶发漏 + 用户想强制刷新时的入口。
+    func refreshCurrentFolder() {
+        guard let url = selectedFolder else { return }
+        Task { await scanImages(in: url) }
+    }
+
+    private func startCurrentFolderWatcher(for url: URL) {
+        let watcher = FSEventsWatcher(queue: folderWatcherQueue) { [weak self] events in
+            // 只关心文件变化（非 metadata-only），避免 inode meta 变动触发无意义 reload
+            let hasFileChange = events.contains { ev in
+                ev.isFile && (ev.isCreated || ev.isRemoved || ev.isModified || ev.isRenamed)
+            }
+            guard hasFileChange else { return }
+            Task { @MainActor [weak self] in
+                guard let self, let current = self.selectedFolder, current == url else { return }
+                await self.scanImages(in: current)
+            }
+        }
+        watcher.start(rootPath: url.standardizedFileURL.path)
+        currentFolderWatcher = watcher
     }
 
     // MARK: - Tree Discovery
