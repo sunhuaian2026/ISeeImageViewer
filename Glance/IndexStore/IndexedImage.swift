@@ -454,6 +454,153 @@ nonisolated extension IndexStore {
         }
     }
 
+    // MARK: - M2 Slice J 找类似（feature print CRUD）
+
+    /// J.3 — 拉一批 supports_feature_print=1 且 feature_print IS NULL 的 row 给 indexer 抽。
+    /// 按 id ASC 取，配 limit 实现 batch backfill。返回 [(id, urlBookmark, relativePath, folderId)]。
+    /// 不返回 IndexedImage 整 row（只用到这 4 列，省内存 + IO）。
+    func fetchImagesNeedingFeaturePrint(limit: Int) throws -> [(id: Int64, urlBookmark: Data, relativePath: String, folderId: Int64)] {
+        try sync { db in
+            let stmt = try db.prepare("""
+                SELECT id, url_bookmark, relative_path, folder_id FROM images
+                WHERE supports_feature_print = 1 AND feature_print IS NULL
+                ORDER BY id ASC LIMIT ?;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int(stmt, 1, Int32(limit)), index: 1, db: db)
+
+            var results: [(Int64, Data, String, Int64)] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let id = sqlite3_column_int64(stmt, 0)
+                let blobLen = sqlite3_column_bytes(stmt, 1)
+                let blobPtr = sqlite3_column_blob(stmt, 1)
+                let bookmark = blobPtr.map { Data(bytes: $0, count: Int(blobLen)) } ?? Data()
+                let relPath = String(cString: sqlite3_column_text(stmt, 2))
+                let folderId = sqlite3_column_int64(stmt, 3)
+                results.append((id, bookmark, relPath, folderId))
+            }
+            return results
+        }
+    }
+
+    /// J.3 — 写入 feature_print blob + revision；caller (indexer) 已 SimilarityService.extract 拿到。
+    func setFeaturePrint(imageId: Int64, archivedData: Data, revision: Int) throws {
+        try sync { db in
+            let stmt = try db.prepare("""
+                UPDATE images SET feature_print = ?, feature_print_revision = ?
+                WHERE id = ?;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            let blobBytes = archivedData as NSData
+            try checkBind(
+                sqlite3_bind_blob(stmt, 1, blobBytes.bytes, Int32(blobBytes.length), unsafeBitCast(-1, to: sqlite3_destructor_type.self)),
+                index: 1, db: db
+            )
+            try checkBind(sqlite3_bind_int(stmt, 2, Int32(revision)), index: 2, db: db)
+            try checkBind(sqlite3_bind_int64(stmt, 3, imageId), index: 3, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "setFeaturePrint: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
+    /// J.3 — Vision 抽取失败（unsupported format / corrupted file）→ 标 supports=0，
+    /// 让 fetchImagesNeedingFeaturePrint 永久跳过（避免无限 retry 同一坏图）。
+    func setFeaturePrintUnsupported(imageId: Int64) throws {
+        try sync { db in
+            let stmt = try db.prepare("""
+                UPDATE images SET supports_feature_print = 0,
+                                  feature_print = NULL,
+                                  feature_print_revision = NULL
+                WHERE id = ?;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int64(stmt, 1, imageId), index: 1, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "setFeaturePrintUnsupported: \(db.lastErrorMessage())")
+            }
+        }
+    }
+
+    /// J.10 — 找类似 query：取所有有 fp 的 (id, archivedData)，加载 SimilarityService 算 distance。
+    /// 1 万图 × ~6KB archive = ~60MB 内存峰值，M1 mac 可接受。
+    func fetchAllFeaturePrintsForCosine() throws -> [(id: Int64, archivedData: Data)] {
+        try sync { db in
+            let stmt = try db.prepare("""
+                SELECT id, feature_print FROM images
+                WHERE supports_feature_print = 1 AND feature_print IS NOT NULL
+                ORDER BY id ASC;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            var results: [(Int64, Data)] = []
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let id = sqlite3_column_int64(stmt, 0)
+                let blobLen = sqlite3_column_bytes(stmt, 1)
+                let blobPtr = sqlite3_column_blob(stmt, 1)
+                let archived = blobPtr.map { Data(bytes: $0, count: Int(blobLen)) } ?? Data()
+                guard !archived.isEmpty else { continue }
+                results.append((id, archived))
+            }
+            return results
+        }
+    }
+
+    /// J.10 — 找类似时：按 image full URL 查 (id, archivedData)。caller 反查源图自己的 fp。
+    /// 失败（行不存在 / fp 未抽 / fp 损坏）→ 返 nil（caller 提示"该图未索引/不支持"）。
+    func fetchFeaturePrintByFullPath(_ fullPath: String) throws -> (id: Int64, archivedData: Data)? {
+        try sync { db in
+            let stmt = try db.prepare("""
+                SELECT i.id, i.feature_print FROM images i
+                JOIN folders f ON i.folder_id = f.id
+                WHERE f.root_path || '/' || i.relative_path = ? LIMIT 1;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_text(stmt, 1, (fullPath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 1, db: db)
+            guard sqlite3_step(stmt) == SQLITE_ROW else { return nil }
+            let id = sqlite3_column_int64(stmt, 0)
+            guard sqlite3_column_type(stmt, 1) != SQLITE_NULL else { return nil }
+            let blobLen = sqlite3_column_bytes(stmt, 1)
+            let blobPtr = sqlite3_column_blob(stmt, 1)
+            let archived = blobPtr.map { Data(bytes: $0, count: Int(blobLen)) } ?? Data()
+            guard !archived.isEmpty else { return nil }
+            return (id, archived)
+        }
+    }
+
+    /// J.10 — 已知 image id list → URL list（resolve root bookmark + 拼 relative_path）。
+    /// computeV2Urls 同款 pattern；失败行 silently skip（compactMap）。
+    func fetchUrlsByIds(_ ids: [Int64]) throws -> [URL] {
+        guard !ids.isEmpty else { return [] }
+        return try sync { db in
+            let placeholders = ids.map { _ in "?" }.joined(separator: ",")
+            let sql = "SELECT id, url_bookmark, relative_path FROM images WHERE id IN (\(placeholders));"
+            let stmt = try db.prepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            for (idx, id) in ids.enumerated() {
+                try checkBind(sqlite3_bind_int64(stmt, Int32(idx + 1), id), index: idx + 1, db: db)
+            }
+
+            // 先拉 row 进字典，再按入参 ids 顺序输出（preserve top-N 排序）
+            var byId: [Int64: URL] = [:]
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                let rowId = sqlite3_column_int64(stmt, 0)
+                let blobLen = sqlite3_column_bytes(stmt, 1)
+                let blobPtr = sqlite3_column_blob(stmt, 1)
+                let bookmark = blobPtr.map { Data(bytes: $0, count: Int(blobLen)) } ?? Data()
+                let relPath = String(cString: sqlite3_column_text(stmt, 2))
+                var stale = false
+                if let rootURL = try? URL(
+                    resolvingBookmarkData: bookmark,
+                    options: [.withSecurityScope],
+                    bookmarkDataIsStale: &stale
+                ) {
+                    byId[rowId] = rootURL.appendingPathComponent(relPath)
+                }
+            }
+            return ids.compactMap { byId[$0] }
+        }
+    }
+
     private func checkBind(_ result: Int32, index: Int, db: IndexDatabase) throws {
         if result != SQLITE_OK {
             throw IndexDatabaseError.bindFailed(index: index, message: "bind result \(result): \(db.lastErrorMessage())")
