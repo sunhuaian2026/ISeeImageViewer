@@ -12,15 +12,31 @@ struct QuickViewerOverlay: View {
     // QV 内方向键 / nav button (goBack/goForward) / filmstrip tap (goTo) 都触发
     // viewModel.currentIndex 变化，统一通过此回调上报给 ContentView 同步 selectedImageIndex
     let onIndexChange: (Int) -> Void
+    /// M2 Slice J — 用户点「找类似」按钮触发；caller (ContentView) 接到当前图 URL 后
+    /// 反查 image id + 调 SimilarityService.queryTopN + 切到 EphemeralResultView。
+    /// nil → 不渲染按钮（caller 未提供能力时静默隐藏）。
+    let onFindSimilar: ((URL) -> Void)?
+    /// M2 Slice J — 当前图是否支持找类似（IndexStore.supports_feature_print 反查）。
+    /// false → 按钮 disable + tooltip 提示。caller 在 ContentView 算好传入。
+    let currentSupportsFeaturePrint: Bool
 
     @FocusState private var isFocused: Bool
     @State private var controlsVisible = true
     @State private var hideTask: Task<Void, Never>?
 
-    init(images: [URL], startIndex: Int, onDismiss: @escaping () -> Void, onIndexChange: @escaping (Int) -> Void) {
+    init(
+        images: [URL],
+        startIndex: Int,
+        onDismiss: @escaping () -> Void,
+        onIndexChange: @escaping (Int) -> Void,
+        onFindSimilar: ((URL) -> Void)? = nil,
+        currentSupportsFeaturePrint: Bool = true
+    ) {
         _viewModel = StateObject(wrappedValue: QuickViewerViewModel(images: images, startIndex: startIndex))
         self.onDismiss = onDismiss
         self.onIndexChange = onIndexChange
+        self.onFindSimilar = onFindSimilar
+        self.currentSupportsFeaturePrint = currentSupportsFeaturePrint
     }
 
     var body: some View {
@@ -259,6 +275,19 @@ struct QuickViewerOverlay: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             toolbarButton(title: "放大 (⌘=)", systemImage: "plus.magnifyingglass") {
                 viewModel.zoomIn()
+            }
+            if let onFindSimilar {
+                toolbarButton(
+                    title: currentSupportsFeaturePrint ? "找类似" : "该格式暂不支持类似图查找",
+                    systemImage: "rectangle.stack.badge.plus"
+                ) {
+                    if currentSupportsFeaturePrint,
+                       let url = viewModel.images[safe: viewModel.currentIndex] {
+                        onFindSimilar(url)
+                    }
+                }
+                .opacity(currentSupportsFeaturePrint ? 1.0 : 0.4)
+                .allowsHitTesting(currentSupportsFeaturePrint)
             }
             toolbarButton(title: "全屏 (F)", systemImage: appState.isFullScreen ? "arrow.down.right.and.arrow.up.left" : DS.Icon.fullscreen) {
                 appState.toggleFullScreen()
