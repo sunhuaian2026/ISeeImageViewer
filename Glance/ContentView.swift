@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import SQLite3
 
 // QV 入口来源：用 enum 而非裸 Bool/Optional 让 dismiss 路由按 provenance 走，不依赖
 // selectedImageIndex 是否 nil 当哨兵 — 这样 QV 方向键写 selectedImageIndex 同步 grid
@@ -11,6 +12,31 @@ import SwiftUI
 private enum QuickViewerEntry {
     case grid     // 路径 1: grid 双击 cell 直接进 QV
     case preview  // 路径 2: grid → preview → 双击 → QV
+}
+
+/// M2 Slice J — 临时结果视图请求。M2 仅支持 .similar；M3 加 .search。
+/// banner 由 caller 计算（D14 部分库提示），nil = 不显示 banner。
+private enum EphemeralRequest: Equatable {
+    case similar(sourceUrl: URL, results: [URL], banner: String?)
+
+    var title: String {
+        switch self {
+        case .similar(let url, _, _):
+            return "类似于 \(url.lastPathComponent)"
+        }
+    }
+
+    var urls: [URL] {
+        switch self {
+        case .similar(_, let r, _): return r
+        }
+    }
+
+    var banner: String? {
+        switch self {
+        case .similar(_, _, let b): return b
+        }
+    }
 }
 
 struct ContentView: View {
@@ -24,6 +50,8 @@ struct ContentView: View {
     /// 不复用 folderStore.images，避免触发 .onChange(of: folderStore.images) 的保护性
     /// 关 QV 逻辑（那条 onChange 是给 V1 排序场景设计的）。
     @State private var v2Urls: [URL] = []
+    /// M2 Slice J — 类似图查找结果视图状态。non-nil 时主区域换 EphemeralResultView 替代 baseGrid。
+    @State private var currentEphemeral: EphemeralRequest?
     @State private var showInspector = false
     @State private var quickViewerIndex: Int? = nil
     // QV 入口来源：onDoubleClick / onQuickView 设值，QV onDismiss 仲裁后清回 nil
@@ -141,7 +169,11 @@ struct ContentView: View {
                         // → 写 selectedImageIndex → ImageGridView b44a175 onChange non-nil 分支自动同步 highlightedURL
                         // → ESC 退 QV 后 grid highlight (路径 1) / preview (路径 2) 都跟到 Z
                         folderStore.selectedImageIndex = newIdx
-                    }
+                    },
+                    onFindSimilar: { sourceUrl in
+                        handleFindSimilar(sourceUrl: sourceUrl)
+                    },
+                    currentSupportsFeaturePrint: currentSupportsFeaturePrint(at: idx)
                 )
                 .transition(.asymmetric(insertion: .identity, removal: .opacity))
             }
@@ -220,6 +252,13 @@ struct ContentView: View {
                 folderStore.selectedImageIndex = nil
             }
         }
+        .onKeyPress(.escape) {
+            if currentEphemeral != nil {
+                withAnimation(DS.Anim.normal) { currentEphemeral = nil }
+                return .handled
+            }
+            return .ignored
+        }
         .background {
             WindowAccessor(appState: appState)
         }
@@ -235,8 +274,30 @@ struct ContentView: View {
     @ViewBuilder
     private var mainContent: some View {
         ZStack(alignment: .top) {
-            baseGrid
-            previewOverlay
+            if let req = currentEphemeral {
+                EphemeralResultView(
+                    title: req.title,
+                    urls: req.urls,
+                    bannerText: req.banner,
+                    onClose: {
+                        withAnimation(DS.Anim.normal) { currentEphemeral = nil }
+                    },
+                    onSingleClick: { idx in
+                        // 类似图结果单击 → 进 preview（v2Urls 路径，复用 V2 mode）
+                        v2Urls = req.urls
+                        folderStore.selectedImageIndex = idx
+                    },
+                    onDoubleClick: { idx in
+                        v2Urls = req.urls
+                        folderStore.selectedImageIndex = nil
+                        quickViewerEntry = .grid
+                        quickViewerIndex = idx
+                    }
+                )
+            } else {
+                baseGrid
+                previewOverlay
+            }
             VStack(spacing: DS.Spacing.xs) {
                 // Slice I.1 — 扫描进度 chip overlay（仅 V2 mode 扫描进行中显示，扫完自动消失）
                 if let progress = indexStoreHolder.progress {
@@ -421,6 +482,92 @@ struct ContentView: View {
         }
         bridge.setFeaturePrintIndexer(indexer)
         indexer.start()
+    }
+
+    // MARK: - M2 Slice J — Similarity query
+
+    /// M2 Slice J — 触发"找类似"：源 URL → IndexStore 反查 fp → SimilarityService 算 top-30
+    /// → fetch URLs → 切 EphemeralResultView。
+    /// D14：feature print 全库未抽完 → banner 提示已索引 X / Y。
+    private func handleFindSimilar(sourceUrl: URL) {
+        guard let store = indexStoreHolder.store else { return }
+        let holderRef = indexStoreHolder
+        Task {
+            // 1. 反查源图 fp
+            guard let (sourceId, sourceArchive) = try? store.fetchFeaturePrintByFullPath(sourceUrl.path) else {
+                await MainActor.run {
+                    holderRef.lastError = "「\(sourceUrl.lastPathComponent)」尚未索引或不支持类似图查找"
+                }
+                return
+            }
+            // 2. 反序列化源 observation
+            guard let sourceObs = try? SimilarityService.unarchive(sourceArchive) else {
+                await MainActor.run {
+                    holderRef.lastError = "源图特征向量损坏，请稍后重试"
+                }
+                return
+            }
+            // 3. 拉所有候选 fp（D14: 部分库 ok）
+            guard let candidates = try? store.fetchAllFeaturePrintsForCosine() else {
+                await MainActor.run {
+                    holderRef.lastError = "类似图查找数据库读取失败"
+                }
+                return
+            }
+            // 4. cosine top-30 (D13)
+            let topN = SimilarityService.queryTopN(
+                source: sourceObs,
+                candidates: candidates,
+                excludingId: sourceId,
+                n: 30
+            )
+            let topIds = topN.map { $0.id }
+            // 5. ids → URLs
+            let urls = (try? store.fetchUrlsByIds(topIds)) ?? []
+
+            // 6. D14 banner：检查 fp 索引覆盖率
+            let banner = ContentView.computeBanner(
+                store: store,
+                indexedCount: candidates.count
+            )
+
+            await MainActor.run {
+                self.currentEphemeral = .similar(sourceUrl: sourceUrl, results: urls, banner: banner)
+                // 关闭 QV（让 ephemeral 视图占主区）
+                self.quickViewerIndex = nil
+            }
+        }
+    }
+
+    /// 算 D14 部分库 banner 字符串。100% 覆盖 → nil；否则返回提示。
+    private static func computeBanner(store: IndexStore, indexedCount: Int) -> String? {
+        let total = (try? store.sync { db -> Int in
+            let stmt = try db.prepare("SELECT COUNT(*) FROM images WHERE supports_feature_print = 1;")
+            defer { sqlite3_finalize(stmt) }
+            guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
+            return Int(sqlite3_column_int(stmt, 0))
+        }) ?? 0
+        guard total > 0 else { return nil }
+        if indexedCount >= total { return nil }
+        return "已索引 \(indexedCount) / \(total) 张，结果为部分库"
+    }
+
+    /// M2 Slice J — 查 idx 处图片的 supports_feature_print。读不到（idx 越界 / 行不存在）→ true 默认（不主动 disable，让用户点了再失败提示）。
+    private func currentSupportsFeaturePrint(at idx: Int) -> Bool {
+        let images = smartFolderStore.selected != nil ? v2Urls : folderStore.images
+        guard idx < images.count, let store = indexStoreHolder.store else { return true }
+        let url = images[idx]
+        return (try? store.sync { db -> Bool in
+            let stmt = try db.prepare("""
+                SELECT i.supports_feature_print FROM images i
+                JOIN folders f ON i.folder_id = f.id
+                WHERE f.root_path || '/' || i.relative_path = ? LIMIT 1;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            _ = sqlite3_bind_text(stmt, 1, (url.path as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self))
+            guard sqlite3_step(stmt) == SQLITE_ROW else { return true }
+            return sqlite3_column_int(stmt, 0) == 1
+        }) ?? true
     }
 
     // MARK: - Slice D — hide toggle 路由（ContentView 拼桥：sidebar URL → IndexStore id+relativePath）
