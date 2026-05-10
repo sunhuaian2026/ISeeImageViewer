@@ -178,12 +178,12 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### V1 mode grid 自动刷新 + 手动刷新（2026-05-10）
 
-- [ ] (2026-05-10 / `<pending>` / V1 refresh) **V1 自动 FSEvents · 增**：V1 mode 选某 folder → grid 显示 → 用 Finder 拖一张图到该 folder → 5s 内 grid 自动出现新图（不用手动刷新）
-- [ ] (2026-05-10 / `<pending>` / V1 refresh) **V1 自动 FSEvents · 删**：V1 mode 选某 folder → 用 Finder 删该 folder 内某图 → 5s 内 grid 自动消失
-- [ ] (2026-05-10 / `<pending>` / V1 refresh) **V1 自动 FSEvents · 改**：V1 mode 选某 folder → 用 Finder 替换某图（cp 覆盖）→ 5s 内 grid 同步（缩略图重新加载）
-- [ ] (2026-05-10 / `<pending>` / V1 refresh) **手动刷新**：右键当前选中的 folder → 出现"刷新"菜单项 → 点 → grid reload。**右键非选中的 folder** → 不应出现"刷新"项（避免歧义刷哪个）
-- [ ] (2026-05-10 / `<pending>` / V1 refresh) **切 folder watcher 切换**：选 folderA → 拖图进 folderA 验证 grid 出现 → 切到 folderB → 拖图进 folderA → folderB grid **不应**响应（folderA watcher 已 stop，selectedFolder guard 也防漏）→ 切回 folderA grid 显示新图
-- [ ] (2026-05-10 / `<pending>` / V1 refresh) **删 folder 停 watcher**：选 folderA → 右键移除 folderA → watcher 应自动停（无 leak），不再有事件触发；之后选别的 folder 正常工作
+- [ ] (2026-05-10 / `3256733` / V1 refresh) **V1 自动 FSEvents · 增**：V1 mode 选某 folder → grid 显示 → 用 Finder 拖一张图到该 folder → 5s 内 grid 自动出现新图（不用手动刷新）
+- [ ] (2026-05-10 / `3256733` / V1 refresh) **V1 自动 FSEvents · 删**：V1 mode 选某 folder → 用 Finder 删该 folder 内某图 → 5s 内 grid 自动消失
+- [ ] (2026-05-10 / `3256733` / V1 refresh) **V1 自动 FSEvents · 改**：V1 mode 选某 folder → 用 Finder 替换某图（cp 覆盖）→ 5s 内 grid 同步（缩略图重新加载）
+- [ ] (2026-05-10 / `3256733` / V1 refresh) **手动刷新**：右键当前选中的 folder → 出现"刷新"菜单项 → 点 → grid reload。**右键非选中的 folder** → 不应出现"刷新"项（避免歧义刷哪个）
+- [ ] (2026-05-10 / `3256733` / V1 refresh) **切 folder watcher 切换**：选 folderA → 拖图进 folderA 验证 grid 出现 → 切到 folderB → 拖图进 folderA → folderB grid **不应**响应（folderA watcher 已 stop，selectedFolder guard 也防漏）→ 切回 folderA grid 显示新图
+- [ ] (2026-05-10 / `3256733` / V1 refresh) **删 folder 停 watcher**：选 folderA → 右键移除 folderA → watcher 应自动停（无 leak），不再有事件触发；之后选别的 folder 正常工作
 
 ### Slice D follow-up #2 — hide 图标扩到 subfolder explicit（2026-05-10）
 
