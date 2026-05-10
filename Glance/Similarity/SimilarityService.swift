@@ -16,7 +16,6 @@
 
 import Foundation
 import Vision
-import AppKit
 
 nonisolated enum SimilarityService {
 
@@ -37,7 +36,7 @@ nonisolated enum SimilarityService {
         do {
             try handler.perform([request])
         } catch {
-            throw SimilarityError.unsupportedFormat
+            throw SimilarityError.extractFailed(error.localizedDescription)
         }
 
         guard let observation = request.results?.first as? VNFeaturePrintObservation else {
