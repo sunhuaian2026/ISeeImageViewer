@@ -90,8 +90,8 @@ struct EphemeralResultView: View {
                 Image(systemName: "xmark")
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
-                    .frame(width: 28, height: 28)
-                    .background(Color.gray.opacity(0.15), in: Circle())
+                    .frame(width: DS.Similarity.closeButtonSize, height: DS.Similarity.closeButtonSize)
+                    .background(Color.gray.opacity(DS.Similarity.closeButtonBgOpacity), in: Circle())
             }
             .buttonStyle(.plain)
             .help("返回 (ESC)")
@@ -125,19 +125,19 @@ struct EphemeralResultView: View {
         }
         .padding(.horizontal, DS.Spacing.md)
         .padding(.vertical, DS.Spacing.xs)
-        .background(Color.gray.opacity(0.08))
+        .background(Color.gray.opacity(DS.Similarity.bannerBgOpacity))
     }
 
     private var emptyState: some View {
         VStack(spacing: DS.Spacing.sm) {
             Image(systemName: "square.stack.3d.up.slash")
-                .font(.system(size: 48))
+                .font(.system(size: DS.Similarity.emptyStateIconSize))
                 .foregroundStyle(.tertiary)
             Text("无结果")
                 .font(.headline)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.top, 80)
+        .padding(.top, DS.Similarity.emptyStateTopPadding)
     }
 }

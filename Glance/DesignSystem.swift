@@ -118,6 +118,14 @@ enum DS {
         static let spinnerScale: CGFloat = 0.7
         /// D13 — 类似图查找返回的 top-N 数量。M2 写死 30，未来需要可调改 setting。
         static let topNResults: Int = 30
+        /// EphemeralResultView 顶部关闭按钮的圆形容器尺寸
+        static let closeButtonSize: CGFloat = 28
+        /// EphemeralResultView 关闭按钮 + banner row 的背景透明度
+        static let closeButtonBgOpacity: Double = 0.15
+        static let bannerBgOpacity: Double = 0.08
+        /// EphemeralResultView 空态图标 + 顶部留白
+        static let emptyStateIconSize: CGFloat = 48
+        static let emptyStateTopPadding: CGFloat = 80
     }
 
     // MARK: - Animation
