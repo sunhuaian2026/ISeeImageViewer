@@ -176,6 +176,32 @@ nonisolated extension IndexStore {
         }
     }
 
+    /// Slice D follow-up — 是否**显式**设过 hide=1（不走 effectiveHidden 的 path-walk 继承），
+    /// 给 sidebar 决定是否显 eye.slash 图标（仅 explicit set 才显，避免 root hide 整树时
+    /// 所有 subfolder 都顶图标的视觉爆炸）。
+    /// `relativePath = ""` 查 root row；否则查 (parent_root_id, relative_path) explicit subfolder row。
+    /// 没 row 视作未 explicit set → false。
+    func isExplicitlyHidden(rootId: Int64, relativePath: String) throws -> Bool {
+        try sync { db in
+            let sql: String
+            if relativePath.isEmpty {
+                sql = "SELECT hide_in_smart_view FROM folders WHERE id = ? AND parent_root_id IS NULL LIMIT 1;"
+            } else {
+                sql = "SELECT hide_in_smart_view FROM folders WHERE parent_root_id = ? AND relative_path = ? LIMIT 1;"
+            }
+            let stmt = try db.prepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            try checkBindBool(sqlite3_bind_int64(stmt, 1, rootId), index: 1, db: db)
+            if !relativePath.isEmpty {
+                try checkBindBool(sqlite3_bind_text(stmt, 2, (relativePath as NSString).utf8String, -1, unsafeBitCast(-1, to: sqlite3_destructor_type.self)), index: 2, db: db)
+            }
+            if sqlite3_step(stmt) == SQLITE_ROW {
+                return sqlite3_column_int(stmt, 0) != 0
+            }
+            return false
+        }
+    }
+
     private func checkBindBool(_ result: Int32, index: Int, db: IndexDatabase) throws {
         if result != SQLITE_OK {
             throw IndexDatabaseError.bindFailed(index: index, message: "bind result \(result): \(db.lastErrorMessage())")

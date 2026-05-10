@@ -14,6 +14,9 @@ struct FolderSidebarView: View {
     var onToggleHide: ((URL, URL) -> Void)? = nil
     /// Slice D — query effective hidden 给 menu label 动态文案；同 (rootURL, nodeURL) 语义。
     var isEffectivelyHidden: ((URL, URL) -> Bool)? = nil
+    /// Slice D follow-up — 是否 row 自己显式 hide=1（不走继承）。给行视觉决定是否显 eye.slash。
+    /// 区分于 isEffectivelyHidden：root hide 整树场景 subfolder effective hidden 但非 explicit，不显图标避噪音。
+    var isExplicitlyHidden: ((URL, URL) -> Bool)? = nil
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -102,9 +105,11 @@ struct FolderSidebarView: View {
 
         HStack {
             Label(node.url.lastPathComponent, systemImage: "folder")
-            // Slice D follow-up — root 层若被在智能文件夹中隐藏，加 eye.slash 图标提示；
-            // 仅 root，subfolder 嵌套继承规则复杂留 contextMenu label 表达
-            if isRoot, isEffectivelyHidden?(node.url, node.url) == true {
+            // Slice D follow-up — row 自己 explicit hide=1 时显 eye.slash 图标。
+            // 用 explicit 而非 effective：root hide 整树时 subfolder 继承 hidden 但非显式 set，
+            // 不显图标避免视觉噪音（root 行图标已表达整树状态）
+            if let rootURL = rootURL(for: node.url),
+               isExplicitlyHidden?(rootURL, node.url) == true {
                 Image(systemName: "eye.slash")
                     .font(.caption)
                     .foregroundStyle(.secondary)

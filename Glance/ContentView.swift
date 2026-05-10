@@ -63,6 +63,9 @@ struct ContentView: View {
                     },
                     isEffectivelyHidden: { rootURL, nodeURL in
                         effectivelyHidden(rootURL: rootURL, nodeURL: nodeURL)
+                    },
+                    isExplicitlyHidden: { rootURL, nodeURL in
+                        explicitlyHidden(rootURL: rootURL, nodeURL: nodeURL)
                     }
                 )
             }
@@ -437,6 +440,13 @@ struct ContentView: View {
         guard let store = indexStoreHolder.store,
               let coord = resolveFolderCoord(rootURL: rootURL, nodeURL: nodeURL) else { return false }
         return (try? store.effectiveHidden(rootId: coord.rootId, relativePath: coord.relativePath)) ?? false
+    }
+
+    /// 仅当 row 自己显式 hide=1 才返 true（不含继承）。给 sidebar 决定显 eye.slash 图标。
+    private func explicitlyHidden(rootURL: URL, nodeURL: URL) -> Bool {
+        guard let store = indexStoreHolder.store,
+              let coord = resolveFolderCoord(rootURL: rootURL, nodeURL: nodeURL) else { return false }
+        return (try? store.isExplicitlyHidden(rootId: coord.rootId, relativePath: coord.relativePath)) ?? false
     }
 }
 

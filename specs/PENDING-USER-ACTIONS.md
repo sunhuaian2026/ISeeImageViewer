@@ -176,6 +176,14 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [ ] (2026-05-09 / `<pending>` / Slice I.2) **错误 banner**：模拟扫描失败（如某文件 IO error）→ mainContent 顶部出现红色 capsule banner "「root_name」扫描失败：..." → 点 X 按钮 dismiss → banner 消失，主 UI 仍可滚动
 - [ ] (2026-05-09 / `<pending>` / Slice I.3) **enum-state 重构无回归**：所有 V2 grid 行为（query 切换 / 重 query / 空态 / preview 方向键 navigate / Inspector 同步）跟 Slice H 一致，没有 race / stale-write / 重复刷新等异常
 
+### Slice D follow-up #2 — hide 图标扩到 subfolder explicit（2026-05-10）
+
+- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **subfolder 单独 hide 显图标**：root visible 状态下 → 右键某 subfolder → "在智能文件夹中隐藏" → **该 subfolder 行**应出现 eye.slash 图标 + tooltip"在智能文件夹中隐藏"
+- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **root hide 整树 subfolder 不显图标**：右键 root → "在智能文件夹中隐藏" → root 行显图标 ✓；展开 root → 各 subfolder 行**不应**显图标（继承非 explicit，避免视觉噪音）
+- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **subfolder 单独 unhide 不显图标**：root hide 状态下 → 右键某 subfolder → "在智能文件夹中显示"（subfolder 行 explicit hide=0）→ subfolder 行**不应**显图标（explicit unhide ≠ hide）
+- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **explicit + 继承双层冗余场景**：root hide → 右键某 subfolder → "在智能文件夹中隐藏"（冗余 explicit）→ root 显 / 该 subfolder 也显（双图标 — explicit 表达一致，冗余但不错）
+- [ ] (2026-05-10 / `<pending>` / Slice D follow-up #2) **重启状态保留**：执行任意 explicit hide → 退出重启 → 图标位置跟退出前一致
+
 ### Slice D follow-up — root hide 图标提示（2026-05-10）
 
 - [ ] (2026-05-10 / `3cd463c` / Slice D follow-up) **root hide 显示 eye.slash**：sidebar 右键 root → "在智能文件夹中隐藏" → 该 root 行 folder 名右侧应出现灰色 `eye.slash` 图标；hover 该图标 → 浮 tooltip "在智能文件夹中隐藏"
