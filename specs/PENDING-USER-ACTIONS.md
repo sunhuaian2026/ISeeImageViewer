@@ -232,6 +232,24 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 - [ ] (2026-05-09 / Deferred / Slice B-α polish) **chip 深浅色模式下对比强化**：用户要求 chip 在 dark/light 各模式下跟 cell 的视觉对比再"跳"一些。当前状态：`.thickMaterial` + `Capsule().strokeBorder(.primary.opacity(DS.SectionHeader.chipBorderOpacity=0.12), lineWidth: DS.SectionHeader.chipBorderWidth=0.5)`。**待对齐**（重启时问用户）：(1) 哪个组合对比最弱？dark mode + dark cell / dark + light cell / light + light cell / light + dark cell（建议截图对比）；(2) 期望"强烈"方向：A stroke 加粗 + opacity 升（0.5pt×0.12 → 1pt×0.30）/ B `.ultraThickMaterial` + 微 shadow / C 反色 fill（dark mode chip 用 light fill / light mode chip 用 dark fill，告别 material 透感，macOS Photos.app / Files.app 模式）/ D material + accentColor tint（DS.Color.glowPrimary 弱化版）。**修法 surface 预期**：仅 `Glance/FolderBrowser/SmartFolderGridView.swift sectionHeader` + `Glance/DesignSystem.swift DS.SectionHeader` 段；不动 LazyVGrid pinnedViews、moveHighlight、locate、其他交互逻辑
 
+### V2 M2 Slice J（2026-05-11）
+
+- [ ] J 启动后 feature print indexer 自动开抽（chip 显示 "正在索引相似度 X / Y"）
+- [ ] J 索引完成后 chip 自动消失
+- [ ] J 索引中点 chip 上 X 按钮 → cancel 生效，chip 立刻消失
+- [ ] J QV 内点「找类似」按钮 → 切到 EphemeralResultView 显示 30 张
+- [ ] J EphemeralResultView 顶 X 按钮 / ESC 键退出回 baseGrid
+- [ ] J EphemeralResultView 单击进 preview，ESC 退回 ephemeral 视图（不直接回 baseGrid）
+- [ ] J EphemeralResultView 双击进 QV，ESC 退回 baseGrid（不回 ephemeral 视图，路径 1 兼容性）
+- [ ] J 部分库时（feature_print IS NULL 还有行）找类似 → banner 显示 "已索引 X / Y 张，结果为部分库"
+- [ ] J 全库索引完成时（indexed = total）banner 不显示
+- [ ] J 添加新文件夹 → 新图 FSEvents 派发 → fp indexer 自动 enqueueIfNeeded → 该图很快被索引（看 chip 短暂出现）
+- [ ] J 关 app 中途取消 fp indexer → 重启后自动从断点继续（feature_print IS NULL 行从 SQL 重新被拉到）
+- [ ] J 损坏图 / RAW 等 Vision 不支持的格式 → 单图标 supports_feature_print=0 永久跳过，不阻塞 pipeline
+- [ ] J QV 内当前图 supports_feature_print=0 → 「找类似」按钮 disable + tooltip 显示"该格式暂不支持类似图查找"
+- [ ] J 1 万图典型库索引耗时记录（M1 mac 实测）：______ 分钟
+- [ ] J 找类似查询响应耗时（10k 库）：______ 秒
+
 ---
 
 ## Done

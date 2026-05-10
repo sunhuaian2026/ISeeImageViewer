@@ -100,6 +100,12 @@ ISeeImageViewer/                    ← 磁盘路径未改，repo 内部一切�
     │   ├── FSEventsWatcher.swift            ← V2 Slice G FSEvents Swift wrapper（CoreServices FSEventStreamCreate / 每 root 一 stream / file-level events / defaultLatency 1s static let）
     │   ├── IndexStoreHolder.swift           ← 异步 init holder（@Published store + isReady Bool 让 .onChange 可观察）+ Slice I.1/I.2 progress / lastError / cancelCurrentScan 钩子
     │   └── FolderStoreIndexBridge.swift     ← rootFolders diff → registerRoot/deleteRoot + 启动 FolderScanner + Slice G.2/3 watcher lifecycle + handle Created/Removed/Modified/Renamed events + Slice H dedup hooks + Slice I.1/I.2 progress 回调 / cancel 转发 / error 回调 + scan resume from cursor
+    ├── Similarity/                  ← V2 M2 类似图查找（feature print + Vision）
+    │   ├── SimilarityService.swift           ← Vision VNFeaturePrintObservation 包装 + computeDistance batch top-N
+    │   ├── FeaturePrintIndexer.swift          ← 后台 fp 索引 pipeline（batch 50 + cancel + enqueueIfNeeded）
+    │   ├── FeaturePrintIndexingProgress.swift ← progress record（indexed/total/lastImageName）
+    │   ├── FeaturePrintProgressView.swift     ← chip 形态进度 UI（mirror Slice I 紫色调区分）
+    │   └── EphemeralResultView.swift          ← 临时结果视图（layout + ThumbnailCell 复用 + banner 槽）
     └── SmartFolder/                 ← V2 智能文件夹规则与查询
         ├── SmartFolder.swift                ← struct（id/displayName/predicate/sortBy/builtIn）
         ├── SmartFolderRule.swift            ← Predicate enum (AND/OR/ATOM) + Atom struct + Op + Value（D6 Spotlight-like 平铺）
