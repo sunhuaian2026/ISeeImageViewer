@@ -519,7 +519,7 @@ struct ContentView: View {
                 source: sourceObs,
                 candidates: candidates,
                 excludingId: sourceId,
-                n: 30
+                n: DS.Similarity.topNResults
             )
             let topIds = topN.map { $0.id }
             // 5. ids → URLs

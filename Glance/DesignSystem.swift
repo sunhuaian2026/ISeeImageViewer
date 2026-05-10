@@ -116,6 +116,8 @@ enum DS {
         /// fp 进度 chip 用紫色调（视觉与扫描进度区分；DS.Color.glowPrimary 系）
         static let chipAccent: SwiftUI.Color = .accentColor
         static let spinnerScale: CGFloat = 0.7
+        /// D13 — 类似图查找返回的 top-N 数量。M2 写死 30，未来需要可调改 setting。
+        static let topNResults: Int = 30
     }
 
     // MARK: - Animation
