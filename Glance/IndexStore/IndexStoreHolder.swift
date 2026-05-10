@@ -29,6 +29,16 @@ final class IndexStoreHolder: ObservableObject {
     /// bridge 在 scan task 创建时 capture，holder 通过此 closure 转发取消信号。
     var cancelCurrentScan: (() -> Void)?
 
+    /// M2 Slice J — feature print 索引进度（nil = 空闲/完成）。
+    /// FeaturePrintIndexer.onProgress 回调更新。
+    @Published var featurePrintProgress: FeaturePrintIndexingProgress?
+
+    /// M2 Slice J — 用户点 fp 进度 chip 上的 X 触发取消。FeaturePrintIndexer.cancel() 转发。
+    var cancelFeaturePrintIndexing: (() -> Void)?
+
+    /// M2 Slice J — 持有 indexer 引用。GlanceApp/ContentView wire 后由 wireIfReady 设值。
+    var featurePrintIndexer: FeaturePrintIndexer?
+
     init() {
         Task { await self.bootstrap() }
     }
