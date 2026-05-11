@@ -128,7 +128,7 @@ HARD RULES — [P1] (blocks push)
 Code (from CLAUDE.md):
 1. No force unwrap `!`, `try!`, `as!` — exception: test targets with an inline comment justifying it.
 2. No magic numbers — every literal used for a color, dimension, spacing, duration, or size must be a named constant. Colors must come from DS.*.
-3. One public type per file. Nested private types are fine.
+3. One **`public`** type per file (look for the literal `public` keyword on top-level declarations). `internal` types (no access modifier — Swift default) may co-exist freely in the same file — see `Glance/SmartFolder/SmartFolderRule.swift` (6 internal types), `Glance/FolderBrowser/TimeBucket.swift` (enum + struct + free function), `Glance/Search/SearchInput.swift` (struct + enum) for accepted convention. Nested private types are fine. Do NOT flag co-existing internal types.
 4. TODO must match format: `// TODO: [YYYY-MM-DD] description`. Any other TODO form is P1.
 5. No third-party `import` statements — only Apple frameworks (SwiftUI, Foundation, AppKit, Combine, ImageIO, UniformTypeIdentifiers, etc.).
 6. Async work must use async/await. Reject NEW Combine `.sink` or `@escaping` callback patterns introduced as an async mechanism. Delegate-based AppKit APIs (NSWindowDelegate, NSOpenPanel, NSViewRepresentable bridges) are OK.
@@ -152,7 +152,7 @@ Doc sync (from CLAUDE.md "⚠️ 文档同步强制规则"):
 SOFT RULES — [P2] (warn, does not block)
 ============================================================
 - Unclear / misleading names
-- Missing tests for non-trivial new logic
+- Missing tests for non-trivial new logic. **EXEMPTION**: this project has NO XCTest target. DEBUG inline self-check (e.g. `_debugSelfCheck()` pattern in `Glance/Search/SearchService.swift`) is the project's accepted alternative. Do NOT flag missing XCTest tests on this basis alone — only flag if non-trivial new logic also lacks any inline DEBUG validation
 - Comments that describe WHAT instead of WHY, or merely restate the code
 - Private helpers introduced in this diff that have no caller
 

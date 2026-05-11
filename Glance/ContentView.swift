@@ -769,21 +769,25 @@ struct ContentView: View {
 
             guard !Task.isCancelled else { return }
 
-            // ③ resolve URL（mirror computeV2Urls pattern）
-            let urls: [URL] = images.compactMap { img in
+            // ③ resolve URL：images 跟 urls 必须 codomain 同构（同长度 + 同 idx 对齐），
+            // 否则 EphemeralResultView 的 datesForBuckets.count == urls.count guard 不通过 →
+            // 静默退化成 flat grid 丢失时间分段；用 (image, url) pair 一起 compactMap 保两数组同步过滤
+            let resolvedPairs: [(IndexedImage, URL)] = images.compactMap { img in
                 var stale = false
                 guard let rootURL = try? URL(
                     resolvingBookmarkData: img.urlBookmark,
                     options: [.withSecurityScope],
                     bookmarkDataIsStale: &stale
                 ) else { return nil }
-                return rootURL.appendingPathComponent(img.relativePath)
+                return (img, rootURL.appendingPathComponent(img.relativePath))
             }
+            let resolvedImages = resolvedPairs.map { $0.0 }
+            let urls = resolvedPairs.map { $0.1 }
 
             // ④ 写状态（MainActor + cancel guard）
             await MainActor.run {
                 guard !Task.isCancelled else { return }
-                self.currentEphemeral = .search(query: input, images: images, urls: urls)
+                self.currentEphemeral = .search(query: input, images: resolvedImages, urls: urls)
             }
         }
     }
