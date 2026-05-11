@@ -152,7 +152,7 @@ Doc sync (from CLAUDE.md "⚠️ 文档同步强制规则"):
 SOFT RULES — [P2] (warn, does not block)
 ============================================================
 - Unclear / misleading names
-- Missing tests for non-trivial new logic. **EXEMPTION**: this project has NO XCTest target. DEBUG inline self-check (e.g. `_debugSelfCheck()` pattern in `Glance/Search/SearchService.swift`) is the project's accepted alternative. Do NOT flag missing XCTest tests on this basis alone — only flag if non-trivial new logic also lacks any inline DEBUG validation
+- Missing tests for non-trivial new logic. **EXEMPTION**: this project has NO XCTest target. DEBUG inline self-check (e.g. `_debugSelfCheck()` pattern in `Glance/Search/SearchService.swift`) is the accepted alternative for this project. Do NOT flag missing XCTest tests on this basis alone — only flag if non-trivial new logic also lacks any inline DEBUG validation
 - Comments that describe WHAT instead of WHY, or merely restate the code
 - Private helpers introduced in this diff that have no caller
 
