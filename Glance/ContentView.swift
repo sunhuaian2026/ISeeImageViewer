@@ -71,8 +71,9 @@ struct ContentView: View {
     /// previewFocusTrigger / ephemeralFocusTrigger）+ 子 view 各自 @FocusState 模式 —
     /// 那套模式在 ZStack 同层多焦点持有者时存在 race（codex:rescue 5b29600 / 59a9d86 / J 阶段已多次复发）。
     @FocusState private var focusTarget: AppFocus?
-    // ImagePreviewView 上的 .id(idx) 会让它在每次方向键切换时整个重建；vm 提到 ContentView
-    // 用 @StateObject 持有，跨重建保留 prefetchCache，方向键命中即时显示无 spinner
+    // vm 由 ContentView @StateObject 持有，prefetchCache 跨 navigate 持续，方向键命中即时显示
+    // 无 spinner。历史上配合 ImagePreviewView 上的 .id(idx) 重建；D15 refactor 后已删 .id，
+    // 但 parent-owned 模式继续保留（不增成本，且未来 .id 若复活仍稳）
     @StateObject private var previewVM = ImagePreviewViewModel()
 
     private var inspectorURL: URL? {
@@ -201,7 +202,7 @@ struct ContentView: View {
                 focusTarget = .grid
             case .preview:
                 // 路径 2：preview 进 QV → ESC 退回 preview（selectedImageIndex 仍 = Z，
-                // ImagePreviewView 通过 .id(idx) 重建显示 Z）
+                // ImagePreviewView 通过 onChange(of: startIndex) 自反应显示 Z）
                 focusTarget = .preview
             case .ephemeral:
                 // M2 Slice J 路径 3：EphemeralResultView 双击进 QV → ESC 退 QV 回 ephemeral
@@ -411,7 +412,7 @@ struct ContentView: View {
     @ViewBuilder
     private var previewOverlay: some View {
         // 收紧渲染条件：QV 期间 (quickViewerIndex != nil) 不渲染 ImagePreviewView，
-        // 避免 QV 内方向键写 selectedImageIndex 时 .id(idx) 触发 preview 在后台重建/loadImage
+        // 避免 QV 内方向键写 selectedImageIndex 时 preview 在后台 loadImage
         if let idx = folderStore.selectedImageIndex, quickViewerIndex == nil {
             ImagePreviewView(
                 vm: previewVM,
@@ -426,7 +427,10 @@ struct ContentView: View {
                     quickViewerIndex = index
                 }
             )
-            .id(idx)
+            // D15 refactor 后删 .id(idx)：rebuild 会让 .focused($focusTarget, equals: .preview)
+            // 在 binding 已 = .preview 时不 transition → 第二次方向键失焦（codex:rescue 验证：
+            // 时序层 race，非"same-value dedupe"机制）。ImagePreviewView 已有
+            // onChange(of: startIndex) → currentIndex/loadImage 自反应（行 136-138），不依赖 .id 重建。
             .transition(.asymmetric(
                 insertion: .scale(scale: 0.97).combined(with: .opacity),
                 removal:   .scale(scale: 0.97).combined(with: .opacity)

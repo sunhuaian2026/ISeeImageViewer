@@ -240,6 +240,8 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 D15 终态落地（共享 `@FocusState focusTarget: AppFocus?` enum）。下列 7 条覆盖所有焦点路径，**任何一条** 方向键 / Space / ESC 静默 = 焦点 race，回滚。
 
+**首测发现的关键回归 + follow-up fix（已修，需重测）**：bdb8307 后 preview 第二次方向键失焦（rebuild + @FocusState binding 时序 race），followup 删 ContentView 上 ImagePreviewView 的 `.id(idx)` 修复（codex:rescue 验证）。**重点验证**：preview 内连续按方向键 ≥ 10 次切图，每次都应即时切换无静默；同时 ESC 在任意切图后仍能退出。
+
 - [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 1 — V1 grid 双击 → QV → ESC**：V1 单文件夹 grid → 双击 cell A → QV → ESC → 焦点回 grid，按方向键能移 highlight，按 Space 能再进 QV
 - [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 2 — V1 grid 单击 → preview → ESC**：单击 cell A → preview → ESC → 焦点回 grid，方向键 / Space 能用
 - [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 3 — V1 grid → preview → 双击 → QV → ESC ×2**：单击 cell A → preview → 双击 → QV → ESC → 焦点回 preview，方向键能切预览；再 ESC → 焦点回 grid，方向键能用（关键回归点：5b29600 / 59a9d86 race）
