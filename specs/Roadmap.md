@@ -306,6 +306,8 @@ V2 引入跨文件夹聚合（智能文件夹）+ 找回（搜索 + 类似图）
 
 27. **D14 部分库时允许查 + banner 提示**：feature print 全库未抽完时（pendingTotal > 0）"找类似"按钮不 disable；查询走 fetchAllFeaturePrintsForCosine 拿当前已抽 row 跑 cosine；EphemeralResultView 顶部 banner = "已索引 X / Y 张，结果为部分库"。Why: 1 万图首次抽 ~17 分钟；disable 体验 17 分钟死锁。部分可用 + 显式提示符合 "show progress, don't gate" 原则。How to apply: ContentView.computeBanner 算 indexed/total，indexed >= total → banner = nil（隐藏）；EphemeralResultView bannerText 是可选参数。
 
+28. **D15 ephemeral+preview overlay ESC = ContentView 兜底状态机（临时方案，2026-05-11 J ship 后 codex:rescue 落地）**：M2 Slice J 引入 EphemeralResultView 后，ZStack 同层并存 ephemeral + previewOverlay 各持私有 @FocusState 注定 race（SwiftUI 没有跨 view 的焦点仲裁者），ESC 路由不可靠（preview 抢不到焦点时 ephemeral 抢着关，跳层 baseGrid）。临时修法：所有 ESC 集中到 ContentView body 的 `.onKeyPress(.escape)` 兜底，按 modal layer 状态机顺序处理（QV > preview > ephemeral > baseGrid，每次只关一层），子 view 不持自己的 ESC handler。Why: 最小 scope 跑通 Slice J 验收，避免一次性重构 5 文件的 V1+V2 焦点 dance（codex:rescue 推荐 P1 单一枚举 @FocusState scheme，但 V1 既有 grid+preview+QV 焦点 dance 都要改，回归风险高）。How to apply: K 阶段做完整 P1 重构（ContentView 持 `enum AppFocus { case grid, preview, ephemeral }` + `@FocusState appFocus: AppFocus?`，所有 view 改共享 binding `.focused($appFocus, equals: .xxx)`，删 trigger UUID 模式），届时移除 ContentView 兜底 ESC 状态机，恢复子 view 各自持 onKeyPress(.escape)，焦点单点仲裁不再 race。
+
 ---
 
 ## V2 进度
