@@ -22,6 +22,9 @@ struct EphemeralResultView: View {
     let onClose: () -> Void
     let onSingleClick: (Int) -> Void
     let onDoubleClick: (Int) -> Void
+    /// M2 Slice J — preview/QV 关闭后让 ephemeral 重新拿焦点；ContentView bump UUID 触发 .onChange。
+    /// mirror ImagePreviewView focusTrigger pattern。
+    let focusTrigger: UUID
 
     @EnvironmentObject var folderStore: FolderStore
 
@@ -74,14 +77,14 @@ struct EphemeralResultView: View {
             }
         }
         .background(DS.Color.appBackground)
+        // M2 Slice J — ESC 不在 ephemeral 这层处理（codex:rescue 确认 ZStack 同层多 @FocusState
+        // race 不可靠），统一由 ContentView 兜底状态机按 layer 顺序拨开。X 按钮 onClose 仍可用
+        // （tap event 不依赖 @FocusState）。focusable + focusTrigger 保留作未来键盘导航扩展用。
         .focusable()
         .focusEffectDisabled()
         .focused($isFocused)
         .onAppear { isFocused = true }
-        .onKeyPress(.escape) {
-            onClose()
-            return .handled
-        }
+        .onChange(of: focusTrigger) { _, _ in isFocused = true }
     }
 
     private var topBar: some View {

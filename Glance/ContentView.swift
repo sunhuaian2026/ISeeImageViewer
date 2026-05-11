@@ -10,8 +10,9 @@ import SQLite3
 // selectedImageIndex 是否 nil 当哨兵 — 这样 QV 方向键写 selectedImageIndex 同步 grid
 // highlight + preview 时不会反向破坏 6da903c 修过的"双击 cell 进 QV 后退出回 grid 不进 preview"
 private enum QuickViewerEntry {
-    case grid     // 路径 1: grid 双击 cell 直接进 QV
-    case preview  // 路径 2: grid → preview → 双击 → QV
+    case grid       // 路径 1: grid 双击 cell 直接进 QV
+    case preview    // 路径 2: grid → preview → 双击 → QV
+    case ephemeral  // 路径 3 (M2 Slice J): EphemeralResultView 双击 cell 进 QV → 退出直接回 baseGrid，不卡在 ephemeral 无焦点态
 }
 
 /// M2 Slice J — 临时结果视图请求。M2 仅支持 .similar；M3 加 .search。
@@ -52,6 +53,9 @@ struct ContentView: View {
     @State private var v2Urls: [URL] = []
     /// M2 Slice J — 类似图查找结果视图状态。non-nil 时主区域换 EphemeralResultView 替代 baseGrid。
     @State private var currentEphemeral: EphemeralRequest?
+    /// M2 Slice J — preview/QV 关闭后让 EphemeralResultView 重新拿焦点的 trigger。
+    /// mirror previewFocusTrigger / gridFocusTrigger 模式。
+    @State private var ephemeralFocusTrigger: UUID = UUID()
     @State private var showInspector = false
     @State private var quickViewerIndex: Int? = nil
     // QV 入口来源：onDoubleClick / onQuickView 设值，QV onDismiss 仲裁后清回 nil
@@ -194,9 +198,21 @@ struct ContentView: View {
                 // 路径 2：preview 进 QV → ESC 退回 preview（selectedImageIndex 仍 = Z，
                 // ImagePreviewView 通过 .id(idx) 重建显示 Z）
                 previewFocusTrigger = UUID()
-            case .none:
-                // 兜底：理论不应到这分支（onDoubleClick/onQuickView 总会设 entry）
+            case .ephemeral:
+                // M2 Slice J 路径 3：EphemeralResultView 双击进 QV → ESC 退 QV 直接清
+                // ephemeral 跳回 baseGrid（不卡在 ephemeral 无焦点态需要再 ESC 一次）
+                withAnimation(DS.Anim.normal) { currentEphemeral = nil }
+                folderStore.selectedImageIndex = nil
                 gridFocusTrigger = UUID()
+            case .none:
+                // 路径 4（M2 Slice J）：handleFindSimilar 在 QV 内点找类似时主动清 entry，
+                // QV 关闭走这里。currentEphemeral 已 set，刷 ephemeralFocusTrigger 拿焦
+                // 否则保 grid 兜底行为
+                if currentEphemeral != nil {
+                    ephemeralFocusTrigger = UUID()
+                } else {
+                    gridFocusTrigger = UUID()
+                }
             }
             quickViewerEntry = nil
         }
@@ -215,6 +231,12 @@ struct ContentView: View {
             if newValue == nil {
                 withAnimation(DS.Anim.normal) { showInspector = false }
                 previewVM.clearCache()
+                // M2 Slice J 修复 Scenario 2：preview 关闭归 nil 时若 ephemeral 还显示
+                // 且 QV 不在 → ephemeral 需要重新拿焦点（preview 抢焦后没机制还回去）
+                // quickViewerIndex == nil 保护避开 ephemeral→QV 路径的 spurious fire
+                if currentEphemeral != nil && quickViewerIndex == nil {
+                    ephemeralFocusTrigger = UUID()
+                }
             }
         }
         // 排序导致 images 数组变化时，关闭 QuickViewer 防止旧索引错位
@@ -252,8 +274,20 @@ struct ContentView: View {
                 folderStore.selectedImageIndex = nil
             }
         }
+        // M2 Slice J — 兜底 ESC 状态机（codex:rescue 确认根因：ZStack 同层多 @FocusState
+        // race，preview/ephemeral 谁拿焦点不确定，依赖 view 自己的 onKeyPress 不可靠）。
+        // 按 modal layer 顺序拨开：QV > preview > ephemeral > baseGrid。每次 ESC 只关一层。
         .onKeyPress(.escape) {
+            if quickViewerIndex != nil {
+                return .ignored  // QV 自己 onKeyPress 处理
+            }
+            if folderStore.selectedImageIndex != nil {
+                // preview 是当前最顶层 modal → 先关 preview（不动 ephemeral）
+                folderStore.selectedImageIndex = nil
+                return .handled
+            }
             if currentEphemeral != nil {
+                // preview 已关 → 第二次 ESC 关 ephemeral
                 withAnimation(DS.Anim.normal) { currentEphemeral = nil }
                 return .handled
             }
@@ -281,23 +315,30 @@ struct ContentView: View {
                     bannerText: req.banner,
                     onClose: {
                         withAnimation(DS.Anim.normal) { currentEphemeral = nil }
+                        // 修复 C：清 selectedImageIndex 防止 ephemeral 关闭后 preview 残留重现
+                        folderStore.selectedImageIndex = nil
                     },
                     onSingleClick: { idx in
-                        // 类似图结果单击 → 进 preview（v2Urls 路径，复用 V2 mode）
+                        // 类似图结果单击 → 进 preview（v2Urls 路径，复用 V2 mode）；
+                        // previewOverlay 现在挂在 ZStack 外层（修复 1），ephemeral 上方 fade in
                         v2Urls = req.urls
                         folderStore.selectedImageIndex = idx
                     },
                     onDoubleClick: { idx in
                         v2Urls = req.urls
                         folderStore.selectedImageIndex = nil
-                        quickViewerEntry = .grid
+                        // 修复 2：用 .ephemeral provenance，QV 关闭时清 ephemeral 直接回 baseGrid
+                        // （避免卡在「ephemeral 无焦点 + QV 已关」死状态）
+                        quickViewerEntry = .ephemeral
                         quickViewerIndex = idx
-                    }
+                    },
+                    focusTrigger: ephemeralFocusTrigger
                 )
             } else {
                 baseGrid
-                previewOverlay
             }
+            // previewOverlay 始终渲染（ephemeral 模式也用 → ephemeral 单击进 preview 才看得见）
+            previewOverlay
             VStack(spacing: DS.Spacing.xs) {
                 // Slice I.1 — 扫描进度 chip overlay（仅 V2 mode 扫描进行中显示，扫完自动消失）
                 if let progress = indexStoreHolder.progress {
@@ -533,6 +574,12 @@ struct ContentView: View {
 
             await MainActor.run {
                 self.currentEphemeral = .similar(sourceUrl: sourceUrl, results: urls, banner: banner)
+                // 修复 2：清 selectedImageIndex 防止 QV 关闭后 previewOverlay 渲染条件成立，
+                // preview 弹回压在 ephemeral 上方（Scenario 1 根因）
+                self.folderStore.selectedImageIndex = nil
+                // 修复 D：清 quickViewerEntry，让 QV close onChange 走 .none 分支不动 currentEphemeral
+                // （否则若上一次 entry == .ephemeral，新设的 currentEphemeral 会被抹掉）
+                self.quickViewerEntry = nil
                 // 关闭 QV（让 ephemeral 视图占主区）
                 self.quickViewerIndex = nil
             }
