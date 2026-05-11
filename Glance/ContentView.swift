@@ -203,7 +203,11 @@ struct ContentView: View {
                 // （而不是清 ephemeral 跳 baseGrid）。EphemeralResultView 已有键盘方向键 +
                 // focusTrigger 焦点恢复机制，原"无焦点死状态"trade-off 不再必要。对齐
                 // Photos.app / Finder Quick Look：QV → ESC 回上一层（ephemeral），再 ESC
-                // 才回 baseGrid（走 ContentView 兜底状态机）
+                // 才回 baseGrid（走 ContentView 兜底状态机）。
+                // QV 期间方向键写过的 selectedImageIndex 这里清回 nil 防止 previewOverlay
+                // 反弹 mount（mirror case .grid 行为）— ephemeral 的 highlightedURL 已被
+                // ephemeral.onChange(of: selectedImageIndex) non-nil 分支同步到 Z 不丢
+                folderStore.selectedImageIndex = nil
                 ephemeralFocusTrigger = UUID()
             case .none:
                 // 路径 4（M2 Slice J）：handleFindSimilar 在 QV 内点找类似时主动清 entry，
