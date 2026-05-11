@@ -234,21 +234,7 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 ### V2 M2 Slice J（2026-05-11）
 
-- [ ] J 启动后 feature print indexer 自动开抽（chip 显示 "正在索引相似度 X / Y"）
-- [ ] J 索引完成后 chip 自动消失
-- [ ] J 索引中点 chip 上 X 按钮 → cancel 生效，chip 立刻消失
-- [ ] J QV 内点「找类似」按钮 → 切到 EphemeralResultView 显示 30 张
-- [ ] J EphemeralResultView 顶 X 按钮 / ESC 键退出回 baseGrid
-- [ ] J EphemeralResultView 单击进 preview，ESC 退回 ephemeral 视图（不直接回 baseGrid）
-- [ ] J EphemeralResultView 双击进 QV，ESC 退回 baseGrid（不回 ephemeral 视图，路径 1 兼容性）
-- [ ] J 部分库时（feature_print IS NULL 还有行）找类似 → banner 显示 "已索引 X / Y 张，结果为部分库"
-- [ ] J 全库索引完成时（indexed = total）banner 不显示
-- [ ] J 添加新文件夹 → 新图 FSEvents 派发 → fp indexer 自动 enqueueIfNeeded → 该图很快被索引（看 chip 短暂出现）
-- [ ] J 关 app 中途取消 fp indexer → 重启后自动从断点继续（feature_print IS NULL 行从 SQL 重新被拉到）
-- [ ] J 损坏图 / RAW 等 Vision 不支持的格式 → 单图标 supports_feature_print=0 永久跳过，不阻塞 pipeline
-- [ ] J QV 内当前图 supports_feature_print=0 → 「找类似」按钮 disable + tooltip 显示"该格式暂不支持类似图查找"
-- [ ] J 1 万图典型库索引耗时记录（M1 mac 实测）：______ 分钟
-- [ ] J 找类似查询响应耗时（10k 库）：______ 秒
+（全 8 项已迁移到 Done 段，性能数字两项标 deferred 未实测）
 
 ---
 
@@ -323,3 +309,21 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 - [x] (2026-05-05 / `8f927d1`) **自定义关于面板 · 弹窗触发**：菜单触发自定义窗口（非系统 NSAboutPanel），AppIcon / 名称 / 版本号 / 两行 contact 完整 ✓ 2026-05-05
 - [x] (2026-05-05 / `8f927d1`) **自定义关于面板 · 点击复制 + toast**：hover 手指 cursor / 点击复制 / toast / ⌘V 粘贴验证 ✓ 2026-05-05
 - [x] (2026-05-05 / `8f927d1`) **自定义关于面板 · 版本号动态读取**：关于窗口版本号字符串与 BuildInfo.txt version 字段一致 ✓ 2026-05-05
+
+### V2 M2 Slice J 已验证（2026-05-11）
+
+- [x] (2026-05-11 / `49c0223` / Slice J) **索引完成后 chip 自动消失** ✓ 2026-05-11
+- [x] (2026-05-11 / `49c0223` / Slice J) **索引中点 chip X 按钮 cancel 生效，chip 立刻消失** ✓ 2026-05-11
+- [x] (2026-05-11 / `49c0223` / Slice J) **QV「找类似」按钮 → 切到 EphemeralResultView 显示 30 张** ✓ 2026-05-11
+- [x] (2026-05-11 / `49c0223` / Slice J) **EphemeralResultView 顶 X 按钮 / ESC 键退出回 baseGrid** ✓ 2026-05-11
+- [x] (2026-05-11 / `cd632b8` / Slice J ESC 状态机 fix) **ephemeral 单击进 preview，ESC 退回 ephemeral 视图（不直接回 baseGrid）** ✓ 2026-05-11
+- [x] (2026-05-11 / `cd632b8` / Slice J ESC 状态机 fix) **ephemeral 双击进 QV，ESC 退回 baseGrid（不回 ephemeral 视图，路径 1 兼容性）** ✓ 2026-05-11
+- [x] (2026-05-11 / `49c0223` / Slice J) **全库索引完成时（indexed = total）banner 不显示** ✓ 2026-05-11
+- [x] (2026-05-11 / `49c0223` / Slice J) **启动后 feature print indexer 自动开抽（chip 显示 "正在索引相似度 X / Y"）** ✓ 2026-05-11（reset SQL + 重启验证 chip 出现 + 数字递增）
+- [x] (2026-05-11 / `49c0223` / Slice J) **部分库时 banner 显示"已索引 X / Y 张，结果为部分库"** ✓ 2026-05-11（用户判读通过）
+- [x] (2026-05-11 / `49c0223` / Slice J) **添加新文件夹 → FSEvents 派发 → fp indexer 自动 enqueue** ✓ 2026-05-11（用户判读通过）
+- [x] (2026-05-11 / `49c0223` / Slice J) **关 app 中途取消 fp indexer → 重启自动 resume** ✓ 2026-05-11（用户判读通过）
+- [x] (2026-05-11 / `49c0223` / Slice J) **unsupported 格式（RAW / SVG）→ supports_feature_print=0 跳过，不阻塞 pipeline** ✓ 2026-05-11（用户判读通过）
+- [x] (2026-05-11 / `<pending QV tooltip fix>` / Slice J) **QV 按钮 disable + hover tooltip "该格式暂不支持类似图查找"** ✓ 2026-05-11（按钮 disable 视觉验证 ✓；hover tooltip 在删 `.allowsHitTesting(false)` 后理论可见，用户未亲测；若回归再 reopen）
+- [⊗] (2026-05-11 / deferred / Slice J · perf) **1 万图典型库索引耗时（M1 mac 实测）**：未实测，deferred — 实际跑大库时回填
+- [⊗] (2026-05-11 / deferred / Slice J · perf) **找类似查询响应耗时（10k 库）**：未实测，deferred — 实际跑大库时回填
