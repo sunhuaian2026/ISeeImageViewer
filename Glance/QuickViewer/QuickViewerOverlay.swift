@@ -135,7 +135,7 @@ struct QuickViewerOverlay: View {
         .onContinuousHover { phase in
             switch phase {
             case .active: showControlsTemporarily()
-            case .ended:  scheduleHide(after: 1.0)
+            case .ended:  scheduleHide(after: DS.Viewer.controlsAutoHideSeconds)
             }
         }
         // 键盘快捷键
@@ -287,7 +287,6 @@ struct QuickViewerOverlay: View {
                     }
                 }
                 .opacity(currentSupportsFeaturePrint ? DS.Similarity.buttonEnabledOpacity : DS.Similarity.buttonDisabledOpacity)
-                .allowsHitTesting(currentSupportsFeaturePrint)
             }
             toolbarButton(title: "全屏 (F)", systemImage: appState.isFullScreen ? "arrow.down.right.and.arrow.up.left" : DS.Icon.fullscreen) {
                 appState.toggleFullScreen()
@@ -403,7 +402,7 @@ struct QuickViewerOverlay: View {
 
     private func showControlsTemporarily() {
         withAnimation(DS.Anim.normal) { controlsVisible = true }
-        scheduleHide(after: 2.0)
+        scheduleHide(after: DS.Viewer.controlsAutoHideSeconds)
     }
 
     private func scheduleHide(after seconds: Double) {

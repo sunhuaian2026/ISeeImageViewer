@@ -66,6 +66,8 @@ enum DS {
         static let nativeScale: CGFloat = 1.0
         // 适合窗口缩放：大图缩到窗口 fitPadding 占比，四周留呼吸边；小图 (≤ 窗口) 保 nativeScale 不上采样
         static let fitPadding: CGFloat = 0.9
+        // 鼠标移动 / 切图后工具栏自动隐藏延迟（秒）。对齐 macOS Quick Look ~4s 节奏
+        static let controlsAutoHideSeconds: Double = 4.0
     }
 
     // MARK: - About
