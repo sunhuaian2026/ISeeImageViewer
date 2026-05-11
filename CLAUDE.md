@@ -113,6 +113,10 @@ ISeeImageViewer/                    ← 磁盘路径未改，repo 内部一切�
     │   ├── FeaturePrintIndexingProgress.swift ← progress record（indexed/total/lastImageName）
     │   ├── FeaturePrintProgressView.swift     ← chip 形态进度 UI（mirror Slice I 紫色调区分）
     │   └── EphemeralResultView.swift          ← 临时结果视图（layout + ThumbnailCell 复用 + banner 槽）
+    ├── Search/                      ← V2 M3 Slice M 全局搜索
+    │   ├── SearchInput.swift                ← ParsedSearch struct + SearchSizeUnit enum
+    │   ├── SearchService.swift              ← parser (Silent partial) + compile → SmartFolderPredicate
+    │   └── SearchOverlayView.swift          ← 顶部 Spotlight 式 overlay + ⌘F 入口 + ESC dismiss
     └── SmartFolder/                 ← V2 智能文件夹规则与查询
         ├── SmartFolder.swift                ← struct（id/displayName/predicate/sortBy/builtIn）
         ├── SmartFolderRule.swift            ← Predicate enum (AND/OR/ATOM) + Atom struct + Op + Value（D6 Spotlight-like 平铺）

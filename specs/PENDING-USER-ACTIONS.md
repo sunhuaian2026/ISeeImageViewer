@@ -267,6 +267,23 @@ D15 终态落地（共享 `@FocusState focusTarget: AppFocus?` enum）。下列 
 - [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 6 — V2 SmartFolder 全路径重测**：sidebar 选「全部最近」→ 重测路径 1-5（V2 grid 走 SmartFolderGridView 路径）
 - [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 7 — 切文件夹强关 QV**：QV 打开 → sidebar 点其他文件夹 → QV 自动关闭 → 焦点应回新文件夹的 grid，方向键能用
 
+### V2 M3 Slice M（2026-05-11）— 全局搜索
+
+- [ ] (2026-05-11 / `d315c78` / Slice M) **⌘F 入口 — baseGrid**：sidebar 选「全部最近」grid 状态按 ⌘F → SearchOverlayView 顶部滑入，input 自动 active，可立即输入
+- [ ] (2026-05-11 / `d315c78` / Slice M) **⌘F 入口 — preview**：单击 cell 进 preview 后按 ⌘F → overlay 出，preview 仍 visible（z-index 区分）
+- [ ] (2026-05-11 / `d315c78` / Slice M) **⌘F 入口 — ephemeral**：找类似 ephemeral 状态按 ⌘F → overlay 替换显示，ephemeral 转换为 search ephemeral
+- [ ] (2026-05-11 / `d315c78` / Slice M) **⌘F 入口 — QV**：双击 cell 进 QV 后按 ⌘F → QV 同帧关 + overlay 出（视觉一帧切换）
+- [ ] (2026-05-11 / `d315c78` / Slice M) **keyword 基础搜索**：输入 "screen" → 200ms 后 EphemeralResultView 出结果，filename + relative_path LIKE 命中均显示，按 birth_time 倒序 + 时间分段 chip header
+- [ ] (2026-05-11 / `d315c78` / Slice M) **modifier type**：输入 "type:png" → 仅 PNG 文件结果
+- [ ] (2026-05-11 / `d315c78` / Slice M) **modifier size**：输入 "size:>1mb" → 仅 >1MB 文件结果
+- [ ] (2026-05-11 / `d315c78` / Slice M) **modifier birth**：输入 "birth:>2026-04-01" → 仅 birth_time > 2026-04-01 文件结果
+- [ ] (2026-05-11 / `d315c78` / Slice M) **modifier 混合 AND**：输入 "screen type:png size:>500k" → 三条件 AND 命中
+- [ ] (2026-05-11 / `d315c78` / Slice M) **Silent partial fallback**：输入 "screen type:invalidext" → 整 token "screen type:invalidext" 当 keyword LIKE（结果可能 0，不报错）；输入 "foo size:abc" → 整 token fallback keyword（结果可能 0）
+- [ ] (2026-05-11 / `d315c78` / Slice M) **Hidden 继承**：右键 hide 某 folder → 搜索其内 filename 应不出现（D18）
+- [ ] (2026-05-11 / `d315c78` / Slice M) **焦点回归**：ESC overlay → baseGrid 立即响应方向键 / Space（D15 单仲裁回归 .grid）
+- [ ] (2026-05-11 / `d315c78` / Slice M) **M2 找类似回归**：QV 内点找类似 → EphemeralResultView showTimeBuckets=false 维持 flat LazyVGrid + "无结果" 文案（如空结果），cell 单击/双击行为不变
+- [ ] (2026-05-11 / `d315c78` / Slice M / deferred) **性能验收**：1 万图库典型 keyword 搜索响应时间 < 200ms（实测数字记录此处）
+
 ---
 
 ## Done
