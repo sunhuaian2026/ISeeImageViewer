@@ -18,10 +18,10 @@
 
 ## M2 Slice Roadmap
 
-| Slice | Goal | Estimate | Ship as |
-|---|---|---|---|
-| **J** ⭐ (this plan, detailed) | 后台 fp 索引 + Quick Viewer 找类似按钮 + EphemeralResultView 端到端 demo | 11-13 天 | V2.1-beta1 |
-| K (outline) | Vision revision 迁移 + 失败重试 polish + 错误 banner + 性能验收 | 4-5 天 | V2.1 GA |
+| Slice | Goal | Estimate | Ship as | Status |
+|---|---|---|---|---|
+| **J** ⭐ (this plan, detailed) | 后台 fp 索引 + Quick Viewer 找类似按钮 + EphemeralResultView 端到端 demo | 11-13 天 | V2.1-beta1 | ✅ 完成 2026-05-11 |
+| K | Vision revision 迁移 + 失败重试 polish + 错误 banner + 性能验收 | 4-5 天 | V2.1 GA | ✅ K.1/K.2/K.3 完成 2026-05-11；K.4 性能验收 + K.5 tag deferred |
 
 **Total:** ~15-18 工作日 ≈ **3 周**（落 V2 design D9 的 M2 = 3 周锁定范围）。
 
@@ -1534,6 +1534,28 @@ git push origin v2.1-beta1
 - 5 步 /go：verify 三段 + 文档同步 + PENDING 收尾 + commit + push
 - Roadmap M2 表标"✅ 完成"
 - tag `v2.1` 推 origin
+
+---
+
+### Slice K 完成详细（追溯式 — 2026-05-11 实施记录）
+
+**注**：本表是 2026-05-11 K ship 后的追溯记录（K plan 阶段直接在 conversation 完成未及时拆 detailed task 表，违反 V2 milestone-level 工作流；事后纠正补此表）。实际落地比上方 outline 收敛了一些范围（schema_meta 表 / retry_count 列 / tag v2.1 都没做），下表为真相源。
+
+| Task | 落地内容 | Commit |
+|---|---|---|
+| K.1 | Vision revision 启动期迁移：`SimilarityService.currentRevision` 静态 getter（构 `VNGenerateImageFeaturePrintRequest()` 读 `.revision` 默认值，避免 schema_meta 表的额外复杂度）+ `IndexedImage.resetFeaturePrintsWithStaleRevision(currentRevision: Int) throws -> Int`（UPDATE images SET feature_print/feature_print_revision = NULL WHERE feature_print_revision IS NOT NULL AND != ?，返回 `sqlite3_changes`）+ `ContentView.wireIfReady` 在 indexer.start 前调一次，>0 → `holderRef.lastError = "ℹ️ Vision 模型已更新，正在重新索引 X 张图片..."`（info banner 复用 lastError 通道，K.3 决定不升级 enum）；schema_meta 表方案丢弃（fetched revision 已能从 SQL `WHERE != ?` 直接判，无 meta 表必要）| `7347013` |
+| K.2 | 失败重试 polish：`FeaturePrintIndexer.runLoop` 加 `var retryCounts: [Int64: Int]` in-memory（per-pipeline-run，session 限），`extractFailed` 累计 < `DS.Similarity.extractRetryThreshold = 3` 时不标 supports=0 让下批 fetch 自然重试；>= 3 才永久标。`unsupportedFormat` / `archiveFailed` 仍立即永久标（永久错误）。retry threshold 通过参数传 nonisolated runLoop 绕 MainActor 隔离 warning。决定**不入 DB schema**（K outline 原计划加 `feature_print_attempt_count` 列被否定）：跨 session 重置给坏盘修好的图再次机会是有意设计，schema 持久化反而违背该意图 | `7347013` |
+| K.3 | 错误 banner 文案润色：3 处 `"feature print 索引..."` → `"类似图特征索引..."`（用户面向中文术语，跟 V2 UI 类似图按钮文案对齐）。决定**不升级** `lastError: String?` 到 `BannerMessage` enum（scope 不平衡，info / error 用前缀图标 ℹ️ / ⚠️ 区分够用，UI 不需重渲染逻辑）| `7347013` |
+| K.4 | 性能验收（1 万图 fp 索引 < 30min / 查询 < 1s / index.sqlite < 50MB）| 🚧 **Deferred** — 等用户 1 万图大库实测机会；PENDING 已留位（"V2 M2 Slice K performance" 项）|
+| K.5 | /go 收尾 + tag v2.1 | 🚧 **Deferred** — V2.1 GA 包内容已就位（K.1+K.2+K.3 全 ship），但用户当前不发布只继续往 M3 肝；tag 留到适当公开窗口再打 |
+
+**plan vs 实际收敛点**：
+1. schema_meta 表（K.1 outline）→ 砍掉，SQL WHERE 直判够用
+2. `feature_print_attempt_count` schema 列（K.2 outline）→ 砍掉，in-memory 跨 session 重置更符合 polish 意图
+3. `BannerMessage` enum 升级（K.3 outline 隐含）→ 砍掉，前缀图标够区分
+4. `tag v2.1`（K.5）→ deferred，等用户公开发布意图
+
+**Codex pre-push hook 在 K push 触发 1 个 P1 误判**："missing doc sync — specs/<module>.md 当前进度" — 根因是 hook PROMPT 第 11 条规则没考虑 V2 milestone-level plan 文档（per-milestone in `specs/v2/`，非 per-module）。当时走 `SKIP_CODEX_REVIEW=1` bypass + 870cf80 precedent。**根治在本追溯写入后**：hook 规则在 commit Roadmap CLAUDE.md 文档同步段已扩展明确 V2 工作流，下次 milestone 工作不会再误判。
 
 ---
 
