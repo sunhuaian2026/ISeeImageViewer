@@ -258,6 +258,9 @@ final class FolderStoreIndexBridge: ObservableObject {
             // Slice H — 新图入索引 → 重新决议该 (file_size, format) group 的 canonical
             triggerDedupGroup(fileSize: metadata.fileSize, format: metadata.format)
             // M2 Slice J — 通知 fp indexer 重启拉新一批（含本图）
+            // MainActor isolation: bridge is @MainActor; FSEvents callback hopped to
+            // @MainActor in startWatcher's Task { @MainActor ... }; featurePrintIndexer
+            // is @MainActor final class; this call is synchronous on MainActor — safe.
             featurePrintIndexer?.enqueueIfNeeded()
             return true
         } catch {

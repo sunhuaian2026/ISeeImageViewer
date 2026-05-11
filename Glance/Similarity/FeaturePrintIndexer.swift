@@ -74,7 +74,10 @@ final class FeaturePrintIndexer {
     }
 
     /// detached 内运行的主循环。Sendable-safe：参数都是 value 或 nonisolated 引用。
-    private static func runLoop(
+    /// 必须显式 nonisolated：FeaturePrintIndexer 是 @MainActor final class，
+    /// 不加 nonisolated 时 static func 会继承 MainActor 隔离，导致 Task.detached
+    /// 内的 `await Self.runLoop(...)` hop 回主线程，Vision + SQLite 在 main thread 跑阻塞 UI。
+    nonisolated private static func runLoop(
         store: IndexStore,
         batchSize: Int,
         progressCB: ((FeaturePrintIndexingProgress?) -> Void)?,
@@ -84,8 +87,8 @@ final class FeaturePrintIndexer {
         // total 在批次开始时计算（pending 估算总量）
         var pendingTotal = 0
         do {
-            let all = try store.fetchImagesNeedingFeaturePrint(limit: Int.max)
-            pendingTotal = all.count
+            // COUNT(*) 单独 query，避免传 Int.max 给 fetch 内部 Int32(limit) 溢出 trap
+            pendingTotal = try store.countImagesNeedingFeaturePrint()
         } catch {
             await MainActor.run { errorCB?("初始化 feature print 索引失败：\(error.localizedDescription)") }
             return

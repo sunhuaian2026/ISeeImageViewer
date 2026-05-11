@@ -33,7 +33,7 @@ struct EphemeralResultView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: DS.Spacing.zero) {
             topBar
             if let bannerText {
                 bannerRow(text: bannerText)
@@ -91,7 +91,7 @@ struct EphemeralResultView: View {
                     .font(.body.weight(.semibold))
                     .foregroundStyle(.primary)
                     .frame(width: DS.Similarity.closeButtonSize, height: DS.Similarity.closeButtonSize)
-                    .background(Color.gray.opacity(DS.Similarity.closeButtonBgOpacity), in: Circle())
+                    .background(DS.Similarity.neutralOverlay.opacity(DS.Similarity.closeButtonBgOpacity), in: Circle())
             }
             .buttonStyle(.plain)
             .help("返回 (ESC)")
@@ -125,7 +125,7 @@ struct EphemeralResultView: View {
         }
         .padding(.horizontal, DS.Spacing.md)
         .padding(.vertical, DS.Spacing.xs)
-        .background(Color.gray.opacity(DS.Similarity.bannerBgOpacity))
+        .background(DS.Similarity.neutralOverlay.opacity(DS.Similarity.bannerBgOpacity))
     }
 
     private var emptyState: some View {

@@ -483,6 +483,19 @@ nonisolated extension IndexStore {
         }
     }
 
+    /// J.3 — 统计待抽 feature print 的图总数（pendingTotal 用，避免 Int.max 传给 limit 触发 Int32 trap）。
+    func countImagesNeedingFeaturePrint() throws -> Int {
+        try sync { db in
+            let stmt = try db.prepare("""
+                SELECT COUNT(*) FROM images
+                WHERE supports_feature_print = 1 AND feature_print IS NULL;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
+            return Int(sqlite3_column_int(stmt, 0))
+        }
+    }
+
     /// J.3 — 写入 feature_print blob + revision；caller (indexer) 已 SimilarityService.extract 拿到。
     func setFeaturePrint(imageId: Int64, archivedData: Data, revision: Int) throws {
         try sync { db in

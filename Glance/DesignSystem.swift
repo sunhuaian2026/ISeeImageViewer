@@ -13,6 +13,8 @@ enum DS {
     // MARK: - Spacing（8pt Grid）
 
     enum Spacing {
+        /// 结构性无间距（VStack/HStack spacing: 0 等价语义）
+        static let zero: CGFloat = 0
         static let xs: CGFloat = 4
         static let sm: CGFloat = 8
         static let md: CGFloat = 16
@@ -126,6 +128,11 @@ enum DS {
         /// EphemeralResultView 空态图标 + 顶部留白
         static let emptyStateIconSize: CGFloat = 48
         static let emptyStateTopPadding: CGFloat = 80
+        /// 中性灰背景色（EphemeralResultView close button 圆形 + banner row 背景）
+        static let neutralOverlay: SwiftUI.Color = .gray
+        /// QV 找类似按钮：unsupported 格式时 disabled / enabled 透明度
+        static let buttonEnabledOpacity: Double = 1.0
+        static let buttonDisabledOpacity: Double = 0.4
     }
 
     // MARK: - Animation

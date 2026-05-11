@@ -286,7 +286,7 @@ struct QuickViewerOverlay: View {
                         onFindSimilar(url)
                     }
                 }
-                .opacity(currentSupportsFeaturePrint ? 1.0 : 0.4)
+                .opacity(currentSupportsFeaturePrint ? DS.Similarity.buttonEnabledOpacity : DS.Similarity.buttonDisabledOpacity)
                 .allowsHitTesting(currentSupportsFeaturePrint)
             }
             toolbarButton(title: "全屏 (F)", systemImage: appState.isFullScreen ? "arrow.down.right.and.arrow.up.left" : DS.Icon.fullscreen) {
