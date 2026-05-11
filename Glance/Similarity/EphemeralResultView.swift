@@ -117,9 +117,9 @@ struct EphemeralResultView: View {
     }
 
     private func computeColumnCount(width: CGFloat) -> Int {
-        // grid 真实宽度 = 容器宽度 - LazyVGrid 上的左右 padding(.horizontal, DS.Spacing.md)
+        // grid 真实宽度 = 容器宽度 - LazyVGrid 左 padding(.horizontal, DS.Spacing.md) - 右 padding(.horizontal, DS.Spacing.md)
         // SwiftUI .adaptive(minimum:) 列数算法：floor((W + spacing) / (cellWidth + spacing))
-        let gridWidth = width - 2 * DS.Spacing.md
+        let gridWidth = width - DS.Spacing.md - DS.Spacing.md
         let cellWidth = folderStore.thumbnailSize
         let spacing = DS.Thumbnail.spacing
         return max(1, Int((gridWidth + spacing) / (cellWidth + spacing)))
