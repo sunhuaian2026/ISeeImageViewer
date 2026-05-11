@@ -22,8 +22,8 @@ import Foundation
 final class FeaturePrintIndexer {
 
     private let store: IndexStore
-    /// 每批 fetch 的图数量。50 是 SQLite IO + Vision 单线程吞吐折中。
-    private let batchSize = 50
+    /// 每批 fetch 的图数量。SQLite IO + Vision 单线程吞吐折中（DS.Similarity.indexerBatchSize）。
+    private let batchSize = DS.Similarity.indexerBatchSize
     /// 当前正在跑的索引 task；nil = 空闲。start/enqueueIfNeeded 重新创建。
     private var currentTask: Task<Void, Never>?
 

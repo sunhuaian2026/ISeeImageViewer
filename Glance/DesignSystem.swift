@@ -120,6 +120,8 @@ enum DS {
         static let spinnerScale: CGFloat = 0.7
         /// D13 — 类似图查找返回的 top-N 数量。M2 写死 30，未来需要可调改 setting。
         static let topNResults: Int = 30
+        /// FeaturePrintIndexer 单批 fetch 张数：SQLite IO + Vision 单线程吞吐折中
+        static let indexerBatchSize: Int = 50
         /// EphemeralResultView 顶部关闭按钮的圆形容器尺寸
         static let closeButtonSize: CGFloat = 28
         /// EphemeralResultView 关闭按钮 + banner row 的背景透明度
