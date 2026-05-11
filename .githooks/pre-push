@@ -139,14 +139,14 @@ Code (from CLAUDE.md):
 UI (from specs/UI.md and CLAUDE.md):
 7. All UI constants must reference `DS.*` (DesignSystem.swift). Reject hardcoded hex colors, `Color(red:...)`, spacing ints passed directly to `.padding()` / `.frame()` / `.spacing(...)`, or animation durations outside `DS.Anim.*`.
 8. `.spring` animations are forbidden in viewer-family views. Use `DS.Anim.fast / normal / slow`.
-9. Any view inside `QuickViewerOverlay` (including Filmstrip, TopBar, BottomToolbar, NavButtons) must use explicit dark-appropriate colors that read correctly under `.preferredColorScheme(.dark)`. System-material backgrounds (`.regularMaterial` etc.) that would flip under light mode are P1 here.
+9. Rule 9 ONLY applies to code inside `Glance/QuickViewer/` (QuickViewerOverlay.swift and the view structs declared there: TopBar/BottomToolbar/Filmstrip/NavButtons). In that scope, system-material backgrounds (`.regularMaterial`, `.thickMaterial`, `.thinMaterial`, `.ultraThinMaterial`) are P1 because they invert under light mode and break the forced dark UI. Outside `Glance/QuickViewer/`, system materials are an accepted project convention (see SmartFolderGridView headers, FeaturePrintProgressView chip, IndexingProgressView chip, FolderSidebarView, AboutView, EphemeralResultView, SearchOverlayView, etc.) — do NOT flag.
 10. `ImagePreviewView` must use `Color.primary` for foreground. Hardcoded `.white` or `.black` is P1.
 
 Doc sync (from CLAUDE.md "⚠️ 文档同步强制规则"):
 11. If the diff modifies `.swift` AND the change falls into one of the categories below, the listed doc MUST also be modified in the SAME diff. If it is not, flag [P1] with message "missing doc sync — <which doc>":
     - Bug fix → `specs/Roadmap.md` Bug Fix 记录 has a new row (commit-hash placeholder is fine)
     - New / deleted / moved / renamed `.swift` file → `CLAUDE.md` 文件结构 updated
-    - Module or sub-feature completion → `specs/<module>.md` 当前进度 updated
+    - V1 module or sub-feature completion → `specs/<module>.md` 当前进度 updated. **EXEMPTION**: V2 milestone code (paths under `Glance/IndexStore/`, `Glance/SmartFolder/`, `Glance/Similarity/`, `Glance/Search/`) does NOT have per-module specs. Doc sync for V2 work goes into `specs/v2/<date>-<milestone>-implementation-plan.md` (Slice 完成详细 table) and `specs/Roadmap.md` M-段 slice 表 instead. Do NOT flag missing `specs/<v2-module>.md` for V2 paths.
     - Architecture / interaction-logic change → `specs/Roadmap.md` 关键架构决策 updated
 12. Use the commit messages (provided alongside the diff) to judge the category. A pure internal refactor with no user-visible, architectural, or file-structure change does NOT require a doc update — do not flag.
 13. If you are uncertain whether a doc update is required, prefer [P2] over [P1].
