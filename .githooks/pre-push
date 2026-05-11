@@ -2,9 +2,12 @@
 # codex pre-push hook — review diff with codex before pushing to remote.
 #
 # Install:           make hooks-install  (sets core.hooksPath=.githooks)
-# Bypass one push:   git push --no-verify
-# Bypass via env:    SKIP_CODEX_REVIEW=1 git push
+# Bypass one push:   git push --no-verify   (git native; cannot be disabled at hook level)
 # Bypass via msg:    include [skip-codex] or [wip] in a commit message in the push range
+#
+# Note: SKIP_CODEX_REVIEW=1 env-var bypass intentionally REMOVED 2026-05-11 — codex review
+# is mandatory before push. Use commit-message [skip-codex]/[wip] for genuine WIP cases,
+# or --no-verify for emergency one-off (leaves no audit trail in commit history; avoid).
 #
 # Behavior:
 #   - Only runs on `git push`. Never runs on commit/stash/rebase.
@@ -25,12 +28,6 @@ BIG_DIFF_LINES=5000
 # Resolve actual git dir — in a worktree `.git` is a file, not a directory,
 # so `.git/codex-reviewed-<sha>` would fail with "Not a directory".
 GIT_DIR=$(git rev-parse --git-dir 2>/dev/null || echo ".git")
-
-# ── global env bypass ─────────────────────────────────────────────
-if [ "${SKIP_CODEX_REVIEW:-}" = "1" ]; then
-  echo "codex: SKIP_CODEX_REVIEW=1, skipping review" >&2
-  exit 0
-fi
 
 # ── pick a timeout command (macOS stock has none; brew coreutils provides both) ──
 if command -v timeout >/dev/null 2>&1; then
