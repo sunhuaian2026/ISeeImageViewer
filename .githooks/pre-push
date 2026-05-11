@@ -22,6 +22,10 @@ ZERO="0000000000000000000000000000000000000000"
 TIMEOUT_SEC=300
 BIG_DIFF_LINES=5000
 
+# Resolve actual git dir — in a worktree `.git` is a file, not a directory,
+# so `.git/codex-reviewed-<sha>` would fail with "Not a directory".
+GIT_DIR=$(git rev-parse --git-dir 2>/dev/null || echo ".git")
+
 # ── global env bypass ─────────────────────────────────────────────
 if [ "${SKIP_CODEX_REVIEW:-}" = "1" ]; then
   echo "codex: SKIP_CODEX_REVIEW=1, skipping review" >&2
@@ -66,7 +70,7 @@ while read -r local_ref local_sha remote_ref remote_sha; do
   fi
 
   # cache: same local_sha already passed before
-  CACHE=".git/codex-reviewed-$local_sha"
+  CACHE="$GIT_DIR/codex-reviewed-$local_sha"
   if [ -f "$CACHE" ]; then
     echo "codex: already reviewed $local_sha, skipping" >&2
     continue
