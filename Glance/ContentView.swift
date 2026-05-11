@@ -13,6 +13,9 @@ enum AppFocus: Hashable {
     case grid
     case preview
     case ephemeral
+    /// M3 Slice M 加：⌘F 触发的 SearchOverlayView input field 拿焦点时此 case 激活；
+    /// modal layer 顺序：QV > search > preview > ephemeral > baseGrid（D16）
+    case search
 }
 
 // QV 入口来源：用 enum 而非裸 Bool/Optional 让 dismiss 路由按 provenance 走，不依赖

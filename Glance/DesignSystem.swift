@@ -143,6 +143,25 @@ enum DS {
         static let extractRetryThreshold: Int = 3
     }
 
+    // MARK: - Search（V2 M3 Slice M — 全局搜索 overlay）
+
+    enum Search {
+        /// SearchOverlayView 最大宽度（detail 区宽度受限于此 cap，居中显示）。
+        static let overlayMaxWidth: CGFloat = 600
+        /// overlay 内 padding（HStack search field + close button 上下左右）。
+        static let overlayPadding: CGFloat = 12
+        /// overlay 圆角半径。
+        static let overlayCornerRadius: CGFloat = 12
+        /// onChange debounce 毫秒数（200ms = Spotlight 同款节奏）。
+        static let debounceMs: Int = 200
+        /// modifier hint 行文字透明度（永远可见的教学行）。
+        static let modifierHintOpacity: Double = 0.55
+        /// overlay strokeBorder 透明度（hairline 边界）。
+        static let overlayBorderOpacity: Double = 0.12
+        /// overlay strokeBorder lineWidth（hairline）。
+        static let overlayBorderWidth: CGFloat = 0.5
+    }
+
     // MARK: - Animation
 
     enum Anim {
