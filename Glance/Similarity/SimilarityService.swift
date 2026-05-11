@@ -26,6 +26,13 @@ nonisolated enum SimilarityService {
         case unarchiveFailed
     }
 
+    /// K.1 — 当前 OS 提供的 Vision feature print 算法版本。VNGenerateImageFeaturePrintRequest()
+    /// 默认 init 即取最新支持的 revision。macOS 升级带来 Vision 版本切换时本值会变，
+    /// 已存 row 的 feature_print_revision != 当前值即"过期"，需要 reset 重抽（IndexStore.resetFeaturePrintsWithStaleRevision）。
+    static var currentRevision: Int {
+        VNGenerateImageFeaturePrintRequest().revision
+    }
+
     /// 单图抽 feature print。返回 (archivedData, revision)。读图失败 / Vision 不支持
     /// 该格式 → 抛 .unsupportedFormat（caller 标 supports_feature_print=false 跳过）。
     /// 调用方所在 task 应已 startAccessing root scoped resource（FeaturePrintIndexer 负责）。

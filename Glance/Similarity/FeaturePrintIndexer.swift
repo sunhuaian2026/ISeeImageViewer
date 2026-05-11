@@ -46,11 +46,15 @@ final class FeaturePrintIndexer {
         let progressCB = self.onProgress
         let errorCB = self.onError
         let batchSize = self.batchSize
+        // K.2 — DS 是 MainActor 隔离（SwiftUI 默认），在 MainActor start() 内读出后传给
+        // nonisolated runLoop，绕开 Swift 6 isolation error
+        let retryThreshold = DS.Similarity.extractRetryThreshold
 
         currentTask = Task.detached(priority: .utility) { [weak self] in
             await Self.runLoop(
                 store: store,
                 batchSize: batchSize,
+                retryThreshold: retryThreshold,
                 progressCB: progressCB,
                 errorCB: errorCB
             )
@@ -80,6 +84,7 @@ final class FeaturePrintIndexer {
     nonisolated private static func runLoop(
         store: IndexStore,
         batchSize: Int,
+        retryThreshold: Int,
         progressCB: ((FeaturePrintIndexingProgress?) -> Void)?,
         errorCB: ((String) -> Void)?
     ) async {
@@ -90,17 +95,22 @@ final class FeaturePrintIndexer {
             // COUNT(*) 单独 query，避免传 Int.max 给 fetch 内部 Int32(limit) 溢出 trap
             pendingTotal = try store.countImagesNeedingFeaturePrint()
         } catch {
-            await MainActor.run { errorCB?("初始化 feature print 索引失败：\(error.localizedDescription)") }
+            await MainActor.run { errorCB?("类似图特征索引初始化失败：\(error.localizedDescription)") }
             return
         }
         guard pendingTotal > 0 else { return }
+
+        // K.2 — 瞬时 extractFailed 重试 counter（per-pipeline-run，session 内有效）。
+        // 同一 row 累计 < threshold 时不标 unsupported，下批 fetch 自然会再拉回来；
+        // >= threshold 才永久标 supports=0 防止无限 retry 坏文件。app 重启 / pipeline 重新 enqueue 时 counter 重置 — 给用户修复坏盘后再次机会。
+        var retryCounts: [Int64: Int] = [:]
 
         while !Task.isCancelled {
             let batch: [(id: Int64, urlBookmark: Data, relativePath: String, folderId: Int64)]
             do {
                 batch = try store.fetchImagesNeedingFeaturePrint(limit: batchSize)
             } catch {
-                await MainActor.run { errorCB?("feature print 索引拉取失败：\(error.localizedDescription)") }
+                await MainActor.run { errorCB?("类似图特征索引读取失败：\(error.localizedDescription)") }
                 return
             }
             if batch.isEmpty { break }
@@ -127,6 +137,7 @@ final class FeaturePrintIndexer {
                 do {
                     let (archived, revision) = try SimilarityService.extract(url: fileURL)
                     try store.setFeaturePrint(imageId: row.id, archivedData: archived, revision: revision)
+                    retryCounts[row.id] = nil  // 抽成功清掉 counter
                     totalIndexed += 1
                     let lastName = (row.relativePath as NSString).lastPathComponent
                     let snapshot = FeaturePrintIndexingProgress(
@@ -137,15 +148,24 @@ final class FeaturePrintIndexer {
                     await MainActor.run { progressCB?(snapshot) }
                 } catch SimilarityService.SimilarityError.unsupportedFormat,
                         SimilarityService.SimilarityError.archiveFailed {
-                    // Vision 不支持 / 序列化失败 → 永久标 supports=0 跳过
+                    // Vision 不支持格式 / 序列化失败 → 永久错误，立即标 supports=0 跳过
                     try? store.setFeaturePrintUnsupported(imageId: row.id)
                 } catch SimilarityService.SimilarityError.extractFailed {
-                    // 单图 I/O 失败（坏文件 / 权限丢失）→ 永久标 supports=0 跳过，不阻塞 pipeline
-                    try? store.setFeaturePrintUnsupported(imageId: row.id)
+                    // K.2 — 单图 I/O 失败可能瞬时（磁盘/权限暂时失效）：累计 < threshold 留
+                    // 在 pending pool 下批重试；>= threshold 才永久标 supports=0
+                    let prior = retryCounts[row.id, default: 0]
+                    let next = prior + 1
+                    if next >= retryThreshold {
+                        try? store.setFeaturePrintUnsupported(imageId: row.id)
+                        retryCounts[row.id] = nil
+                    } else {
+                        retryCounts[row.id] = next
+                        // 不标 unsupported 不写 fp → 下批 fetchImagesNeedingFeaturePrint 自然拉回
+                    }
                 } catch {
                     // IndexStore IO 异常 → 报 banner 并退出（避免在错误 DB 上 spin）
                     await MainActor.run {
-                        errorCB?("feature print 索引写入失败：\(error.localizedDescription)")
+                        errorCB?("类似图特征索引写入失败：\(error.localizedDescription)")
                     }
                     return
                 }

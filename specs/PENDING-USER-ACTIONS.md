@@ -236,6 +236,15 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 （全 8 项已迁移到 Done 段，性能数字两项标 deferred 未实测）
 
+### V2 M2 Slice K（2026-05-11）— V2.1 GA polish
+
+- [ ] (2026-05-11 / `<pending>` / Slice K.1) **Vision revision 迁移正常启动**：app 启动正常进 grid，不应弹出"Vision 模型已更新"banner（除非真的 macOS Vision revision 变了）；启动延迟无感知（≤200ms 额外开销）
+- [ ] (2026-05-11 / `<pending>` / Slice K.1) **Vision revision 迁移 mock 测**：终止 app → `sqlite3 ~/Library/Containers/com.sunhongjun.glance/.../index.sqlite "UPDATE images SET feature_print_revision = 0 WHERE feature_print IS NOT NULL LIMIT 5;"` 改 5 行 stale revision → 重启 app → 应看到 banner "Vision 模型已更新，正在重新索引 5 张图片"；fp progress chip 应出现并完成
+- [ ] (2026-05-11 / `<pending>` / Slice K.2) **失败重试 polish**：临时让某张图不可读（`chmod 000`）→ FeaturePrintIndexer 应不立刻把它标 supports_feature_print=0；改回 `chmod 644` → 同 session 内能恢复索引；超过 3 次仍失败 → 标 unsupported（找类似按钮 disable）
+- [ ] (2026-05-11 / `<pending>` / Slice K.3) **错误 banner 文案**：触发任一 fp 错误（mock SQLite IO 失败 / Vision 不支持等）→ banner 文案是"类似图特征索引...失败"风格，不是旧"feature print"技术 jargon
+- [ ] (2026-05-11 / `<pending>` / Slice K.4 / deferred) **性能验收 — 索引时长**：1 万图大库首次扫完入 IndexStore 后启动 fp 索引 → indexing 总时长 < 20min（电池机可放宽至 30min）
+- [ ] (2026-05-11 / `<pending>` / Slice K.4 / deferred) **性能验收 — 查询响应**：1 万图全索引完后，QV 内点找类似 → 从 click 到 EphemeralResultView 显示结果时长 < 500ms
+
 ### Focus 架构父持有重构（2026-05-11）
 
 D15 终态落地（共享 `@FocusState focusTarget: AppFocus?` enum）。下列 7 条覆盖所有焦点路径，**任何一条** 方向键 / Space / ESC 静默 = 焦点 race，回滚。

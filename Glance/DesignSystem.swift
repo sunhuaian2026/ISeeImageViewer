@@ -137,6 +137,10 @@ enum DS {
         /// QV 找类似按钮：unsupported 格式时 disabled / enabled 透明度
         static let buttonEnabledOpacity: Double = 1.0
         static let buttonDisabledOpacity: Double = 0.4
+        /// K.2 — 瞬时 extractFailed 单图重试上限（同一 pipeline run 内）；
+        /// 超过即标 supports=0 跳过避免无限 retry 同一坏文件。
+        /// 跨 session 重置（per-pipeline-run，非持久化）— in-memory 实现见 FeaturePrintIndexer.runLoop
+        static let extractRetryThreshold: Int = 3
     }
 
     // MARK: - Animation

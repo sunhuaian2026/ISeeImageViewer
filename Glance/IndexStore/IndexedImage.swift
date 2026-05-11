@@ -517,6 +517,25 @@ nonisolated extension IndexStore {
         }
     }
 
+    /// K.1 — 把所有 feature_print_revision 不等于 currentRevision 的 row 清回 NULL，
+    /// 让 indexer 通过 fetchImagesNeedingFeaturePrint 自然重抽。返回受影响 row 数。
+    /// 触发场景：macOS 升级让 VNFeaturePrintObservation 算法 revision 变化，旧 fp 不能
+    /// 跟新算法的源图直接 computeDistance（行为不一致 / 距离失真）。
+    func resetFeaturePrintsWithStaleRevision(currentRevision: Int) throws -> Int {
+        try sync { db in
+            let stmt = try db.prepare("""
+                UPDATE images SET feature_print = NULL, feature_print_revision = NULL
+                WHERE feature_print_revision IS NOT NULL AND feature_print_revision != ?;
+            """)
+            defer { sqlite3_finalize(stmt) }
+            try checkBind(sqlite3_bind_int(stmt, 1, Int32(currentRevision)), index: 1, db: db)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw IndexDatabaseError.stepFailed(message: "resetFeaturePrintsWithStaleRevision: \(db.lastErrorMessage())")
+            }
+            return Int(sqlite3_changes(db.handle))
+        }
+    }
+
     /// J.3 — Vision 抽取失败（unsupported format / corrupted file）→ 标 supports=0，
     /// 让 fetchImagesNeedingFeaturePrint 永久跳过（避免无限 retry 同一坏图）。
     func setFeaturePrintUnsupported(imageId: Int64) throws {

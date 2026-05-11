@@ -496,6 +496,20 @@ struct ContentView: View {
             await smartFolderStore.refreshSelected()
         }
 
+        // K.1 — Vision revision 迁移：启动期对比已存 fp 的 revision vs 当前 Vision revision，
+        // 不一致 row 清回 NULL 让 indexer 自然重抽。macOS 升级触发；通常 0 row 受影响秒级返回。
+        let currentRev = SimilarityService.currentRevision
+        let holderRefRev = indexStoreHolder
+        do {
+            let resetCount = try store.resetFeaturePrintsWithStaleRevision(currentRevision: currentRev)
+            if resetCount > 0 {
+                holderRefRev.lastError = "ℹ️ Vision 模型已更新，正在重新索引 \(resetCount) 张图片的相似特征"
+            }
+        } catch {
+            // 不阻塞主索引器启动；revision migration 失败 = 用户继续用老 fp（结果可能略偏）
+            holderRefRev.lastError = "相似特征版本迁移失败，可继续使用但 macOS 升级后结果可能不准确：\(error.localizedDescription)"
+        }
+
         // M2 Slice J — feature print indexer 启动 + 回调挂载
         let indexer = FeaturePrintIndexer(store: store)
         let holderRef2 = indexStoreHolder  // shadow capture（指针不变 capture 安全）
