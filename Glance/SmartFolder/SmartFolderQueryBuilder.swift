@@ -130,6 +130,12 @@ nonisolated enum SmartFolderQueryBuilder {
         }
     }
 
+    /// 月偏移量：往回一个月（Calendar.date(byAdding: .month, value:)）。
+    /// 命名常量满足 CLAUDE.md "禁止魔法数字" 规则。
+    private static let oneMonthBack: Int = -1
+    /// 时间偏移量：往回一秒（用于构造 inclusive end timestamp，从 next-period-start - 1s）。
+    private static let oneSecondBack: TimeInterval = -1
+
     private static func resolveRelativeTime(_ token: String, now: Date) -> Double {
         if token == "now" { return now.timeIntervalSince1970 }
         // M3.L — 自然月边界 token：last-month-start = 上月 1 日 00:00（inclusive），
@@ -138,7 +144,7 @@ nonisolated enum SmartFolderQueryBuilder {
         if token == "last-month-start" {
             let cal = Calendar.current
             guard let thisMonthStart = cal.dateInterval(of: .month, for: now)?.start,
-                  let lastMonthStart = cal.date(byAdding: .month, value: -1, to: thisMonthStart) else {
+                  let lastMonthStart = cal.date(byAdding: .month, value: oneMonthBack, to: thisMonthStart) else {
                 return now.timeIntervalSince1970
             }
             return lastMonthStart.timeIntervalSince1970
@@ -148,7 +154,7 @@ nonisolated enum SmartFolderQueryBuilder {
             guard let thisMonthStart = cal.dateInterval(of: .month, for: now)?.start else {
                 return now.timeIntervalSince1970
             }
-            return thisMonthStart.addingTimeInterval(-1).timeIntervalSince1970
+            return thisMonthStart.addingTimeInterval(oneSecondBack).timeIntervalSince1970
         }
         if let last = token.last, last == "d",
            let n = Int(token.dropLast()) {
