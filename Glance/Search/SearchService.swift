@@ -76,7 +76,8 @@ nonisolated enum SearchService {
         guard let value = Int64(digits), let unit = SearchSizeUnit.parse(unitRaw) else {
             return nil
         }
-        let bytes = value * unit.multiplier
+        let (bytes, overflow) = value.multipliedReportingOverflow(by: unit.multiplier)
+        guard !overflow else { return nil }
         return SmartFolderAtom(field: .fileSize, op: op, value: .int(bytes))
     }
 
@@ -89,8 +90,11 @@ nonisolated enum SearchService {
         guard let parsed = parseISODate(dateRaw) else { return nil }
 
         // eq 翻译为 betweenDuration [当日 00:00, 次日 00:00)
+        // 用 addingTimeInterval(secondsPerDay) 而非 Calendar.current.date(byAdding:)：
+        // (1) 不会因 Calendar 失败 fallback 到 parsed 导致 endISO == startISO 的 0 结果 bug；
+        // (2) parsed 是 UTC 对齐 instant，Calendar.current 会套本地 DST 让 +1 day 变 23/25h。
         if op == .eq {
-            let nextDay = Calendar.current.date(byAdding: .day, value: 1, to: parsed) ?? parsed
+            let nextDay = parsed.addingTimeInterval(secondsPerDay)
             let startISO = isoFormatter.string(from: parsed)
             let endISO = isoFormatter.string(from: nextDay)
             return SmartFolderAtom(
@@ -123,6 +127,9 @@ nonisolated enum SearchService {
         if let d = dateOnlyFormatter.date(from: raw) { return d }
         return nil
     }
+
+    /// 一天秒数常量（避免魔法数字 86400）。birth:= 翻译 [当日, 次日) 区间用。
+    private static let secondsPerDay: TimeInterval = 86_400
 
     private static let isoFormatter: ISO8601DateFormatter = {
         let f = ISO8601DateFormatter()
