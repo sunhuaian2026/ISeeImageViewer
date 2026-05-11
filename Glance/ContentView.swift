@@ -199,11 +199,12 @@ struct ContentView: View {
                 // ImagePreviewView 通过 .id(idx) 重建显示 Z）
                 previewFocusTrigger = UUID()
             case .ephemeral:
-                // M2 Slice J 路径 3：EphemeralResultView 双击进 QV → ESC 退 QV 直接清
-                // ephemeral 跳回 baseGrid（不卡在 ephemeral 无焦点态需要再 ESC 一次）
-                withAnimation(DS.Anim.normal) { currentEphemeral = nil }
-                folderStore.selectedImageIndex = nil
-                gridFocusTrigger = UUID()
+                // M2 Slice J 路径 3：EphemeralResultView 双击进 QV → ESC 退 QV 回 ephemeral
+                // （而不是清 ephemeral 跳 baseGrid）。EphemeralResultView 已有键盘方向键 +
+                // focusTrigger 焦点恢复机制，原"无焦点死状态"trade-off 不再必要。对齐
+                // Photos.app / Finder Quick Look：QV → ESC 回上一层（ephemeral），再 ESC
+                // 才回 baseGrid（走 ContentView 兜底状态机）
+                ephemeralFocusTrigger = UUID()
             case .none:
                 // 路径 4（M2 Slice J）：handleFindSimilar 在 QV 内点找类似时主动清 entry，
                 // QV 关闭走这里。currentEphemeral 已 set，刷 ephemeralFocusTrigger 拿焦

@@ -41,50 +41,88 @@ struct EphemeralResultView: View {
             if let bannerText {
                 bannerRow(text: bannerText)
             }
-            ScrollView {
-                if urls.isEmpty {
-                    emptyState
-                } else {
-                    LazyVGrid(columns: gridColumns, spacing: DS.Thumbnail.spacing) {
-                        ForEach(Array(urls.enumerated()), id: \.element) { idx, url in
-                            VStack(spacing: DS.Spacing.xs) {
-                                ThumbnailCell(
-                                    url: url,
-                                    isHighlighted: highlightedURL == url,
-                                    size: folderStore.thumbnailSize
-                                )
-                                Text(url.lastPathComponent)
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                                    .truncationMode(.middle)
-                                    .frame(maxWidth: folderStore.thumbnailSize)
+            GeometryReader { geo in
+                let colCount = computeColumnCount(width: geo.size.width)
+                ScrollViewReader { scrollProxy in
+                    ScrollView {
+                        if urls.isEmpty {
+                            emptyState
+                        } else {
+                            LazyVGrid(columns: gridColumns, spacing: DS.Thumbnail.spacing) {
+                                ForEach(Array(urls.enumerated()), id: \.element) { idx, url in
+                                    VStack(spacing: DS.Spacing.xs) {
+                                        ThumbnailCell(
+                                            url: url,
+                                            isHighlighted: highlightedURL == url,
+                                            size: folderStore.thumbnailSize
+                                        )
+                                        Text(url.lastPathComponent)
+                                            .font(.caption2)
+                                            .foregroundStyle(.secondary)
+                                            .lineLimit(1)
+                                            .truncationMode(.middle)
+                                            .frame(maxWidth: folderStore.thumbnailSize)
+                                    }
+                                    .id(url)
+                                    .contentShape(Rectangle())
+                                    .onTapGesture(count: 2) {
+                                        highlightedURL = url
+                                        onDoubleClick(idx)
+                                    }
+                                    .onTapGesture(count: 1) {
+                                        highlightedURL = url
+                                        onSingleClick(idx)
+                                    }
+                                }
                             }
-                            .contentShape(Rectangle())
-                            .onTapGesture(count: 2) {
-                                highlightedURL = url
-                                onDoubleClick(idx)
-                            }
-                            .onTapGesture(count: 1) {
-                                highlightedURL = url
-                                onSingleClick(idx)
-                            }
+                            .padding(.horizontal, DS.Spacing.md)
+                            .padding(.vertical, DS.Spacing.sm)
                         }
                     }
-                    .padding(.horizontal, DS.Spacing.md)
-                    .padding(.vertical, DS.Spacing.sm)
+                    // M2 Slice J — ESC 不在 ephemeral 这层处理（codex:rescue 确认 ZStack 同层多
+                    // @FocusState race 不可靠），统一由 ContentView 兜底状态机按 layer 顺序拨开。
+                    // X 按钮 onClose 仍可用（tap event 不依赖 @FocusState）。
+                    .focusable()
+                    .focusEffectDisabled()
+                    .focused($isFocused)
+                    .onAppear { isFocused = true }
+                    .onChange(of: focusTrigger) { _, _ in isFocused = true }
+                    .onKeyPress(.space) {
+                        guard !urls.isEmpty else { return .ignored }
+                        let target = highlightedURL.flatMap({ urls.firstIndex(of: $0) }) ?? 0
+                        onDoubleClick(target)
+                        return .handled
+                    }
+                    .onKeyPress(.leftArrow)  { moveHighlight(by: -1,        colCount: colCount, proxy: scrollProxy); return .handled }
+                    .onKeyPress(.rightArrow) { moveHighlight(by: +1,        colCount: colCount, proxy: scrollProxy); return .handled }
+                    .onKeyPress(.upArrow)    { moveHighlight(by: -colCount, colCount: colCount, proxy: scrollProxy); return .handled }
+                    .onKeyPress(.downArrow)  { moveHighlight(by: +colCount, colCount: colCount, proxy: scrollProxy); return .handled }
                 }
             }
         }
         .background(DS.Color.appBackground)
-        // M2 Slice J — ESC 不在 ephemeral 这层处理（codex:rescue 确认 ZStack 同层多 @FocusState
-        // race 不可靠），统一由 ContentView 兜底状态机按 layer 顺序拨开。X 按钮 onClose 仍可用
-        // （tap event 不依赖 @FocusState）。focusable + focusTrigger 保留作未来键盘导航扩展用。
-        .focusable()
-        .focusEffectDisabled()
-        .focused($isFocused)
-        .onAppear { isFocused = true }
-        .onChange(of: focusTrigger) { _, _ in isFocused = true }
+    }
+
+    // MARK: - Keyboard helpers
+
+    private func moveHighlight(by delta: Int, colCount: Int, proxy: ScrollViewProxy) {
+        guard !urls.isEmpty else { return }
+        let current = highlightedURL.flatMap({ urls.firstIndex(of: $0) })
+            ?? (delta > 0 ? -1 : 0)
+        let next = max(0, min(urls.count - 1, current + delta))
+        highlightedURL = urls[next]
+        withAnimation(DS.Anim.fast) {
+            proxy.scrollTo(urls[next], anchor: .center)
+        }
+    }
+
+    private func computeColumnCount(width: CGFloat) -> Int {
+        // grid 真实宽度 = 容器宽度 - LazyVGrid 上的左右 padding(.horizontal, DS.Spacing.md)
+        // SwiftUI .adaptive(minimum:) 列数算法：floor((W + spacing) / (cellWidth + spacing))
+        let gridWidth = width - 2 * DS.Spacing.md
+        let cellWidth = folderStore.thumbnailSize
+        let spacing = DS.Thumbnail.spacing
+        return max(1, Int((gridWidth + spacing) / (cellWidth + spacing)))
     }
 
     private var topBar: some View {
