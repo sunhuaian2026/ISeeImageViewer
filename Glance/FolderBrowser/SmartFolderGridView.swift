@@ -34,15 +34,15 @@ struct SmartFolderGridView: View {
     let onSingleClick: (Int) -> Void
     /// 双击 cell 回调（同 onSingleClick 的 index 语义）。
     let onDoubleClick: (Int) -> Void
-    /// QuickViewer / preview 关闭后 ContentView 通过 trigger 拉 grid 焦点回来。
-    let gridFocusTrigger: UUID
+    /// D15 终态：父持有的 @FocusState binding，本 view 通过
+    /// `.focused($focusTarget, equals: .grid)` 申请焦点（与 V1 ImageGridView 共用 .grid case）。
+    @FocusState.Binding var focusTarget: AppFocus?
 
     /// V2 grid 内 cell 高亮状态（mirror V1 ImageGridView.highlightedURL）。
     /// 同步规则：cell 单击 / 双击设当前 cell；preview 方向键 navigate 写
     /// folderStore.selectedImageIndex → 这里 onChange 同步到 queryResult[idx].id；
     /// queryResult 整体变化（重新 query）→ reset nil。
     @State private var highlightedID: Int64?
-    @FocusState private var isFocused: Bool
 
     var body: some View {
         GeometryReader { geo in
@@ -107,8 +107,8 @@ struct SmartFolderGridView: View {
                 .background(DS.Color.gridBackground)
                 .focusable()
                 .focusEffectDisabled()
-                .focused($isFocused)
-                .onAppear { isFocused = true }
+                .focused($focusTarget, equals: .grid)
+                .onAppear { focusTarget = .grid }
                 .navigationTitle({
                     // mirror V1 ImageGridView 行为：preview 模式（selectedImageIndex 非 nil）显示 filename，
                     // grid 模式显示 SmartFolder displayName
@@ -118,17 +118,13 @@ struct SmartFolderGridView: View {
                     }
                     return smartFolderStore.selected?.displayName ?? ""
                 }())
-                // preview 方向键 navigate 时 selectedImageIndex 变 → 同步 highlight 跟到当前预览图；
-                // preview/QV 关闭（→ nil）时拉回 grid 焦点（mirror V1 ImageGridView Y-1/Y-2 race 修法）
+                // preview 方向键 navigate 时 selectedImageIndex 变 → 同步 highlight 跟到当前预览图。
+                // focus 仲裁由父 view 单点持有，本 view 不再需要 newValue == nil 时主动 refocus。
                 .onChange(of: folderStore.selectedImageIndex) { _, newValue in
                     if let idx = newValue, smartFolderStore.queryResult.indices.contains(idx) {
                         highlightedID = smartFolderStore.queryResult[idx].id
-                    } else if newValue == nil {
-                        isFocused = true
                     }
                 }
-                // ContentView 在 QuickViewer / preview 关闭后通过 gridFocusTrigger 拉回焦点
-                .onChange(of: gridFocusTrigger) { _, _ in isFocused = true }
                 // queryResult 整体重新 query → 老 highlight 已无意义，reset
                 .onChange(of: smartFolderStore.queryResult) { _, _ in
                     highlightedID = nil

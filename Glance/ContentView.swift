@@ -6,6 +6,15 @@
 import SwiftUI
 import SQLite3
 
+/// 焦点目标 enum（D15 终态：父持有 @FocusState 单仲裁者）。
+/// grid case 由 V1 ImageGridView / V2 SmartFolderGridView 互斥共用（同层 baseGrid 二选一）。
+/// QuickViewerOverlay 独立持本地 @FocusState（overlay 结构上跟 detail ZStack 平行无 race）。
+enum AppFocus: Hashable {
+    case grid
+    case preview
+    case ephemeral
+}
+
 // QV 入口来源：用 enum 而非裸 Bool/Optional 让 dismiss 路由按 provenance 走，不依赖
 // selectedImageIndex 是否 nil 当哨兵 — 这样 QV 方向键写 selectedImageIndex 同步 grid
 // highlight + preview 时不会反向破坏 6da903c 修过的"双击 cell 进 QV 后退出回 grid 不进 preview"
@@ -53,18 +62,15 @@ struct ContentView: View {
     @State private var v2Urls: [URL] = []
     /// M2 Slice J — 类似图查找结果视图状态。non-nil 时主区域换 EphemeralResultView 替代 baseGrid。
     @State private var currentEphemeral: EphemeralRequest?
-    /// M2 Slice J — preview/QV 关闭后让 EphemeralResultView 重新拿焦点的 trigger。
-    /// mirror previewFocusTrigger / gridFocusTrigger 模式。
-    @State private var ephemeralFocusTrigger: UUID = UUID()
     @State private var showInspector = false
     @State private var quickViewerIndex: Int? = nil
     // QV 入口来源：onDoubleClick / onQuickView 设值，QV onDismiss 仲裁后清回 nil
     @State private var quickViewerEntry: QuickViewerEntry? = nil
-    @State private var previewFocusTrigger: UUID = UUID()
-    // QuickViewer / ImagePreviewView 关闭后让 grid 重新拿焦点的 trigger。变更通过
-    // onChange(of: quickViewerIndex) 触发（覆盖 onDismiss 闭包 + onChange(of: images)
-    // 强制关闭 两条路径），避免只挂 onDismiss 漏掉切换文件夹时关闭 QV 的场景
-    @State private var gridFocusTrigger: UUID = UUID()
+    /// D15 终态：父持有的单一 @FocusState，向所有可聚焦子 view（grid / preview / ephemeral）
+    /// 通过 FocusState.Binding 下发。替代原 3 个 UUID trigger（gridFocusTrigger /
+    /// previewFocusTrigger / ephemeralFocusTrigger）+ 子 view 各自 @FocusState 模式 —
+    /// 那套模式在 ZStack 同层多焦点持有者时存在 race（codex:rescue 5b29600 / 59a9d86 / J 阶段已多次复发）。
+    @FocusState private var focusTarget: AppFocus?
     // ImagePreviewView 上的 .id(idx) 会让它在每次方向键切换时整个重建；vm 提到 ContentView
     // 用 @StateObject 持有，跨重建保留 prefetchCache，方向键命中即时显示无 spinner
     @StateObject private var previewVM = ImagePreviewViewModel()
@@ -190,34 +196,22 @@ struct ContentView: View {
             switch quickViewerEntry {
             case .grid:
                 // 路径 1：双击 grid cell 进 QV → ESC 后回 grid（保 6da903c 行为）
-                // QV 期间方向键写过的 selectedImageIndex 这里清回 nil 防止 preview 反弹
-                // mount。highlightedURL 已在 QV 期间被 ImageGridView onChange 同步到 Z 不变
+                // QV 期间方向键写过的 selectedImageIndex 这里清回 nil 防止 preview 反弹 mount。
                 folderStore.selectedImageIndex = nil
-                gridFocusTrigger = UUID()
+                focusTarget = .grid
             case .preview:
                 // 路径 2：preview 进 QV → ESC 退回 preview（selectedImageIndex 仍 = Z，
                 // ImagePreviewView 通过 .id(idx) 重建显示 Z）
-                previewFocusTrigger = UUID()
+                focusTarget = .preview
             case .ephemeral:
                 // M2 Slice J 路径 3：EphemeralResultView 双击进 QV → ESC 退 QV 回 ephemeral
-                // （而不是清 ephemeral 跳 baseGrid）。EphemeralResultView 已有键盘方向键 +
-                // focusTrigger 焦点恢复机制，原"无焦点死状态"trade-off 不再必要。对齐
-                // Photos.app / Finder Quick Look：QV → ESC 回上一层（ephemeral），再 ESC
-                // 才回 baseGrid（走 ContentView 兜底状态机）。
-                // QV 期间方向键写过的 selectedImageIndex 这里清回 nil 防止 previewOverlay
-                // 反弹 mount（mirror case .grid 行为）— ephemeral 的 highlightedURL 已被
-                // ephemeral.onChange(of: selectedImageIndex) non-nil 分支同步到 Z 不丢
+                // QV 期间方向键写过的 selectedImageIndex 这里清回 nil 防止 previewOverlay 反弹
                 folderStore.selectedImageIndex = nil
-                ephemeralFocusTrigger = UUID()
+                focusTarget = .ephemeral
             case .none:
                 // 路径 4（M2 Slice J）：handleFindSimilar 在 QV 内点找类似时主动清 entry，
-                // QV 关闭走这里。currentEphemeral 已 set，刷 ephemeralFocusTrigger 拿焦
-                // 否则保 grid 兜底行为
-                if currentEphemeral != nil {
-                    ephemeralFocusTrigger = UUID()
-                } else {
-                    gridFocusTrigger = UUID()
-                }
+                // QV 关闭走这里。currentEphemeral 已 set 时回 ephemeral，否则回 grid
+                focusTarget = currentEphemeral != nil ? .ephemeral : .grid
             }
             quickViewerEntry = nil
         }
@@ -236,11 +230,11 @@ struct ContentView: View {
             if newValue == nil {
                 withAnimation(DS.Anim.normal) { showInspector = false }
                 previewVM.clearCache()
-                // M2 Slice J 修复 Scenario 2：preview 关闭归 nil 时若 ephemeral 还显示
-                // 且 QV 不在 → ephemeral 需要重新拿焦点（preview 抢焦后没机制还回去）
-                // quickViewerIndex == nil 保护避开 ephemeral→QV 路径的 spurious fire
-                if currentEphemeral != nil && quickViewerIndex == nil {
-                    ephemeralFocusTrigger = UUID()
+                // preview 关闭归 nil 时若 QV 不在 → 焦点回上一层：ephemeral 还显示则回 ephemeral，
+                // 否则回 baseGrid。quickViewerIndex == nil 保护避开 preview→QV 路径的 spurious fire
+                // （那条路径走 .onChange(of: quickViewerIndex) 的 .preview 分支单独仲裁焦点）
+                if quickViewerIndex == nil {
+                    focusTarget = currentEphemeral != nil ? .ephemeral : .grid
                 }
             }
         }
@@ -279,25 +273,8 @@ struct ContentView: View {
                 folderStore.selectedImageIndex = nil
             }
         }
-        // M2 Slice J — 兜底 ESC 状态机（codex:rescue 确认根因：ZStack 同层多 @FocusState
-        // race，preview/ephemeral 谁拿焦点不确定，依赖 view 自己的 onKeyPress 不可靠）。
-        // 按 modal layer 顺序拨开：QV > preview > ephemeral > baseGrid。每次 ESC 只关一层。
-        .onKeyPress(.escape) {
-            if quickViewerIndex != nil {
-                return .ignored  // QV 自己 onKeyPress 处理
-            }
-            if folderStore.selectedImageIndex != nil {
-                // preview 是当前最顶层 modal → 先关 preview（不动 ephemeral）
-                folderStore.selectedImageIndex = nil
-                return .handled
-            }
-            if currentEphemeral != nil {
-                // preview 已关 → 第二次 ESC 关 ephemeral
-                withAnimation(DS.Anim.normal) { currentEphemeral = nil }
-                return .handled
-            }
-            return .ignored
-        }
+        // D15 终态：删除原 ContentView 兜底 ESC 状态机。子 view 各自持 ESC handler
+        // （preview / ephemeral），共享 @FocusState 单仲裁者保证焦点可靠，race 消除。
         .background {
             WindowAccessor(appState: appState)
         }
@@ -320,8 +297,11 @@ struct ContentView: View {
                     bannerText: req.banner,
                     onClose: {
                         withAnimation(DS.Anim.normal) { currentEphemeral = nil }
-                        // 修复 C：清 selectedImageIndex 防止 ephemeral 关闭后 preview 残留重现
+                        // 清 selectedImageIndex 防止 ephemeral 关闭后 preview 残留重现
                         folderStore.selectedImageIndex = nil
+                        // baseGrid 即将 swap in，下一帧其 onAppear 会 set .grid；这里显式
+                        // 写一笔避免依赖 onAppear 时序，多次设同值 SwiftUI 自动 dedupe
+                        focusTarget = .grid
                     },
                     onSingleClick: { idx in
                         // 类似图结果单击 → 进 preview（v2Urls 路径，复用 V2 mode）；
@@ -332,12 +312,11 @@ struct ContentView: View {
                     onDoubleClick: { idx in
                         v2Urls = req.urls
                         folderStore.selectedImageIndex = nil
-                        // 修复 2：用 .ephemeral provenance，QV 关闭时清 ephemeral 直接回 baseGrid
-                        // （避免卡在「ephemeral 无焦点 + QV 已关」死状态）
+                        // 用 .ephemeral provenance，QV 关闭时回 ephemeral（D8 amendment 分层 modal 模型）
                         quickViewerEntry = .ephemeral
                         quickViewerIndex = idx
                     },
-                    focusTrigger: ephemeralFocusTrigger
+                    focusTarget: $focusTarget
                 )
             } else {
                 baseGrid
@@ -414,12 +393,12 @@ struct ContentView: View {
                     quickViewerEntry = .grid
                     quickViewerIndex = idx
                 },
-                gridFocusTrigger: gridFocusTrigger
+                focusTarget: $focusTarget
             )
         } else {
             // V1 ImageGridView 始终保留在层级里，避免返回时缩略图全部重载
             ImageGridView(
-                gridFocusTrigger: gridFocusTrigger,
+                focusTarget: $focusTarget,
                 onDoubleClick: { index in
                     folderStore.selectedImageIndex = nil
                     quickViewerEntry = .grid
@@ -438,7 +417,7 @@ struct ContentView: View {
                 vm: previewVM,
                 images: smartFolderStore.selected != nil ? v2Urls : folderStore.images,
                 startIndex: idx,
-                focusTrigger: previewFocusTrigger,
+                focusTarget: $focusTarget,
                 onDismiss: {
                     folderStore.selectedImageIndex = nil
                 },

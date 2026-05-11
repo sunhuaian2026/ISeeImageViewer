@@ -20,7 +20,6 @@
 - **V1 v1.0**：已公开发布（GitHub Release + DMG + 仓库 public，2026-05-08 commit `0c9f699`）
 - 工程化基建：`/go` 五步 / `verify.sh` 三段 oracle / `build/Glance.app` 自动 sync `~/sync/` / pre-push codex hook / build 版本号注入 + BuildInfo sidecar
 - 下一步主线：V2 M2（类似图查找 Vision feature print + Quick Viewer "找类似" 按钮）/ V2 M3（搜索 + 新内置 SmartFolder "上个月" "截图" "大图"）
-- 远期 Refactor：Focus 架构父持有重构（详见待开发段）
 
 ---
 
@@ -154,7 +153,7 @@
 
 | 阶段 | 模块 | Spec | 优先级 | 前置依赖 | 说明 |
 |------|------|------|--------|----------|------|
-| Refactor | Focus 架构父持有重构 | （待写）| 中 | 5b29600 / 59a9d86 ESC race fix | 三个分散 `@FocusState`（grid / preview / QuickViewer）在 dismiss 路径的 race 已修两次。codex high effort 强烈建议改父持有：`ContentView` 加 `@FocusState focusTarget: FocusTarget?` enum，子 view 通过 `.focused($parentFocus, equals: .grid/.preview/.quickViewer)` 绑定，由 ContentView 集中仲裁焦点。本次仍走 incremental trigger UUID 修补，但下次同类 bug 出现前必须做 |
+| _（空，Focus 架构父持有重构已于 2026-05-11 落地，见 D15 amendment）_ | | | | | |
 
 ---
 
@@ -312,6 +311,7 @@ V2 引入跨文件夹聚合（智能文件夹）+ 找回（搜索 + 类似图）
 27. **D14 部分库时允许查 + banner 提示**：feature print 全库未抽完时（pendingTotal > 0）"找类似"按钮不 disable；查询走 fetchAllFeaturePrintsForCosine 拿当前已抽 row 跑 cosine；EphemeralResultView 顶部 banner = "已索引 X / Y 张，结果为部分库"。Why: 1 万图首次抽 ~17 分钟；disable 体验 17 分钟死锁。部分可用 + 显式提示符合 "show progress, don't gate" 原则。How to apply: ContentView.computeBanner 算 indexed/total，indexed >= total → banner = nil（隐藏）；EphemeralResultView bannerText 是可选参数。
 
 28. **D15 ephemeral+preview overlay ESC = ContentView 兜底状态机（临时方案，2026-05-11 J ship 后 codex:rescue 落地）**：M2 Slice J 引入 EphemeralResultView 后，ZStack 同层并存 ephemeral + previewOverlay 各持私有 @FocusState 注定 race（SwiftUI 没有跨 view 的焦点仲裁者），ESC 路由不可靠（preview 抢不到焦点时 ephemeral 抢着关，跳层 baseGrid）。临时修法：所有 ESC 集中到 ContentView body 的 `.onKeyPress(.escape)` 兜底，按 modal layer 状态机顺序处理（QV > preview > ephemeral > baseGrid，每次只关一层），子 view 不持自己的 ESC handler。Why: 最小 scope 跑通 Slice J 验收，避免一次性重构 5 文件的 V1+V2 焦点 dance（codex:rescue 推荐 P1 单一枚举 @FocusState scheme，但 V1 既有 grid+preview+QV 焦点 dance 都要改，回归风险高）。How to apply: K 阶段做完整 P1 重构（ContentView 持 `enum AppFocus { case grid, preview, ephemeral }` + `@FocusState appFocus: AppFocus?`，所有 view 改共享 binding `.focused($appFocus, equals: .xxx)`，删 trigger UUID 模式），届时移除 ContentView 兜底 ESC 状态机，恢复子 view 各自持 onKeyPress(.escape)，焦点单点仲裁不再 race。
+    - **2026-05-11 终态落地**：父持有 `@FocusState focusTarget: AppFocus?` enum (`grid` / `preview` / `ephemeral`) 重构完成。变更概览：(1) ContentView 加 `AppFocus` enum + 单 `@FocusState`，删 `gridFocusTrigger` / `previewFocusTrigger` / `ephemeralFocusTrigger` 三个 UUID `@State`；(2) ImageGridView / SmartFolderGridView / ImagePreviewView / EphemeralResultView 改用 `@FocusState.Binding var focusTarget: AppFocus?` 接收 binding，`.focused($focusTarget, equals: .xxx)` 申请焦点；子 view 删本地 `@FocusState isFocused` + `.onChange(of: trigger)`；(3) 子 view 各自持 `.onKeyPress(.escape)`（preview / ephemeral 自闭层）— preview 走 `dismissPreview()` (focusTarget=nil + onDismiss)，ephemeral 走 `onClose()`；(4) ContentView body 删兜底 ESC `.onKeyPress(.escape)` 状态机；(5) QV close 路由（`onChange(of: quickViewerIndex)`）把 `triggerXxx = UUID()` 全替换为 `focusTarget = .grid/.preview/.ephemeral`；(6) preview close 路由（`onChange(of: selectedImageIndex)` newValue==nil 分支）写 `focusTarget = currentEphemeral != nil ? .ephemeral : .grid`。QuickViewerOverlay 保留本地 `@FocusState`（overlay 与 detail ZStack 结构平行，无 race）。
 
 ---
 

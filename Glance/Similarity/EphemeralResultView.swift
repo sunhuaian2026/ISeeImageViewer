@@ -22,13 +22,11 @@ struct EphemeralResultView: View {
     let onClose: () -> Void
     let onSingleClick: (Int) -> Void
     let onDoubleClick: (Int) -> Void
-    /// M2 Slice J — preview/QV 关闭后让 ephemeral 重新拿焦点；ContentView bump UUID 触发 .onChange。
-    /// mirror ImagePreviewView focusTrigger pattern。
-    let focusTrigger: UUID
+    /// D15 终态：父持有的 @FocusState binding（参考 ContentView.AppFocus）。
+    @FocusState.Binding var focusTarget: AppFocus?
 
     @EnvironmentObject var folderStore: FolderStore
 
-    @FocusState private var isFocused: Bool
     @State private var highlightedURL: URL?
 
     private var gridColumns: [GridItem] {
@@ -79,14 +77,13 @@ struct EphemeralResultView: View {
                             .padding(.vertical, DS.Spacing.sm)
                         }
                     }
-                    // M2 Slice J — ESC 不在 ephemeral 这层处理（codex:rescue 确认 ZStack 同层多
-                    // @FocusState race 不可靠），统一由 ContentView 兜底状态机按 layer 顺序拨开。
-                    // X 按钮 onClose 仍可用（tap event 不依赖 @FocusState）。
+                    // D15 终态：focus 仲裁由父 view 单点持有，ephemeral 通过 .focused(equals: .ephemeral)
+                    // 申请焦点；ESC 在本层处理（onClose）后父 view 的 onChange/swap 会写回 .grid。
                     .focusable()
                     .focusEffectDisabled()
-                    .focused($isFocused)
-                    .onAppear { isFocused = true }
-                    .onChange(of: focusTrigger) { _, _ in isFocused = true }
+                    .focused($focusTarget, equals: .ephemeral)
+                    .onAppear { focusTarget = .ephemeral }
+                    .onKeyPress(.escape) { onClose(); return .handled }
                     // mirror V1 ImageGridView Bug 4 真解：preview/QV 内方向键已写 folderStore.selectedImageIndex
                     // → ephemeral 监听 non-nil 分支同步 highlightedURL → 退回 ephemeral 时 highlight 跟到 Z
                     // （对齐 Photos.app / Finder Quick Look：高亮跟随浏览位置）

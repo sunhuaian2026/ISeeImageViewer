@@ -9,10 +9,11 @@ import ImageIO
 struct ImageGridView: View {
     @EnvironmentObject var folderStore: FolderStore
     @EnvironmentObject var appState: AppState
-    let gridFocusTrigger: UUID
+    /// D15 终态：父持有的 @FocusState binding。本 view 通过
+    /// `.focused($focusTarget, equals: .grid)` 申请焦点；onAppear / dismiss 路径由父 view 写值。
+    @FocusState.Binding var focusTarget: AppFocus?
     var onDoubleClick: (Int) -> Void = { _ in }
 
-    @FocusState private var isFocused: Bool
     @State private var highlightedURL: URL? = nil
 
     private var gridColumns: [GridItem] {
@@ -151,24 +152,17 @@ struct ImageGridView: View {
                 // dark 跟 Finder 一致（~#1E1E1E 中性灰，不再偏冷蓝紫）。light 模式视觉无变化
                 .focusable()
                 .focusEffectDisabled()
-                .focused($isFocused)
-                .onAppear { isFocused = true }
-                // ImagePreviewView 关闭时（selectedImageIndex 变 nil）grid 一直在 ZStack 底层
-                // 没有重新出现，onAppear 不会再触发；主动拉回焦点防止方向键 / Space 静默或被
-                // 退场中的 ImagePreviewView 残留响应（Y-1 / Y-2 race）
+                .focused($focusTarget, equals: .grid)
+                .onAppear { focusTarget = .grid }
+                // preview 方向键 navigate 已写回 selectedImageIndex（ImagePreviewView.swift navigate(by:)），
+                // grid 这边监听 non-nil 分支同步 highlightedURL → ESC 退回 grid 时 highlight 跟到 preview
+                // 浏览到的图，对齐 Finder Cover Flow / Photos.app 行为（Bug 4 真解）。
+                // focus 仲裁由父 view 单点持有，本 view 不再需要 selectedImageIndex == nil 时主动 refocus。
                 .onChange(of: folderStore.selectedImageIndex) { _, newValue in
-                    if newValue == nil {
-                        isFocused = true
-                    } else if let idx = newValue, folderStore.images.indices.contains(idx) {
-                        // preview 方向键 navigate 已写回 selectedImageIndex（ImagePreviewView.swift:147-152），
-                        // grid 这边监听同步 highlightedURL → ESC 退回 grid 时 highlight 跟到 preview 浏览到的图，
-                        // 对齐 Finder Cover Flow / Photos.app 行为。Bug 4 真解
+                    if let idx = newValue, folderStore.images.indices.contains(idx) {
                         highlightedURL = folderStore.images[idx]
                     }
                 }
-                // ContentView 在 QuickViewer / preview 关闭后通过 gridFocusTrigger 拉回焦点；
-                // 上面 selectedImageIndex onChange 是冗余兜底（仅覆盖 preview dismiss 路径）
-                .onChange(of: gridFocusTrigger) { _, _ in isFocused = true }
                 // Space：进入全窗口查看器
                 .onKeyPress(.space) {
                     guard !images.isEmpty else { return .ignored }

@@ -236,6 +236,18 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 （全 8 项已迁移到 Done 段，性能数字两项标 deferred 未实测）
 
+### Focus 架构父持有重构（2026-05-11）
+
+D15 终态落地（共享 `@FocusState focusTarget: AppFocus?` enum）。下列 7 条覆盖所有焦点路径，**任何一条** 方向键 / Space / ESC 静默 = 焦点 race，回滚。
+
+- [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 1 — V1 grid 双击 → QV → ESC**：V1 单文件夹 grid → 双击 cell A → QV → ESC → 焦点回 grid，按方向键能移 highlight，按 Space 能再进 QV
+- [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 2 — V1 grid 单击 → preview → ESC**：单击 cell A → preview → ESC → 焦点回 grid，方向键 / Space 能用
+- [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 3 — V1 grid → preview → 双击 → QV → ESC ×2**：单击 cell A → preview → 双击 → QV → ESC → 焦点回 preview，方向键能切预览；再 ESC → 焦点回 grid，方向键能用（关键回归点：5b29600 / 59a9d86 race）
+- [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 4 — Ephemeral → QV → ESC ×2**：QV → 找类似 → ephemeral → 双击 → QV → ESC → 焦点回 ephemeral，方向键能在 ephemeral grid 切 highlight；再 ESC → 焦点回 baseGrid（D8 amendment 分层 modal 行为）
+- [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 5 — Ephemeral → preview → ESC**：ephemeral → 单击 cell → preview → ESC → 焦点回 ephemeral，方向键能在 ephemeral 切 highlight
+- [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 6 — V2 SmartFolder 全路径重测**：sidebar 选「全部最近」→ 重测路径 1-5（V2 grid 走 SmartFolderGridView 路径）
+- [ ] (2026-05-11 / `<pending>` / refactor) **Focus 路径 7 — 切文件夹强关 QV**：QV 打开 → sidebar 点其他文件夹 → QV 自动关闭 → 焦点应回新文件夹的 grid，方向键能用
+
 ---
 
 ## Done
