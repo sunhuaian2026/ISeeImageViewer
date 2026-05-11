@@ -132,6 +132,24 @@ nonisolated enum SmartFolderQueryBuilder {
 
     private static func resolveRelativeTime(_ token: String, now: Date) -> Double {
         if token == "now" { return now.timeIntervalSince1970 }
+        // M3.L — 自然月边界 token：last-month-start = 上月 1 日 00:00（inclusive），
+        // last-month-end = 本月 1 日 00:00 - 1s（inclusive end）。timezone 走 device local
+        // 跟 D4 时间分段同源；NSCalendar dateInterval(of: .month) 自动处理跨年（1 月→上年 12 月）
+        if token == "last-month-start" {
+            let cal = Calendar.current
+            guard let thisMonthStart = cal.dateInterval(of: .month, for: now)?.start,
+                  let lastMonthStart = cal.date(byAdding: .month, value: -1, to: thisMonthStart) else {
+                return now.timeIntervalSince1970
+            }
+            return lastMonthStart.timeIntervalSince1970
+        }
+        if token == "last-month-end" {
+            let cal = Calendar.current
+            guard let thisMonthStart = cal.dateInterval(of: .month, for: now)?.start else {
+                return now.timeIntervalSince1970
+            }
+            return thisMonthStart.addingTimeInterval(-1).timeIntervalSince1970
+        }
         if let last = token.last, last == "d",
            let n = Int(token.dropLast()) {
             return now.addingTimeInterval(TimeInterval(n) * 86400).timeIntervalSince1970

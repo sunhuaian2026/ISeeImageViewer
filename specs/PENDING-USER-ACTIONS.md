@@ -236,6 +236,14 @@ sqlite3 "$DB" "SELECT 'folders:', count(*) FROM folders; SELECT 'images:', count
 
 （全 8 项已迁移到 Done 段，性能数字两项标 deferred 未实测）
 
+### V2 M3 Slice L（2026-05-11）— 3 个新内置 SmartFolder
+
+- [ ] (2026-05-11 / `<pending>` / Slice L) **Sidebar 显示 5 个内置 SF**：app 启动 → sidebar 顶部智能文件夹区按顺序看到「全部最近」/「本周新增」/「上个月」/「截图」/「大图」5 条
+- [ ] (2026-05-11 / `<pending>` / Slice L) **「上个月」自然月边界**：点击「上个月」→ grid 显示库里所有 birth_time 落在上个自然月（1 号 00:00 到本月 1 号 -1s）的图；跨年场景：1 月点开看到上年 12 月的图（如有）
+- [ ] (2026-05-11 / `<pending>` / Slice L) **「截图」筛选**：库里有任一 filename 含 "Screenshot" 或 "截图" 的图 → 点开看到，按 birth_time 倒序；不含这两个 keyword 的图不在结果里
+- [ ] (2026-05-11 / `<pending>` / Slice L) **「大图」筛选**：库里有任一文件 >5MB 或 width>4000 且 height>4000 的图 → 点开看到，按 birth_time 倒序
+- [ ] (2026-05-11 / `<pending>` / Slice L) **空结果空态**：3 个新 SF 任一在小库下可能空结果 → 显示已有 SmartFolderGridView emptyState，不崩
+
 ### V2 M2 Slice K（2026-05-11）— V2.1 GA polish
 
 - [ ] (2026-05-11 / `<pending>` / Slice K.1) **Vision revision 迁移正常启动**：app 启动正常进 grid，不应弹出"Vision 模型已更新"banner（除非真的 macOS Vision revision 变了）；启动延迟无感知（≤200ms 额外开销）
