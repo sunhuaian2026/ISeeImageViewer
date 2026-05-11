@@ -87,6 +87,14 @@ struct EphemeralResultView: View {
                     .focused($isFocused)
                     .onAppear { isFocused = true }
                     .onChange(of: focusTrigger) { _, _ in isFocused = true }
+                    // mirror V1 ImageGridView Bug 4 真解：preview/QV 内方向键已写 folderStore.selectedImageIndex
+                    // → ephemeral 监听 non-nil 分支同步 highlightedURL → 退回 ephemeral 时 highlight 跟到 Z
+                    // （对齐 Photos.app / Finder Quick Look：高亮跟随浏览位置）
+                    .onChange(of: folderStore.selectedImageIndex) { _, newValue in
+                        if let idx = newValue, urls.indices.contains(idx) {
+                            highlightedURL = urls[idx]
+                        }
+                    }
                     .onKeyPress(.space) {
                         guard !urls.isEmpty else { return .ignored }
                         let target = highlightedURL.flatMap({ urls.firstIndex(of: $0) }) ?? 0
