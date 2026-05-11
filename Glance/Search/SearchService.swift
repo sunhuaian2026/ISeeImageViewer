@@ -166,3 +166,78 @@ nonisolated enum SearchService {
         return .and(atoms)
     }
 }
+
+#if DEBUG
+extension SearchService {
+    /// M.2 — inline 调试：跑 design § 6.5 表所有 case 验证 parse + compile 正确。
+    /// 调用方式：GlanceApp .onAppear { SearchService._debugSelfCheck() } 临时挂；
+    /// 验证完打 commit 前可删 _debugSelfCheck 调用，但函数保留留作 future regression check。
+    static func _debugSelfCheck() {
+        // Case 1: pure keyword
+        let p1 = parse("screenshot")
+        assert(p1.modifiers.isEmpty, "screenshot should have no modifiers")
+        assert(p1.keyword == "screenshot", "expected 'screenshot' keyword")
+
+        // Case 2: pure modifier type
+        let p2 = parse("type:png")
+        assert(p2.modifiers.count == 1, "type:png should produce 1 modifier")
+        assert(p2.modifiers[0].field == .format, "expected .format field")
+        assert(p2.keyword.isEmpty, "expected empty keyword")
+
+        // Case 3: keyword + modifier
+        let p3 = parse("screenshot type:png")
+        assert(p3.modifiers.count == 1, "expected 1 modifier")
+        assert(p3.keyword == "screenshot", "expected 'screenshot' keyword")
+
+        // Case 4: two modifiers
+        let p4 = parse("size:>1mb birth:>2026-04-01")
+        assert(p4.modifiers.count == 2, "expected 2 modifiers")
+        assert(p4.keyword.isEmpty, "expected empty keyword")
+        if case .int(let bytes) = p4.modifiers[0].value {
+            assert(bytes == 1_000_000, "expected 1mb = 1_000_000 bytes")
+        } else {
+            assertionFailure("size value should be .int")
+        }
+
+        // Case 5: partial fallback (invalid type)
+        let p5 = parse("screen type:invalidext")
+        // type:invalidext 合法字段名 + 非空 expr → parseTypeValue 校验 allSatisfy isLetter/isNumber 通过
+        // 实际会成功解析（IndexStore 找不到匹配返 0 结果，是另一回事）
+        // 这是 spec § 6.5 的实际行为 — 验证 D17：parser 不报错，user 看 0 结果自调
+        // 如要让 invalidext fail，需在 parseTypeValue 加 allow-list；M3 不做（保 Silent partial）
+        assert(p5.modifiers.count == 1, "M3: type:invalidext 当 modifier 不当 keyword（详见注释）")
+
+        // Case 5b: partial fallback (invalid size unit)
+        let p5b = parse("foo size:abc")
+        assert(p5b.modifiers.isEmpty, "size:abc invalid → fallback keyword")
+        assert(p5b.keyword == "foo size:abc", "expected full token fallback to keyword")
+
+        // Case 6: unknown modifier field
+        let p6 = parse("foo path:bar")
+        assert(p6.modifiers.isEmpty, "path: unknown modifier → fallback keyword")
+        assert(p6.keyword == "foo path:bar", "expected full token fallback")
+
+        // Case 7: birth eq translates to betweenDuration
+        let p7 = parse("birth:2026-04-15")
+        assert(p7.modifiers.count == 1)
+        assert(p7.modifiers[0].op == .betweenDuration, "eq birth → betweenDuration")
+
+        // Case 8: empty input
+        let p8 = parse("")
+        assert(p8.isEmpty, "empty input → isEmpty=true")
+        let p8b = parse("   ")
+        assert(p8b.isEmpty, "whitespace-only → isEmpty=true")
+
+        // Compile sanity
+        let compiled = compile(p4)
+        if case .and(let xs) = compiled {
+            // 3 common filter + 2 modifier = 5 atoms; keyword 空不加 OR
+            assert(xs.count == 5, "expected 5 atoms (3 common + 2 modifier)")
+        } else {
+            assertionFailure("compile should produce .and(...)")
+        }
+
+        print("[SearchService] _debugSelfCheck: all assertions passed")
+    }
+}
+#endif
