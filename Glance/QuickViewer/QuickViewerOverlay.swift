@@ -19,6 +19,9 @@ struct QuickViewerOverlay: View {
     /// M2 Slice J — 当前图是否支持找类似（IndexStore.supports_feature_print 反查）。
     /// false → 按钮 disable + tooltip 提示。caller 在 ContentView 算好传入。
     let currentSupportsFeaturePrint: Bool
+    /// M3 Slice M — QV 内按 ⌘F → ContentView 同帧关 QV + 浮 search overlay。
+    /// nil = 无搜索能力（caller 未提供时静默 fallback 到全屏切换）。
+    let onCommandF: (() -> Void)?
 
     @FocusState private var isFocused: Bool
     @State private var controlsVisible = true
@@ -30,13 +33,15 @@ struct QuickViewerOverlay: View {
         onDismiss: @escaping () -> Void,
         onIndexChange: @escaping (Int) -> Void,
         onFindSimilar: ((URL) -> Void)? = nil,
-        currentSupportsFeaturePrint: Bool = true
+        currentSupportsFeaturePrint: Bool = true,
+        onCommandF: (() -> Void)? = nil
     ) {
         _viewModel = StateObject(wrappedValue: QuickViewerViewModel(images: images, startIndex: startIndex))
         self.onDismiss = onDismiss
         self.onIndexChange = onIndexChange
         self.onFindSimilar = onFindSimilar
         self.currentSupportsFeaturePrint = currentSupportsFeaturePrint
+        self.onCommandF = onCommandF
     }
 
     var body: some View {
@@ -159,7 +164,13 @@ struct QuickViewerOverlay: View {
             if NSEvent.modifierFlags.contains(.command) { viewModel.zoomOut() }
             return .handled
         }
-        .onKeyPress(.init("f"), phases: .down) { _ in
+        // M3 Slice M：⌘F 路由到 onCommandF（同帧关 QV + 浮 search overlay）；
+        // 裸 F 仍走原全屏切换。检查 .command 修饰符决定分支。
+        .onKeyPress(.init("f"), phases: .down) { event in
+            if event.modifiers.contains(.command), let onCommandF {
+                onCommandF()
+                return .handled
+            }
             appState.toggleFullScreen()
             return .handled
         }

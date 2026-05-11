@@ -27,27 +27,62 @@ private enum QuickViewerEntry {
     case ephemeral  // 路径 3 (M2 Slice J): EphemeralResultView 双击 cell 进 QV → 退出直接回 baseGrid，不卡在 ephemeral 无焦点态
 }
 
-/// M2 Slice J — 临时结果视图请求。M2 仅支持 .similar；M3 加 .search。
+/// M2 Slice J — 临时结果视图请求。M2 .similar；M3 加 .search。
 /// banner 由 caller 计算（D14 部分库提示），nil = 不显示 banner。
 private enum EphemeralRequest: Equatable {
     case similar(sourceUrl: URL, results: [URL], banner: String?)
+    /// M3 Slice M — 全局搜索结果。images 携带 birth_time 给 EphemeralResultView 做时间分段。
+    case search(query: String, images: [IndexedImage], urls: [URL])
 
     var title: String {
         switch self {
         case .similar(let url, _, _):
             return "类似于 \(url.lastPathComponent)"
+        case .search(let q, _, _):
+            return q.isEmpty ? "搜索" : "搜索: \(q)"
         }
     }
 
     var urls: [URL] {
         switch self {
         case .similar(_, let r, _): return r
+        case .search(_, _, let urls): return urls
         }
     }
 
     var banner: String? {
         switch self {
         case .similar(_, _, let b): return b
+        case .search: return nil   // D19 搜索不带 banner
+        }
+    }
+
+    /// D19 toggle：search → true 启用 sectioned；similar → false flat。
+    var showTimeBuckets: Bool {
+        switch self {
+        case .similar: return false
+        case .search:  return true
+        }
+    }
+
+    /// caller 控空态文案。M3 search 区分空 input vs 0 结果。
+    var emptyStateText: String {
+        switch self {
+        case .similar:
+            return "无结果"
+        case .search(let q, _, _):
+            return q.isEmpty
+                ? "输入关键字或 modifier 搜索"
+                : "未找到匹配项 · 检查拼写或减少 modifier"
+        }
+    }
+
+    /// 跟 urls 平行的 birth_time 数组。M3 search 才有；M2 similar nil。
+    var datesForBuckets: [Date]? {
+        switch self {
+        case .similar: return nil
+        case .search(_, let images, _):
+            return images.map { $0.birthTime }
         }
     }
 }
@@ -69,6 +104,10 @@ struct ContentView: View {
     @State private var quickViewerIndex: Int? = nil
     // QV 入口来源：onDoubleClick / onQuickView 设值，QV onDismiss 仲裁后清回 nil
     @State private var quickViewerEntry: QuickViewerEntry? = nil
+    /// M3 Slice M — search overlay 显隐控制
+    @State private var showSearchOverlay: Bool = false
+    /// M3 Slice M — 当前搜索后台 Task（cancel 用，避免 stale 覆盖）
+    @State private var searchTask: Task<Void, Never>? = nil
     /// D15 终态：父持有的单一 @FocusState，向所有可聚焦子 view（grid / preview / ephemeral）
     /// 通过 FocusState.Binding 下发。替代原 3 个 UUID trigger（gridFocusTrigger /
     /// previewFocusTrigger / ephemeralFocusTrigger）+ 子 view 各自 @FocusState 模式 —
@@ -187,7 +226,8 @@ struct ContentView: View {
                     onFindSimilar: { sourceUrl in
                         handleFindSimilar(sourceUrl: sourceUrl)
                     },
-                    currentSupportsFeaturePrint: currentSupportsFeaturePrint(at: idx)
+                    currentSupportsFeaturePrint: currentSupportsFeaturePrint(at: idx),
+                    onCommandF: { openSearch() }
                 )
                 .transition(.asymmetric(insertion: .identity, removal: .opacity))
             }
@@ -218,6 +258,15 @@ struct ContentView: View {
                 focusTarget = currentEphemeral != nil ? .ephemeral : .grid
             }
             quickViewerEntry = nil
+        }
+        // M3 Slice M：body 级 ⌘F → openSearch（QV 不在场景下生效；QV 在时焦点在 QV，
+        // QV 自己的 .onKeyPress(F) 处理 ⌘F，分支调 onCommandF 走 ContentView.openSearch）
+        .onKeyPress(.init("f"), phases: .down) { event in
+            if event.modifiers.contains(.command) {
+                openSearch()
+                return .handled
+            }
+            return .ignored
         }
         .toolbar(quickViewerIndex != nil ? .hidden : .visible, for: .windowToolbar)
         // 隐藏 window toolbar 的 background material 绘制层，让 toolbar items（文件名 / ⓘ /
@@ -299,13 +348,22 @@ struct ContentView: View {
                     title: req.title,
                     urls: req.urls,
                     bannerText: req.banner,
+                    emptyStateText: req.emptyStateText,
+                    showTimeBuckets: req.showTimeBuckets,
+                    datesForBuckets: req.datesForBuckets,
                     onClose: {
-                        withAnimation(DS.Anim.normal) { currentEphemeral = nil }
-                        // 清 selectedImageIndex 防止 ephemeral 关闭后 preview 残留重现
-                        folderStore.selectedImageIndex = nil
-                        // baseGrid 即将 swap in，下一帧其 onAppear 会 set .grid；这里显式
-                        // 写一笔避免依赖 onAppear 时序，多次设同值 SwiftUI 自动 dedupe
-                        focusTarget = .grid
+                        switch req {
+                        case .similar:
+                            withAnimation(DS.Anim.normal) { currentEphemeral = nil }
+                            // 清 selectedImageIndex 防止 ephemeral 关闭后 preview 残留重现
+                            folderStore.selectedImageIndex = nil
+                            // baseGrid 即将 swap in，下一帧其 onAppear 会 set .grid；这里显式
+                            // 写一笔避免依赖 onAppear 时序，多次设同值 SwiftUI 自动 dedupe
+                            focusTarget = .grid
+                        case .search:
+                            // M3 Slice M：search ephemeral 由 closeSearch 同时 cancel task / 收 overlay / 切焦点
+                            closeSearch()
+                        }
                     },
                     onSingleClick: { idx in
                         // 类似图结果单击 → 进 preview（v2Urls 路径，复用 V2 mode）；
@@ -375,10 +433,24 @@ struct ContentView: View {
                 }
             }
             .padding(.top, DS.Spacing.sm)
+            // M3 Slice M — search overlay top z-index（QV > search > preview > ephemeral > baseGrid）
+            if showSearchOverlay {
+                SearchOverlayView(
+                    focusTarget: $focusTarget,
+                    onInputChange: { input, skipDebounce in
+                        runSearch(input: input, skipDebounce: skipDebounce)
+                    },
+                    onClose: { closeSearch() }
+                )
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .frame(maxWidth: .infinity, alignment: .center)
+                .zIndex(100)
+            }
         }
         .animation(DS.Anim.fast, value: indexStoreHolder.progress)
         .animation(DS.Anim.fast, value: indexStoreHolder.lastError)
         .animation(DS.Anim.fast, value: indexStoreHolder.featurePrintProgress)
+        .animation(DS.Anim.normal, value: showSearchOverlay)
     }
 
     @ViewBuilder
@@ -620,6 +692,100 @@ struct ContentView: View {
             guard sqlite3_step(stmt) == SQLITE_ROW else { return true }
             return sqlite3_column_int(stmt, 0) == 1
         }) ?? true
+    }
+
+    // MARK: - M3 Slice M — Search
+
+    /// ⌘F 入口。从任意 layer（baseGrid / preview / ephemeral / QV）触发。
+    private func openSearch() {
+        // 路径 1：QV 内按 ⌘F → 同帧关 QV + 浮 overlay（D16）。
+        // 顺序：先清 entry 再清 quickViewerIndex，让 onChange(of: quickViewerIndex) 走 .none
+        // 分支不动 currentEphemeral；随后我们覆写 focusTarget = .search 优先。
+        if quickViewerIndex != nil {
+            quickViewerEntry = nil
+            quickViewerIndex = nil
+        }
+        showSearchOverlay = true
+        // 初始化空 query 的 ephemeral 让 EphemeralResultView 显示 hint 空态文案
+        currentEphemeral = .search(query: "", images: [], urls: [])
+        focusTarget = .search
+    }
+
+    /// ESC / × button 关闭路径。清 currentEphemeral 让 baseGrid 回来。
+    private func closeSearch() {
+        searchTask?.cancel()
+        searchTask = nil
+        withAnimation(DS.Anim.normal) {
+            showSearchOverlay = false
+            currentEphemeral = nil
+        }
+        folderStore.selectedImageIndex = nil
+        focusTarget = .grid
+    }
+
+    /// debounce + cancel + SearchService 调用。skipDebounce=true 跳 200ms timer（Enter 路径）。
+    private func runSearch(input: String, skipDebounce: Bool) {
+        searchTask?.cancel()
+        let trimmed = input.trimmingCharacters(in: .whitespaces)
+
+        // 空输入 → 立即 reset 到 hint 状态（不查 SQL）
+        guard !trimmed.isEmpty else {
+            currentEphemeral = .search(query: "", images: [], urls: [])
+            return
+        }
+
+        guard let store = indexStoreHolder.store else { return }
+        let holderRef = indexStoreHolder
+
+        searchTask = Task.detached(priority: .userInitiated) {
+            // ① debounce sleep
+            if !skipDebounce {
+                try? await Task.sleep(for: .milliseconds(DS.Search.debounceMs))
+                guard !Task.isCancelled else { return }
+            }
+
+            // ② parse + compile + fetch
+            let parsed = SearchService.parse(input)
+            guard !parsed.isEmpty else { return }
+            let predicate = SearchService.compile(parsed)
+            let folder = SmartFolder(
+                id: "ephemeral-search",
+                displayName: "搜索",
+                predicate: predicate,
+                sortBy: .birthTime,
+                sortDescending: true,
+                isBuiltIn: false
+            )
+            let images: [IndexedImage]
+            do {
+                let compiled = try SmartFolderQueryBuilder.compile(folder, now: Date())
+                images = try store.fetch(compiled, limit: nil)
+            } catch {
+                await MainActor.run {
+                    holderRef.lastError = "搜索失败：\(error.localizedDescription)"
+                }
+                return
+            }
+
+            guard !Task.isCancelled else { return }
+
+            // ③ resolve URL（mirror computeV2Urls pattern）
+            let urls: [URL] = images.compactMap { img in
+                var stale = false
+                guard let rootURL = try? URL(
+                    resolvingBookmarkData: img.urlBookmark,
+                    options: [.withSecurityScope],
+                    bookmarkDataIsStale: &stale
+                ) else { return nil }
+                return rootURL.appendingPathComponent(img.relativePath)
+            }
+
+            // ④ 写状态（MainActor + cancel guard）
+            await MainActor.run {
+                guard !Task.isCancelled else { return }
+                self.currentEphemeral = .search(query: input, images: images, urls: urls)
+            }
+        }
     }
 
     // MARK: - Slice D — hide toggle 路由（ContentView 拼桥：sidebar URL → IndexStore id+relativePath）
